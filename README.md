@@ -39,8 +39,8 @@ Then install the package [Utilities](https://github.com/ChristianSteger/Utilitie
 The Shortwave_subgrid package can then be installed with:
 
 ```bash
-git clone https://github.com/ChristianSteger/HORAYZON.git
-cd HORAYZON
+git clone https://github.com/ChristianSteger/Shortwave_subgrid.git
+cd Shortwave_subgrid
 python -m pip install .
 ```
 
