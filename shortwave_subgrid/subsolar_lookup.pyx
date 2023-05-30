@@ -41,16 +41,16 @@ def sw_dir_cor(
     vert_grid : ndarray of float
         Array (one-dimensional) with vertices of DEM in ENU coordinates [metre]
     dem_dim_0 : int
-        Dimension length of DEM in meridional direction (latitude)
+        Dimension length of DEM in y-direction
     dem_dim_1 : int
-        Dimension length of DEM in zonal direction (longitude)
+        Dimension length of DEM in x-direction
     vert_grid_in : ndarray of float
         Array (one-dimensional) with vertices of inner DEM with 0.0 m elevation
         in ENU coordinates [metre]
     dem_dim_in_0 : int
-        Dimension length of inner DEM in meridional direction (latitude)
+        Dimension length of inner DEM in y-direction
     dem_dim_in_1 : int
-        Dimension length of inner DEM in zonal direction (longitude)
+        Dimension length of inner DEM in x-direction
     sun_pos : ndarray of float
         Array (three-dimensional) with sun positions in ENU coordinates
         (dim_sun_0, dim_sun_1, 3) [metre]
@@ -68,8 +68,14 @@ def sw_dir_cor(
         'ang_max' is also applied to restrict the maximal angle between the sun
         vector and the horizontal surface normal [degree]
     sw_dir_cor_max : float
-        Maximal allowed correction factor for direct downwelling shortwave
-        radiation [-]"""
+        Maximal allowed correction factor for direct downward shortwave
+        radiation [-]
+
+    Returns
+    -------
+    sw_dir_cor : ndarray of float
+        Array (four-dimensional) with shortwave correction factor
+        (y, x, dim_sun_0, dim_sun_1) [-]"""
 
 	# Check consistency and validity of input arguments
     if ((dem_dim_0 != (2 * offset_gc * pixel_per_gc) + dem_dim_in_0)
@@ -84,7 +90,7 @@ def sw_dir_cor(
         raise ValueError("value for 'pixel_per_gc' must be larger than 1")
     if offset_gc < 0:
         raise ValueError("value for 'offset_gc' must be larger than 0")
-    if (dist_search < 0.1):
+    if dist_search < 0.1:
         raise ValueError("'dist_search' must be at least 100.0 m")
     if geom_type not in ("triangle", "quad", "grid"):
         raise ValueError("invalid input argument for geom_type")
@@ -106,7 +112,7 @@ def sw_dir_cor(
     # Convert input strings to bytes
     geom_type_c = geom_type.encode("utf-8")
 
-    # Allocate array for shortwave corretion factors
+    # Allocate array for shortwave correction factors
     cdef int len_in_0 = int((dem_dim_in_0 - 1) / pixel_per_gc)
     cdef int len_in_1 = int((dem_dim_in_1 - 1) / pixel_per_gc)
     cdef int dim_sun_0 = sun_pos.shape[0]

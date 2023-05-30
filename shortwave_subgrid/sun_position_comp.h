@@ -5,25 +5,28 @@ class CppTerrain {
 public:
     RTCDevice device;
     RTCScene scene;
-    int dem_dim_0_cl, dem_dim_1_cl;
     float* vert_grid_cl;
-    int offset_0_cl, offset_1_cl;
-    float* vec_tilt_cl;
-    float* vec_norm_cl;
-    int dim_in_0_cl, dim_in_1_cl;
-    float* surf_enl_fac_cl;
+    int dem_dim_0_cl, dem_dim_1_cl;
+    float* vert_grid_in_cl;
+    int dem_dim_in_0_cl, dem_dim_in_1_cl;
+    int pixel_per_gc_cl;
+    int offset_gc_cl;
+    float dist_search_cl;
     float ang_max_cl;
+    float sw_dir_cor_max_cl;
     CppTerrain();
     ~CppTerrain();
-    void initialise(float* vert_grid,
+    void initialise(
+    	float* vert_grid,
     	int dem_dim_0, int dem_dim_1,
-    	int offset_0, int offset_1,
-    	float* vec_tilt,
-    	float* vec_norm,
-    	int dim_in_0, int dim_in_1,
-    	float* surf_enl_fac,
-    	char* geom_type,
-    	float ang_max);
-    void sw_dir_cor(float* sun_position, float* sw_dir_cor_buffer);
+		float* vert_grid_in,
+		int dem_dim_in_0, int dem_dim_in_1,
+		int pixel_per_gc,
+		int offset_gc,
+		float dist_search,
+		char* geom_type,
+		float ang_max,
+		float sw_dir_cor_max);
+    void sw_dir_cor(float* sun_pos, float* sw_dir_cor);
 };
 }
