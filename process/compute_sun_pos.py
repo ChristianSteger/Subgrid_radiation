@@ -38,7 +38,7 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 ellps = "sphere"  # Earth's surface approximation (sphere, GRS80 or WGS84)
-plot = True
+plot = False
 
 # -----------------------------------------------------------------------------
 # Load and check data
@@ -51,20 +51,20 @@ pixel_per_gc = ds.attrs["sub_grid_info_zonal"]
 offset_gc = ds.attrs["offset_grid_cells_zonal"]
 # offset in number of grid cells
 # -----------------------------------------------------------------------------
-# -> use sub-domain with reduces boundary for now...
-offset_gc = int(offset_gc / 2)
-ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-             rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
-# 30 x 50
+# # -> use sub-domain with reduces boundary for now...
+# offset_gc = int(offset_gc / 2)
+# ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+#              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# # 30 x 50
 # -----------------------------------------------------------------------------
-# # -> use sub-domain for now...
-# ds = ds.isel(rlat=slice(150 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         540 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-#              rlon=slice(150 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         740 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
-# # 390 x 590
+# -> use sub-domain for now...
+ds = ds.isel(rlat=slice(150 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        540 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+             rlon=slice(150 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        740 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# 390 x 590
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
@@ -188,10 +188,14 @@ x_enu, y_enu, z_enu = swsg.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
 sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
 terrain.sw_dir_cor(sun_pos, sw_dir_cor)
+sw_dir_cor_def = sw_dir_cor.copy()  # default
+terrain.sw_dir_cor_coherent_rays(sun_pos, sw_dir_cor)
+sw_dir_cor_coh = sw_dir_cor.copy()  # coherent rays
+print(np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
 
 # Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
-      + ", %.2f" % sw_dir_cor.max() + "]")
+print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor_coh.min()
+      + ", %.2f" % sw_dir_cor_coh.max() + "]")
 
 # Test plot
 levels = np.arange(0.0, 2.0, 0.2)
@@ -203,13 +207,13 @@ if plot:
     plt.pcolormesh(sw_dir_cor, cmap=cmap, norm=norm)
     plt.colorbar()
 
-# Compare result with computed lookup table
-ds = xr.open_dataset(dir_work + "SW_dir_cor_lookup.nc")
-ind_lat = np.where(ds["subsolar_lat"].values == subsol_lat)[0][0]
-ind_lon = np.where(ds["subsolar_lon"].values == subsol_lon)[0][0]
-sw_dir_cor_lut = ds["f_cor"][:, :, ind_lat, ind_lon].values
-ds.close()
-dev_abs_max = np.abs(sw_dir_cor - sw_dir_cor_lut).max()
-print("Maximal absolute deviation: %.8f" % dev_abs_max)
-dev_abs_mean = np.abs(sw_dir_cor - sw_dir_cor_lut).mean()
-print("Mean absolute deviation: %.8f" % dev_abs_mean)
+# # Compare result with computed lookup table
+# ds = xr.open_dataset(dir_work + "SW_dir_cor_lookup.nc")
+# ind_lat = np.where(ds["subsolar_lat"].values == subsol_lat)[0][0]
+# ind_lon = np.where(ds["subsolar_lon"].values == subsol_lon)[0][0]
+# sw_dir_cor_lut = ds["f_cor"][:, :, ind_lat, ind_lon].values
+# ds.close()
+# dev_abs_max = np.abs(sw_dir_cor_coh - sw_dir_cor_lut).max()
+# print("Maximal absolute deviation: %.8f" % dev_abs_max)
+# dev_abs_mean = np.abs(sw_dir_cor_coh - sw_dir_cor_lut).mean()
+# print("Mean absolute deviation: %.8f" % dev_abs_mean)
