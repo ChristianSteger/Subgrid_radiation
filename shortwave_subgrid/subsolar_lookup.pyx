@@ -55,7 +55,7 @@ def sw_dir_cor(
         Array (three-dimensional) with sun positions in ENU coordinates
         (dim_sun_0, dim_sun_1, 3) [metre]
     pixel_per_gc : int
-        Number of pixels within one grid cell (along one dimension)
+        Number of subgrid pixels within one grid cell (along one dimension)
     offset_gc : int
         Offset number of grid cells
     dist_search : float
@@ -75,7 +75,13 @@ def sw_dir_cor(
     -------
     sw_dir_cor : ndarray of float
         Array (four-dimensional) with shortwave correction factor
-        (y, x, dim_sun_0, dim_sun_1) [-]"""
+        (y, x, dim_sun_0, dim_sun_1) [-]
+
+    References
+    ----------
+    - Mueller, M. D., & Scherer, D. (2005): A Grid- and Subgrid-Scale
+    Radiation Parameterization of Topographic Effects for Mesoscale
+    Weather Forecast Models, Monthly Weather Review, 133(6), 1431-1442."""
 
 	# Check consistency and validity of input arguments
     if ((dem_dim_0 != (2 * offset_gc * pixel_per_gc) + dem_dim_in_0)

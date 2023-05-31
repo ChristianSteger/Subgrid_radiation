@@ -365,16 +365,16 @@ void sw_dir_cor_comp(
 	float ray_org_elev = 0.05;
 	// value to elevate ray origin (-> avoids potential issue with numerical
 	// imprecision / truncation) [m]
-	float dot_prod_rem = cos(deg2rad(93.0));
+	float dot_prod_rem = cos(deg2rad(94.0));
 	// threshold depends on radius (r) of Earth and mountain elevation
 	// maximum (em)
 
 	// Number of grid cells
-	int num_gc_lat = (dem_dim_in_0 - 1) / pixel_per_gc;
-	int num_gc_lon = (dem_dim_in_1 - 1) / pixel_per_gc;
-	cout << "Number of grid cells in meridional direction: " << num_gc_lat 
+	int num_gc_y = (dem_dim_in_0 - 1) / pixel_per_gc;
+	int num_gc_x = (dem_dim_in_1 - 1) / pixel_per_gc;
+	cout << "Number of grid cells in y-direction: " << num_gc_y 
 		<< endl;
-	cout << "Number of grid cells in zonal direction: " << num_gc_lon << endl;
+	cout << "Number of grid cells in x-direction: " << num_gc_x << endl;
 	
 	// Number of triangles
 	int num_tri = (dem_dim_in_0 - 1) * (dem_dim_in_1 - 1) * 2;
@@ -403,17 +403,19 @@ void sw_dir_cor_comp(
 	size_t num_rays = 0;
 
 	num_rays += tbb::parallel_reduce(
-		tbb::blocked_range<size_t>(0, num_gc_lat), 0.0,
+		tbb::blocked_range<size_t>(0, num_gc_y), 0.0,
 		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
 
 	// Loop through 2D-field of grid cells
-	//for (size_t i = 0; i < num_gc_lat; i++) {  // serial
+	//for (size_t i = 0; i < num_gc_y; i++) {  // serial
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
-		for (size_t j = 0; j < num_gc_lon; j++) {
+		for (size_t j = 0; j < num_gc_x; j++) {
 				
 			// Loop through 2D-field of DEM pixels
-			for (size_t k = (i * pixel_per_gc); k < ((i * pixel_per_gc) + pixel_per_gc); k++) {
-				for (size_t m = (j * pixel_per_gc); m < ((j * pixel_per_gc) + pixel_per_gc); m++) {
+			for (size_t k = (i * pixel_per_gc);
+				k < ((i * pixel_per_gc) + pixel_per_gc); k++) {
+				for (size_t m = (j * pixel_per_gc);
+					m < ((j * pixel_per_gc) + pixel_per_gc); m++) {
 				
 					//if ((k == 719) && (m == 1199)) {  // temporary ----------------------!!!
 					//if ((k == 677) && (m == 437)) {  // temporary ----------------------!!!
@@ -421,9 +423,9 @@ void sw_dir_cor_comp(
 					// Loop through two triangles per pixel
 					for (size_t n = 0; n < 2; n++) {
 
-						//----------------------------------------------------------
+						//-----------------------------------------------------
 						// Tilted triangle
-						//----------------------------------------------------------
+						//-----------------------------------------------------
 						//cout << "Tilted triangle:" << endl;
 
 						size_t ind_tri_0, ind_tri_1, ind_tri_2;
@@ -461,13 +463,16 @@ void sw_dir_cor_comp(
 						//cout << "area_tilt: " << area_tilt << endl;
 
 						// Ray origin
-  						float ray_org_x = (cent_x + norm_tilt_x * ray_org_elev);
-  						float ray_org_y = (cent_y + norm_tilt_y * ray_org_elev);
-  						float ray_org_z = (cent_z + norm_tilt_z * ray_org_elev);
+  						float ray_org_x = (cent_x
+  							+ norm_tilt_x * ray_org_elev);
+  						float ray_org_y = (cent_y
+  							+ norm_tilt_y * ray_org_elev);
+  						float ray_org_z = (cent_z
+  							+ norm_tilt_z * ray_org_elev);
 
-						//--------------------------------------------------------------
+						//-----------------------------------------------------
 						// Horizontal triangle
-						//--------------------------------------------------------------
+						//-----------------------------------------------------
 						//cout << "Horizontal triangle:" << endl;
 
 						func_ptr[n](dem_dim_in_1, k, m,
@@ -493,9 +498,10 @@ void sw_dir_cor_comp(
 
 						float surf_enl_fac = area_tilt / area_hori;
 
-						//--------------------------------------------------------------
-						// Loop through sun positions
-						//--------------------------------------------------------------
+						//-----------------------------------------------------
+						// Loop through sun positions and compute correction
+						// factors
+						//-----------------------------------------------------
 						//cout << "Loop through sun positions:" << endl;
 					
 						size_t ind_lin_sun, ind_lin_cor;
@@ -504,19 +510,23 @@ void sw_dir_cor_comp(
 						
 								//if ((o == 5) && (p == 22)) { // temporary ----------------------!!!
 					
-								ind_lin_sun = lin_ind_3d(dim_sun_1, 3, o, p, 0);
+								ind_lin_sun = lin_ind_3d(dim_sun_1, 3,
+									o, p, 0);
 								//cout << dim_sun_1 << ", " << 3 << ", " << o << ", " << p << ", " << 0 << endl;
 								//cout << ind_lin_sun << endl;
 						
-								ind_lin_cor = lin_ind_4d(num_gc_lon, dim_sun_0, dim_sun_1,
-								i, j, o, p);
-								//cout << num_gc_lon << ", " << dim_sun_0 << ", " << dim_sun_1 << ", " << i << ", " << j << ", " << o << ", " << p << endl;
+								ind_lin_cor = lin_ind_4d(num_gc_x,
+									dim_sun_0, dim_sun_1, i, j, o, p);
+								//cout << num_gc_x << ", " << dim_sun_0 << ", " << dim_sun_1 << ", " << i << ", " << j << ", " << o << ", " << p << endl;
 								//cout << ind_lin_cor << endl;
 							
 								// Compute sun unit vector
-  								float sun_x = (sun_pos[ind_lin_sun] - ray_org_x);
-  								float sun_y = (sun_pos[ind_lin_sun + 1] - ray_org_y);
-  								float sun_z = (sun_pos[ind_lin_sun + 2] - ray_org_z);
+  								float sun_x = (sun_pos[ind_lin_sun]
+  									- ray_org_x);
+  								float sun_y = (sun_pos[ind_lin_sun + 1]
+  									- ray_org_y);
+  								float sun_z = (sun_pos[ind_lin_sun + 2]
+  									- ray_org_z);
   								vec_unit(sun_x, sun_y, sun_z);
   								//cout << "sun_x: " << sun_x << endl;
 								//cout << "sun_y: " << sun_y << endl;
@@ -524,7 +534,8 @@ void sw_dir_cor_comp(
 							
 								// Check for shadowing by Earth's sphere
 								float dot_prod_hs = (norm_hori_x * sun_x
-									+ norm_hori_y * sun_y + norm_hori_z * sun_z);
+									+ norm_hori_y * sun_y
+									+ norm_hori_z * sun_z);
 								//cout << "angle between sun and horizontal surface normal: " << rad2deg(acos(dot_prod_hs)) << endl;
 								if (dot_prod_hs < dot_prod_rem) {
 									continue;
@@ -532,15 +543,12 @@ void sw_dir_cor_comp(
 							
 								// Check for self-shadowing
   								float dot_prod_ts = norm_tilt_x * sun_x
-  									+ norm_tilt_y * sun_y + norm_tilt_z * sun_z;
+  									+ norm_tilt_y * sun_y
+  									+ norm_tilt_z * sun_z;
   								//cout << "angle between sun and tilted surface normal: " << rad2deg(acos(dot_prod_ts)) << endl;
 								if (dot_prod_ts < dot_prod_min) {
 									continue;
 								}
-
-								//-------------------------------------------------
-								// Ray tracing
-								//-------------------------------------------------
 			
 								// Intersect context
   								struct RTCIntersectContext context;
@@ -564,7 +572,11 @@ void sw_dir_cor_comp(
 									if (dot_prod_hs < dot_prod_min) {
 										dot_prod_hs = dot_prod_min;
 									}
-									sw_dir_cor[ind_lin_cor] += std::min(((dot_prod_ts / dot_prod_hs) * surf_enl_fac), sw_dir_cor_max);
+									sw_dir_cor[ind_lin_cor] =
+										sw_dir_cor[ind_lin_cor]
+										+ std::min(((dot_prod_ts
+										/ dot_prod_hs) * surf_enl_fac),
+										sw_dir_cor_max);
 								}
 								num_rays += 1;
 						
@@ -590,12 +602,13 @@ void sw_dir_cor_comp(
   	std::chrono::duration<double> time_ray = (end_ray - start_ray);
   	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
   	cout << "Number of rays shot: " << num_rays << endl;
-  	float frac_ray = (float)num_rays / (float)(num_tri * dim_sun_0 * dim_sun_1);
+  	float frac_ray = (float)num_rays /
+  		(float)(num_tri * dim_sun_0 * dim_sun_1);
   	cout << "Fraction of rays required: " << frac_ray << endl;
   	
   	// Divide accum. correction values by number of triangles within grid cell
   	float num_tri_per_gc = pixel_per_gc * pixel_per_gc * 2.0;
-  	size_t num_elem = (num_gc_lat * num_gc_lon * dim_sun_0 * dim_sun_1);
+  	size_t num_elem = (num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1);
   	for (size_t i = 0; i < num_elem; i++) {
 		sw_dir_cor[i] /= num_tri_per_gc;
   	}
@@ -613,4 +626,3 @@ void sw_dir_cor_comp(
 	//------------------------------------------------------------------------- 
 
 }
-

@@ -20,4 +20,3 @@ void sw_dir_cor_comp(
 	float sw_dir_cor_max);
 
 #endif
-
