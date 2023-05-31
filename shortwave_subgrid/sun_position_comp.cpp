@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string.h>
 #include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
 #include <sstream>
 #include <iomanip>
 
@@ -353,9 +354,32 @@ void CppTerrain::initialise(
 	dem_dim_in_1_cl = dem_dim_in_1;
 	pixel_per_gc_cl = pixel_per_gc;
 	offset_gc_cl = offset_gc;
-	dist_search_cl = dist_search;
 	ang_max_cl = ang_max;
 	sw_dir_cor_max_cl = sw_dir_cor_max;
+	
+	// Hard-coded settings
+	ray_org_elev_cl = 0.05;
+	// value to elevate ray origin (-> avoids potential issue with numerical
+	// imprecision / truncation) [m]
+    dot_prod_rem_cl = cos(deg2rad(94.0));
+	// threshold depends on radius (r) of Earth and mountain elevation
+	// maximum (em)
+	
+	// Number of grid cells
+	num_gc_y_cl = (dem_dim_in_0 - 1) / pixel_per_gc;
+	num_gc_x_cl = (dem_dim_in_1 - 1) / pixel_per_gc;
+    
+	// Number of triangles
+	num_tri_cl = (dem_dim_in_0 - 1) * (dem_dim_in_1 - 1) * 2;
+	cout << "Number of triangles: " << num_tri_cl << endl;
+
+	// Unit conversion(s)
+    dot_prod_min_cl = cos(deg2rad(ang_max));
+    dist_search_cl = dist_search * 1000.0;  // [kilometre] to [metre]
+    cout << "Search distance: " << dist_search_cl << " m" << endl;
+    
+    cout << "ang_max: " << ang_max << " degree" << endl;
+	cout << "sw_dir_cor_max: " << sw_dir_cor_max  << endl;
 
 	auto start_ini = std::chrono::high_resolution_clock::now();
 
@@ -374,92 +398,177 @@ void CppTerrain::initialise(
 
 void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
  
-// 	float ray_org_elev=0.05;
-// 	float dot_prod_min = cos(deg2rad(ang_max_cl));
-// 
-// 	tbb::parallel_for(tbb::blocked_range<size_t>(0,dim_in_0_cl),
-// 		[&](tbb::blocked_range<size_t> r) {  // parallel
-// 
-// 	//for (size_t i = 0; i < (size_t)dim_in_0_cl; i++) {  // serial
-// 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
-//   		for (size_t j = 0; j < (size_t)dim_in_1_cl; j++) {
-//   		
-//   			size_t ind_arr = lin_ind_2d(dim_in_1_cl, i, j);
-// 
-//     			// Get components of terrain surface / ellipsoid normal vectors
-//     			size_t ind_vec = lin_ind_2d(dim_in_1_cl, i, j) * 3;
-//   				float tilt_x = vec_tilt_cl[ind_vec];
-//   				float norm_x = vec_norm_cl[ind_vec];
-//   				ind_vec += 1;
-//   				float tilt_y = vec_tilt_cl[ind_vec];
-//   				float norm_y = vec_norm_cl[ind_vec];
-//   				ind_vec += 1;
-//   				float tilt_z = vec_tilt_cl[ind_vec];
-//   				float norm_z = vec_norm_cl[ind_vec];
-//   
-//   				// Ray origin
-//   				size_t ind_2d = lin_ind_2d(dem_dim_1_cl, i + offset_0_cl,
-//   					j + offset_1_cl);
-//   				float ray_org_x = (vert_grid_cl[ind_2d * 3 + 0] 
-//   					+ norm_x * ray_org_elev);
-//   				float ray_org_y = (vert_grid_cl[ind_2d * 3 + 1] 
-//   					+ norm_y * ray_org_elev);
-//   				float ray_org_z = (vert_grid_cl[ind_2d * 3 + 2] 
-//   					+ norm_z * ray_org_elev);
-// 
-//   				// Compute sun unit vector
-//   				float sun_x = (sun_position[0] - ray_org_x);
-//   				float sun_y = (sun_position[1] - ray_org_y);
-//   				float sun_z = (sun_position[2] - ray_org_z);
-//   				vec_unit(sun_x, sun_y, sun_z);
-// 
-//   				float dot_prod_ns = (norm_x * sun_x + norm_y * sun_y
-//   					+ norm_z * sun_z);
-//   			
-//   				// Check for self-shadowing
-//   				float dot_prod_ts = tilt_x * sun_x + tilt_y * sun_y 
-//   					+ tilt_z * sun_z;
-//   				if (dot_prod_ts > dot_prod_min) {
-//   			
-// 					// Intersect context
-//   					struct RTCIntersectContext context;
-//   					rtcInitIntersectContext(&context);
-// 
-//   					// Ray structure
-//   					struct RTCRay ray;
-//   					ray.org_x = ray_org_x;
-//   					ray.org_y = ray_org_y;
-//   					ray.org_z = ray_org_z;
-//   					ray.dir_x = sun_x;
-//   					ray.dir_y = sun_y;
-//   					ray.dir_z = sun_z;
-//   					ray.tnear = 0.0;
-//   					ray.tfar = std::numeric_limits<float>::infinity();
-// 
-//   					// Intersect ray with scene
-//   					rtcOccluded1(scene, &context, &ray);
-// 
-// 					if (ray.tfar < 0.0) {
-// 						sw_dir_cor_buffer[ind_arr] = 0.0;
-// 					} else {
-// 						if (dot_prod_ns < dot_prod_min) {
-// 							dot_prod_ns = dot_prod_min;
-// 						}
-// 						sw_dir_cor_buffer[ind_arr] = ((dot_prod_ts 
-// 							/ dot_prod_ns) * surf_enl_fac_cl[ind_arr]);	
-// 					}
-// 			
-// 				} else {
-// 			
-// 					sw_dir_cor_buffer[ind_arr] = 0.0;
-// 			
-// 				}
-// 	
-// 		}
-// 	}
-// 	
-// 	}); // parallel
-// 
+	auto start_ray = std::chrono::high_resolution_clock::now();
+	size_t num_rays = 0;
+
+	num_rays += tbb::parallel_reduce(
+		tbb::blocked_range<size_t>(0, num_gc_y_cl), 0.0,
+		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
+
+	// Loop through 2D-field of grid cells
+	//for (size_t i = 0; i < num_gc_y_cl; i++) {  // serial
+	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+		for (size_t j = 0; j < num_gc_x_cl; j++) {
+				
+			// Loop through 2D-field of DEM pixels
+			for (size_t k = (i * pixel_per_gc_cl);
+				k < ((i * pixel_per_gc_cl) + pixel_per_gc_cl); k++) {
+				for (size_t m = (j * pixel_per_gc_cl);
+					m < ((j * pixel_per_gc_cl) + pixel_per_gc_cl); m++) {
+					
+					// Loop through two triangles per pixel
+					for (size_t n = 0; n < 2; n++) {
+
+						//-----------------------------------------------------
+						// Tilted triangle
+						//-----------------------------------------------------
+
+						size_t ind_tri_0, ind_tri_1, ind_tri_2;
+						func_ptr[n](dem_dim_1_cl,
+							k + (pixel_per_gc_cl * offset_gc_cl),
+							m + (pixel_per_gc_cl * offset_gc_cl),
+							ind_tri_0, ind_tri_1, ind_tri_2);
+
+    					float vert_0_x = vert_grid_cl[ind_tri_0];
+    					float vert_0_y = vert_grid_cl[ind_tri_0 + 1];
+    					float vert_0_z = vert_grid_cl[ind_tri_0 + 2];
+    					float vert_1_x = vert_grid_cl[ind_tri_1];
+    					float vert_1_y = vert_grid_cl[ind_tri_1 + 1];
+   						float vert_1_z = vert_grid_cl[ind_tri_1 + 2];
+    					float vert_2_x = vert_grid_cl[ind_tri_2];
+    					float vert_2_y = vert_grid_cl[ind_tri_2 + 1];
+    					float vert_2_z = vert_grid_cl[ind_tri_2 + 2];
+
+						float cent_x, cent_y, cent_z;
+						triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
+							vert_1_x, vert_1_y, vert_1_z,
+							vert_2_x, vert_2_y, vert_2_z,
+							cent_x, cent_y, cent_z);
+
+						float norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
+						triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
+							vert_1_x, vert_1_y, vert_1_z,
+							vert_2_x, vert_2_y, vert_2_z,
+							norm_tilt_x, norm_tilt_y, norm_tilt_z,
+							area_tilt);
+
+						// Ray origin
+  						float ray_org_x = (cent_x
+  							+ norm_tilt_x * ray_org_elev_cl);
+  						float ray_org_y = (cent_y
+  							+ norm_tilt_y * ray_org_elev_cl);
+  						float ray_org_z = (cent_z
+  							+ norm_tilt_z * ray_org_elev_cl);
+
+						//-----------------------------------------------------
+						// Horizontal triangle
+						//-----------------------------------------------------
+
+						func_ptr[n](dem_dim_in_1_cl, k, m,
+							ind_tri_0, ind_tri_1, ind_tri_2);
+
+    					vert_0_x = vert_grid_in_cl[ind_tri_0];
+    					vert_0_y = vert_grid_in_cl[ind_tri_0 + 1];
+    					vert_0_z = vert_grid_in_cl[ind_tri_0 + 2];
+    					vert_1_x = vert_grid_in_cl[ind_tri_1];
+    					vert_1_y = vert_grid_in_cl[ind_tri_1 + 1];
+   						vert_1_z = vert_grid_in_cl[ind_tri_1 + 2];
+    					vert_2_x = vert_grid_in_cl[ind_tri_2];
+    					vert_2_y = vert_grid_in_cl[ind_tri_2 + 1];
+    					vert_2_z = vert_grid_in_cl[ind_tri_2 + 2];		
+
+						float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
+						triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
+							vert_1_x, vert_1_y, vert_1_z,
+							vert_2_x, vert_2_y, vert_2_z,
+							norm_hori_x, norm_hori_y, norm_hori_z,
+							area_hori);
+
+						float surf_enl_fac = area_tilt / area_hori;
+
+						//-----------------------------------------------------
+						// Compute correction factor
+						//-----------------------------------------------------
+					
+						size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j);
+
+						// Compute sun unit vector
+  						float sun_x = (sun_pos[0] - ray_org_x);
+  						float sun_y = (sun_pos[1] - ray_org_y);
+  						float sun_z = (sun_pos[2] - ray_org_z);
+  						vec_unit(sun_x, sun_y, sun_z);
+
+							
+						// Check for shadowing by Earth's sphere
+						float dot_prod_hs = (norm_hori_x * sun_x
+							+ norm_hori_y * sun_y
+							+ norm_hori_z * sun_z);
+						if (dot_prod_hs < dot_prod_rem_cl) {
+							continue;
+						}
+							
+						// Check for self-shadowing
+  						float dot_prod_ts = norm_tilt_x * sun_x
+  							+ norm_tilt_y * sun_y
+  							+ norm_tilt_z * sun_z;
+						if (dot_prod_ts < dot_prod_min_cl) {
+							continue;
+						}
+			
+						// Intersect context
+  						struct RTCIntersectContext context;
+  						rtcInitIntersectContext(&context);
+
+  						// Ray structure
+  						struct RTCRay ray;
+  						ray.org_x = ray_org_x;
+  						ray.org_y = ray_org_y;
+  						ray.org_z = ray_org_z;
+  						ray.dir_x = sun_x;
+  						ray.dir_y = sun_y;
+  						ray.dir_z = sun_z;
+  						ray.tnear = 0.0;
+  						// ray.tfar = std::numeric_limits<float>::infinity();
+  						ray.tfar = dist_search_cl;
+
+  						// Intersect ray with scene
+  						rtcOccluded1(scene, &context, &ray);
+						if (ray.tfar > 0.0) {
+							// no intersection -> 'tfar' is not updated;
+							// otherwise 'tfar' = -inf
+							if (dot_prod_hs < dot_prod_min_cl) {
+								dot_prod_hs = dot_prod_min_cl;
+							}
+							sw_dir_cor[ind_lin_cor] =
+								sw_dir_cor[ind_lin_cor]
+								+ std::min(((dot_prod_ts / dot_prod_hs)
+								* surf_enl_fac), sw_dir_cor_max_cl);
+						}
+						num_rays += 1;
+
+					}
+
+				}
+			}
+
+		}
+	}
+	
+  	return num_rays;  // parallel
+  	}, std::plus<size_t>());  // parallel
+	
+	auto end_ray = std::chrono::high_resolution_clock::now();
+  	std::chrono::duration<double> time_ray = (end_ray - start_ray);
+  	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
+  	cout << "Number of rays shot: " << num_rays << endl;
+  	float frac_ray = (float)num_rays / (float)num_tri_cl;
+  	cout << "Fraction of rays required: " << frac_ray << endl;
+  	
+  	// Divide accum. correction values by number of triangles within grid cell
+  	float num_tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2.0;
+  	size_t num_elem = (num_gc_y_cl * num_gc_x_cl);
+  	for (size_t i = 0; i < num_elem; i++) {
+		sw_dir_cor[i] /= num_tri_per_gc;
+  	}
+
 }
-
-

@@ -33,25 +33,26 @@ cdef class Terrain:
                    str geom_type="grid",
                    float ang_max=89.0,
                    sw_dir_cor_max=25.0):
-        """Initialise Terrain class with Digital Elevation Model (DEM) data..
+        """Initialise Terrain class with Digital Elevation Model (DEM) data.
 
         Parameters
         ----------
         vert_grid : ndarray of float
-            Array (one-dimensional) with vertices of DEM in ENU coordinates [metre]
+            Array (one-dimensional) with vertices of DEM in ENU coordinates
+            [metre]
         dem_dim_0 : int
             Dimension length of DEM in y-direction
         dem_dim_1 : int
             Dimension length of DEM in x-direction
         vert_grid_in : ndarray of float
-            Array (one-dimensional) with vertices of inner DEM with 0.0 m elevation
-            in ENU coordinates [metre]
+            Array (one-dimensional) with vertices of inner DEM with 0.0 m
+            elevation in ENU coordinates [metre]
         dem_dim_in_0 : int
             Dimension length of inner DEM in y-direction
         dem_dim_in_1 : int
             Dimension length of inner DEM in x-direction
         pixel_per_gc : int
-            Number of pixels within one grid cell (along one dimension)
+            Number of subgrid pixels within one grid cell (along one dimension)
         offset_gc : int
             Offset number of grid cells
         dist_search : float
@@ -59,19 +60,21 @@ cdef class Terrain:
         geom_type : str
             Embree geometry type (triangle, quad, grid)
         ang_max : float
-            Maximal angle between sun vector and tilted surface normal for which
-            correction is computed. For larger angles, 'sw_dir_cor' is set to 0.0.
-            'ang_max' is also applied to restrict the maximal angle between the sun
-            vector and the horizontal surface normal [degree]
+            Maximal angle between sun vector and tilted surface normal for
+            which correction is computed. For larger angles, 'sw_dir_cor' is
+            set to 0.0. 'ang_max' is also applied to restrict the maximal angle
+            between the sun vector and the horizontal surface normal [degree]
         sw_dir_cor_max : float
             Maximal allowed correction factor for direct downward shortwave
             radiation [-]"""
 
         # Check consistency and validity of input arguments
         if ((dem_dim_0 != (2 * offset_gc * pixel_per_gc) + dem_dim_in_0)
-                or (dem_dim_1 != (2 * offset_gc * pixel_per_gc) + dem_dim_in_1)):
-            raise ValueError("Inconsistency between input arguments 'dem_dim_?',"
-                             + " 'dem_dim_in_?', 'offset_gc' and 'pixel_per_gc'")
+                or (dem_dim_1 != (2 * offset_gc * pixel_per_gc)
+                    + dem_dim_in_1)):
+            raise ValueError("Inconsistency between input arguments "
+                             + "'dem_dim_?', 'dem_dim_in_?', 'offset_gc' "
+                             + "and 'pixel_per_gc'")
         if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
             raise ValueError("array 'vert_grid' has insufficient length")
         if len(vert_grid_in) < (dem_dim_in_0 * dem_dim_in_1 * 3):
@@ -87,7 +90,8 @@ cdef class Terrain:
         if (ang_max < 85.0) or (ang_max > 89.99):
             raise ValueError("'ang_max' must be in the range [85.0, 89.99]")
         if (sw_dir_cor_max < 2.0) or (sw_dir_cor_max > 100.0):
-            raise ValueError("'sw_dir_cor_max' must be in the range [2.0, 100.0]")
+            raise ValueError("'sw_dir_cor_max' must be in the range "
+                             + "[2.0, 100.0]")
 
         # Check size of input geometries
         if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
@@ -107,11 +111,8 @@ cdef class Terrain:
 
     def sw_dir_cor(self, np.ndarray[np.float32_t, ndim = 1] sun_pos,
                    np.ndarray[np.float32_t, ndim = 2] sw_dir_cor):
-        """Compute shortwave correction factor for specified sun position.
-
-        Compute correction factor for direct downward shortwave radiation
-        (for 1D plane-parallel radiative transfer model) for specified sun
-        position.
+        """Compute subgrid-scale correction factors for downward direct
+        shortwave radiation for a specific sun position.
 
         Parameters
         ----------
@@ -119,7 +120,8 @@ cdef class Terrain:
             Array (one-dimensional) with sun position in ENU coordinates
             (x, y, z) [metre]
         sw_dir_cor : ndarray of float
-            Array (two-dimensional) with shortwave correction factor (y, x) [-]
+            Array (two-dimensional) with shortwave correction factor (y, x)
+            [-]
 
         References
         ----------
@@ -132,5 +134,9 @@ cdef class Terrain:
             raise ValueError("array 'sun_pos' has incorrect shape")
         if not sw_dir_cor.flags["C_CONTIGUOUS"]:
             raise ValueError("array 'sw_dir_cor' is not C-contiguous")
+
+        # Ensure that all elements of array 'sw_dir_cor' are 0.0
+        # (-> crucial because subgrid correction values are added)
+        sw_dir_cor.fill(0.0)  # default value
 
         self.thisptr.sw_dir_cor(&sun_pos[0], &sw_dir_cor[0,0])
