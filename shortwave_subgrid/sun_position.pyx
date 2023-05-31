@@ -173,4 +173,4 @@ cdef class Terrain:
         # (-> crucial because subgrid correction values are added)
         sw_dir_cor.fill(0.0)  # default value
 
-        self.thisptr.sw_dir_cor(&sun_pos[0], &sw_dir_cor[0,0])
+        self.thisptr.sw_dir_cor_coherent_rays(&sun_pos[0], &sw_dir_cor[0,0])

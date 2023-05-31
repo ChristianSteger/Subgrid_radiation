@@ -589,8 +589,11 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 	//for (size_t i = 0; i < num_gc_y_cl; i++) {  // serial
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
 		for (size_t j = 0; j < num_gc_x_cl; j++) {
+		
+			float* test = new float[pixel_per_gc_cl * pixel_per_gc_cl * 2];  // --------- temporary!
 
 			// Loop through 2D-field of DEM pixels
+			size_t ind = 0; // ------------------------------------------------ temporary!
 			for (size_t k = (i * pixel_per_gc_cl);
 				k < ((i * pixel_per_gc_cl) + pixel_per_gc_cl); k++) {
 				for (size_t m = (j * pixel_per_gc_cl);
@@ -598,6 +601,9 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 
 					// Loop through two triangles per pixel
 					for (size_t n = 0; n < 2; n++) {
+					
+						test[ind] = 3.0; // ---------------------------------- temporary!
+						ind = ind + 1;
 
 						//-----------------------------------------------------
 						// Tilted triangle
@@ -718,10 +724,10 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 							if (dot_prod_hs < dot_prod_min_cl) {
 								dot_prod_hs = dot_prod_min_cl;
 							}
-							sw_dir_cor[ind_lin_cor] =
-								sw_dir_cor[ind_lin_cor]
-								+ std::min(((dot_prod_ts / dot_prod_hs)
-								* surf_enl_fac), sw_dir_cor_max_cl);
+// 							sw_dir_cor[ind_lin_cor] = // ---------------------- temporary!
+// 								sw_dir_cor[ind_lin_cor]
+// 								+ std::min(((dot_prod_ts / dot_prod_hs)
+// 								* surf_enl_fac), sw_dir_cor_max_cl);
 						}
 						num_rays += 1;
 
@@ -729,6 +735,14 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 
 				}
 			}
+			
+			size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j); // ------------ temporary!
+			float temp = 0.0;
+			for (size_t k = 0; k < (pixel_per_gc_cl * pixel_per_gc_cl * 2); k++) {
+				temp = temp + test[k];
+  			}
+			sw_dir_cor[ind_lin_cor] = temp;
+			delete[] test;   // ----------------------------------------------- temporary!
 
 		}
 	}
@@ -743,11 +757,11 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
   	float frac_ray = (float)num_rays / (float)num_tri_cl;
   	cout << "Fraction of rays required: " << frac_ray << endl;
 
-  	// Divide accum. correction values by number of triangles within grid cell
-  	float num_tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2.0;
-  	size_t num_elem = (num_gc_y_cl * num_gc_x_cl);
-  	for (size_t i = 0; i < num_elem; i++) {
-		sw_dir_cor[i] /= num_tri_per_gc;
-  	}
+  	// Divide accum. correction values by number of triangles within grid cell ----------- temporary!
+//   	float num_tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2.0;
+//   	size_t num_elem = (num_gc_y_cl * num_gc_x_cl);
+//   	for (size_t i = 0; i < num_elem; i++) {
+// 		sw_dir_cor[i] /= num_tri_per_gc;
+//   	}
 
 }
