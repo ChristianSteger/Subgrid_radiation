@@ -27,7 +27,7 @@ inline float deg2rad(float ang) {
 	/* Parameters
        ----------
 	   ang: angle [degree]
-	   
+
 	   Returns
        ----------
 	   ang: angle [radian]
@@ -40,7 +40,7 @@ inline float rad2deg(float ang) {
 	/* Parameters
        ----------
 	   ang: angle [radian]
-	   
+
 	   Returns
        ----------
 	   ang: angle [degree]*/
@@ -71,7 +71,7 @@ inline size_t lin_ind_3d(size_t dim_1, size_t dim_2,
 	   ind_0: first array indices [-]
 	   ind_1: second array indices [-]
 	   ind_2: third array indices [-]
-	   
+
 	   Returns
        ----------
 	   ind_lin: linear index of array [-]
@@ -91,7 +91,7 @@ inline size_t lin_ind_4d(size_t dim_1, size_t dim_2, size_t dim_3,
 	   ind_1: second array indices [-]
 	   ind_2: third array indices [-]
 	   ind_3: fourth array indicies [-6]
-	   
+
 	   Returns
        ----------
 	   ind_lin: linear index of array [-]
@@ -129,19 +129,18 @@ inline void triangle_normal_area(
 	float b_x = vert_0_x - vert_1_x;
 	float b_y = vert_0_y - vert_1_y;
 	float b_z = vert_0_z - vert_1_z;
-	
+
 	norm_x = a_y * b_z - a_z * b_y;
     norm_y = a_z * b_x - a_x * b_z;
     norm_z = a_x * b_y - a_y * b_x;
-    
+
     float mag = sqrt(norm_x * norm_x + norm_y * norm_y + norm_z * norm_z);
 	norm_x = norm_x / mag;
 	norm_y = norm_y / mag;
 	norm_z = norm_z / mag;
-	
+
 	area = mag / 2.0;
 }
-
 
 // Triangle centroid
 inline void triangle_centroid(
@@ -258,7 +257,7 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
   	RTCGeometry geom = rtcNewGeometry(device, rtc_geom_type);  	
   	rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
   		RTC_FORMAT_FLOAT3, vert_grid, 0, 3*sizeof(float), num_vert);  	
-	
+
 	//-------------------------------------------------------------------------
 	// Triangle
 	//-------------------------------------------------------------------------

@@ -33,5 +33,6 @@ public:
 		float ang_max,
 		float sw_dir_cor_max);
     void sw_dir_cor(float* sun_pos, float* sw_dir_cor);
+    void sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor);
 };
 }
