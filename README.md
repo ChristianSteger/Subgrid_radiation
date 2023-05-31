@@ -1,5 +1,5 @@
 # Shortwave_subgrid
-Package to efficiently compute sub-grid correction factors for downwelling direct shortwave radiation.
+Package to efficiently compute subgrid correction factors for direct downward shortwave radiation.
 
 # Installation
 
