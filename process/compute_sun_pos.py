@@ -1,6 +1,6 @@
-# Description: Compute subgrid correction factors for direct shortwave
-#              downward radiation (aggregated to the model grid cell
-#              resolution) for a single sun position
+# Description: Compute subgrid correction factors for direct downward shortwave
+#              radiation (aggregated to the model grid cell resolution) for a
+#              single sun position
 #
 # Copyright (c) 2023 ETH Zurich, Christian R. Steger
 # MIT License
@@ -31,14 +31,14 @@ mpl.style.use("classic")
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
-geom_type = "grid"  # "quad" ca. 25% faster than "grid"
+geom_type = "quad"  # "quad" ca. 25% faster than "grid"
 ang_max = 89.5
 sw_dir_cor_max = 20.0
 
 # Miscellaneous settings
 dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 ellps = "sphere"  # Earth's surface approximation (sphere, GRS80 or WGS84)
-plot = False
+plot = True
 
 # -----------------------------------------------------------------------------
 # Load and check data
@@ -51,20 +51,18 @@ pixel_per_gc = ds.attrs["sub_grid_info_zonal"]
 offset_gc = ds.attrs["offset_grid_cells_zonal"]
 # offset in number of grid cells
 # -----------------------------------------------------------------------------
-# # -> use sub-domain with reduces boundary for now...
-# offset_gc = int(offset_gc / 2)
-# ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-#              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
-# # 30 x 50
+# sub-domain with reduces boundary: 30 x 50
+offset_gc = int(offset_gc / 2)
+ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+             rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
-# -> use sub-domain for now...
-ds = ds.isel(rlat=slice(150 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        540 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-             rlon=slice(150 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        740 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
-# 390 x 590
+# # sub-domain: 290 x 590
+# ds = ds.isel(rlat=slice(200 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+#              rlon=slice(200 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
@@ -204,16 +202,16 @@ norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=False,
                                extend="max")
 if plot:
     plt.figure()
-    plt.pcolormesh(sw_dir_cor, cmap=cmap, norm=norm)
+    plt.pcolormesh(sw_dir_cor_coh, cmap=cmap, norm=norm)
     plt.colorbar()
 
-# # Compare result with computed lookup table
-# ds = xr.open_dataset(dir_work + "SW_dir_cor_lookup.nc")
-# ind_lat = np.where(ds["subsolar_lat"].values == subsol_lat)[0][0]
-# ind_lon = np.where(ds["subsolar_lon"].values == subsol_lon)[0][0]
-# sw_dir_cor_lut = ds["f_cor"][:, :, ind_lat, ind_lon].values
-# ds.close()
-# dev_abs_max = np.abs(sw_dir_cor_coh - sw_dir_cor_lut).max()
-# print("Maximal absolute deviation: %.8f" % dev_abs_max)
-# dev_abs_mean = np.abs(sw_dir_cor_coh - sw_dir_cor_lut).mean()
-# print("Mean absolute deviation: %.8f" % dev_abs_mean)
+# Compare result with computed lookup table
+ds = xr.open_dataset(dir_work + "SW_dir_cor_lookup.nc")
+ind_lat = np.where(ds["subsolar_lat"].values == subsol_lat)[0][0]
+ind_lon = np.where(ds["subsolar_lon"].values == subsol_lon)[0][0]
+sw_dir_cor_lut = ds["f_cor"][:, :, ind_lat, ind_lon].values
+ds.close()
+dev_abs_max = np.abs(sw_dir_cor_coh - sw_dir_cor_lut).max()
+print("Maximal absolute deviation: %.8f" % dev_abs_max)
+dev_abs_mean = np.abs(sw_dir_cor_coh - sw_dir_cor_lut).mean()
+print("Mean absolute deviation: %.8f" % dev_abs_mean)

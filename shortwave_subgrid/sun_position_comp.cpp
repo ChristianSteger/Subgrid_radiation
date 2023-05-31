@@ -173,7 +173,7 @@ inline void triangle_vert_ur(size_t dim_1, size_t ind_0, size_t ind_1,
 
 // Store above two functions in array
 void (*func_ptr[2])(size_t dim_1, size_t ind_0, size_t ind_1,
-	size_t &ind_tri_0, size_t &ind_tri_1, size_t &ind_tri_2) 
+	size_t &ind_tri_0, size_t &ind_tri_1, size_t &ind_tri_2)
 	= {triangle_vert_ll, triangle_vert_ur};
 
 //#############################################################################
@@ -228,13 +228,13 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
   		rtc_geom_type = RTC_GEOMETRY_TYPE_TRIANGLE;
   	} else if (strcmp(geom_type, "quad") == 0) {
   		rtc_geom_type = RTC_GEOMETRY_TYPE_QUAD;
-  	} else { 	
+  	} else {
   		rtc_geom_type = RTC_GEOMETRY_TYPE_GRID;
-  	}  	
+  	}
 
-  	RTCGeometry geom = rtcNewGeometry(device, rtc_geom_type);  	
+  	RTCGeometry geom = rtcNewGeometry(device, rtc_geom_type);
   	rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
-  		RTC_FORMAT_FLOAT3, vert_grid, 0, 3*sizeof(float), num_vert);  	
+  		RTC_FORMAT_FLOAT3, vert_grid, 0, 3*sizeof(float), num_vert);
 
 	//-------------------------------------------------------------------------
 	// Triangle
@@ -265,7 +265,7 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
   	} else if (strcmp(geom_type, "quad") == 0) {
   		cout << "Selected geometry type: quad" << endl;
 		int num_quad = ((dem_dim_0 - 1) * (dem_dim_1 - 1));
-  		printf("Number of quads: %d \n", num_quad);							   
+  		printf("Number of quads: %d \n", num_quad);
   		Quad* quads = (Quad*) rtcSetNewGeometryBuffer(geom,
   			RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, sizeof(Quad),
   			num_quad);
@@ -282,7 +282,7 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
   	}
 	//-------------------------------------------------------------------------
 	// Grid
-	//-------------------------------------------------------------------------  	
+	//-------------------------------------------------------------------------
   	} else {
   		cout << "Selected geometry type: grid" << endl;
 		RTCGrid* grid = (RTCGrid*)rtcSetNewGeometryBuffer(geom,
@@ -392,7 +392,7 @@ void CppTerrain::initialise(
 }
 
 //#############################################################################
-// Compute subgrid correction factor for direct downward shortwave radiation
+// Compute correction factors
 //#############################################################################
 
 void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
@@ -474,7 +474,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
    						vert_1_z = vert_grid_in_cl[ind_tri_1 + 2];
     					vert_2_x = vert_grid_in_cl[ind_tri_2];
     					vert_2_y = vert_grid_in_cl[ind_tri_2 + 1];
-    					vert_2_z = vert_grid_in_cl[ind_tri_2 + 2];		
+    					vert_2_z = vert_grid_in_cl[ind_tri_2 + 2];
 
 						float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
 						triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
@@ -526,8 +526,8 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
   						ray.dir_y = sun_y;
   						ray.dir_z = sun_z;
   						ray.tnear = 0.0;
-  						// ray.tfar = std::numeric_limits<float>::infinity();
   						ray.tfar = dist_search_cl;
+  						// std::numeric_limits<float>::infinity();
 
   						// Intersect ray with scene
   						rtcOccluded1(scene, &context, &ray);
@@ -562,7 +562,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
   	float frac_ray = (float)num_rays / (float)num_tri_cl;
   	cout << "Fraction of rays required: " << frac_ray << endl;
 
-  	// Divide accum. correction values by number of triangles within grid cell
+  	// Divide accumulated values by number of triangles within grid cell
   	float num_tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2.0;
   	size_t num_elem = (num_gc_y_cl * num_gc_x_cl);
   	for (size_t i = 0; i < num_elem; i++) {
@@ -572,15 +572,14 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
 }
 
 //#############################################################################
-// Compute subgrid correction factor for direct downward shortwave radiation
-// (-> perform ray tracing in a coherently)
+// Compute correction factors with coherent rays
 //#############################################################################
 
 void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 
 	auto start_ray = std::chrono::high_resolution_clock::now();
 	size_t num_rays = 0;
-	
+
 	int tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2;
 	// number of triangles per grid cell
 
@@ -592,11 +591,12 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 	//for (size_t i = 0; i < num_gc_y_cl; i++) {  // serial
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
 		for (size_t j = 0; j < num_gc_x_cl; j++) {
-		
+
 			float* norm_tilt = new float[tri_per_gc * 3];
 			float* ray_org = new float[tri_per_gc * 3];
 			float* norm_hori = new float[tri_per_gc * 3];
 			float* surf_enl_fac = new float[tri_per_gc];
+			float* sw_dir_cor_ray = new float[tri_per_gc];
 
 			// Compute triangle's centroid, surface normal and area
 			size_t ind_incr_3 = 0;
@@ -668,7 +668,7 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
    						vert_1_z = vert_grid_in_cl[ind_tri_1 + 2];
     					vert_2_x = vert_grid_in_cl[ind_tri_2];
     					vert_2_y = vert_grid_in_cl[ind_tri_2 + 1];
-    					vert_2_z = vert_grid_in_cl[ind_tri_2 + 2];		
+    					vert_2_z = vert_grid_in_cl[ind_tri_2 + 2];
 
 						float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
 						triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
@@ -681,19 +681,23 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
   						norm_hori[ind_incr_3 + 2] = norm_hori_z;
 
 						surf_enl_fac[ind_incr_1] = area_tilt / area_hori;
-						
+
 						ind_incr_3 = ind_incr_3 + 3;
 						ind_incr_1 = ind_incr_1 + 1;
-						
+
 					}
 
 				}
 			}
 
-			// Compute correction factor
+			//-----------------------------------------------------------------
+			// Compute correction factors (I)
+			//-----------------------------------------------------------------
+
 			ind_incr_3 = 0;
 			ind_incr_1 = 0;
-			float sw_dir_cor_agg = 0.0;
+			RTCRay rays[tri_per_gc];
+			unsigned int num_rays_gc = 0;
 			for (size_t k = (i * pixel_per_gc_cl);
 				k < ((i * pixel_per_gc_cl) + pixel_per_gc_cl); k++) {
 				for (size_t m = (j * pixel_per_gc_cl);
@@ -728,75 +732,26 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 							continue;
 						}
 
-						// Intersect context
-  						struct RTCIntersectContext context;
-  						rtcInitIntersectContext(&context);
-  						//context.flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-  						context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+						// Add ray
+						rays[num_rays_gc].org_x = ray_org[ind_incr_3];
+  						rays[num_rays_gc].org_y = ray_org[ind_incr_3 + 1];
+  						rays[num_rays_gc].org_z = ray_org[ind_incr_3 + 2];
+  						rays[num_rays_gc].dir_x = sun_x;
+  						rays[num_rays_gc].dir_y = sun_y;
+  						rays[num_rays_gc].dir_z = sun_z;
+  						rays[num_rays_gc].tnear = 0.0;
+  						rays[num_rays_gc].tfar = dist_search_cl;
+  						// std::numeric_limits<float>::infinity();
+						rays[num_rays_gc].id = num_rays_gc;
 
-						// ----------------------------------------------------
-						// New
-						// ----------------------------------------------------
-						
-						// Ray structure
-						RTCRay rays[10];
-						for (size_t o = 0; o < 10; o++) {
-  							rays[o].org_x = ray_org[ind_incr_3];
-  							rays[o].org_y = ray_org[ind_incr_3 + 1];
-  							rays[o].org_z = ray_org[ind_incr_3 + 2];
-  							rays[o].dir_x = sun_x;
-  							rays[o].dir_y = sun_y;
-  							rays[o].dir_z = sun_z;
-  							rays[o].tnear = 0.0;
-  							// ray.tfar = std::numeric_limits<float>::infinity();
-  							rays[o].tfar = dist_search_cl;
-  						}
-  						
-  						// Intersect ray with scene
-  						rtcOccluded1M(scene, &context,(RTCRay*)rays, 10, sizeof(RTCRay));
-						if (rays[0].tfar > 0.0) {
-							// no intersection -> 'tfar' is not updated;
-							// otherwise 'tfar' = -inf
-							if (dot_prod_hs < dot_prod_min_cl) {
-								dot_prod_hs = dot_prod_min_cl;
-							}
-							sw_dir_cor_agg =
-								sw_dir_cor_agg
-								+ std::min(((dot_prod_ts / dot_prod_hs)
-								* surf_enl_fac[ind_incr_1]),
-								sw_dir_cor_max_cl);
+						if (dot_prod_hs < dot_prod_min_cl) {
+							dot_prod_hs = dot_prod_min_cl;
 						}
-						num_rays += 1;
-
-  						// ----------------------------------------------------
-
-  						// Ray structure
-//   						struct RTCRay ray;
-//   						ray.org_x = ray_org[ind_incr_3];
-//   						ray.org_y = ray_org[ind_incr_3 + 1];
-//   						ray.org_z = ray_org[ind_incr_3 + 2];
-//   						ray.dir_x = sun_x;
-//   						ray.dir_y = sun_y;
-//   						ray.dir_z = sun_z;
-//   						ray.tnear = 0.0;
-//   						// ray.tfar = std::numeric_limits<float>::infinity();
-//   						ray.tfar = dist_search_cl;
-
-  						// Intersect ray with scene
-//   						rtcOccluded1(scene, &context, &ray);
-// 						if (ray.tfar > 0.0) {
-// 							// no intersection -> 'tfar' is not updated;
-// 							// otherwise 'tfar' = -inf
-// 							if (dot_prod_hs < dot_prod_min_cl) {
-// 								dot_prod_hs = dot_prod_min_cl;
-// 							}
-// 							sw_dir_cor_agg =
-// 								sw_dir_cor_agg
-// 								+ std::min(((dot_prod_ts / dot_prod_hs)
-// 								* surf_enl_fac[ind_incr_1]),
-// 								sw_dir_cor_max_cl);
-// 						}
-// 						num_rays += 1;
+						sw_dir_cor_ray[num_rays_gc] =
+							std::min(((dot_prod_ts / dot_prod_hs)
+							* surf_enl_fac[ind_incr_1]),
+							sw_dir_cor_max_cl);
+						num_rays_gc = num_rays_gc + 1;
 						
 						ind_incr_3 = ind_incr_3 + 3;
 						ind_incr_1 = ind_incr_1 + 1;
@@ -806,11 +761,35 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 				}
 			}
 
+			//-----------------------------------------------------------------
+			// Compute correction factors (II)
+			//-----------------------------------------------------------------
+
+  			struct RTCIntersectContext context;
+  			rtcInitIntersectContext(&context);
+  			context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+
+  			// Intersect rays with scene
+  			rtcOccluded1M(scene, &context,(RTCRay*)rays, num_rays_gc,
+  				sizeof(RTCRay));
+  			num_rays += num_rays_gc;
+
+  			float sw_dir_cor_agg = 0.0;
+  			for (size_t k = 0; k < num_rays_gc; k++) {
+  				if (rays[k].tfar > 0.0) {
+							// no intersection -> 'tfar' is not updated;
+							// otherwise 'tfar' = -inf
+							sw_dir_cor_agg = sw_dir_cor_agg
+								+ sw_dir_cor_ray[rays[k].id];
+				}
+  			}
+
 			delete[] norm_tilt;
 			delete[] ray_org;
 			delete[] norm_hori;
 			delete[] surf_enl_fac;
-			
+			delete[] sw_dir_cor_ray;
+
 			size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j);
 			sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / tri_per_gc;
 

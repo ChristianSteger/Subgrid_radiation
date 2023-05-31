@@ -1,6 +1,6 @@
-# Description: Compute subgrid correction factors for direct shortwave
-#              downward radiation (aggregated to the model grid cell
-#              resolution) for an array of sun positions
+# Description: Compute subgrid correction factors for direct downward shortwave
+#              radiation (aggregated to the model grid cell resolution) for an
+#              array of sun positions
 #
 # Copyright (c) 2023 ETH Zurich, Christian R. Steger
 # MIT License
@@ -57,13 +57,12 @@ pixel_per_gc = ds.attrs["sub_grid_info_zonal"]
 offset_gc = ds.attrs["offset_grid_cells_zonal"]
 # offset in number of grid cells
 # -----------------------------------------------------------------------------
-# -> use sub-domain with reduces boundary for now...
+# sub-domain with reduces boundary: 30 x 50
 offset_gc = int(offset_gc / 2)
 ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
                         355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
                         315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
-# 30 x 50
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)

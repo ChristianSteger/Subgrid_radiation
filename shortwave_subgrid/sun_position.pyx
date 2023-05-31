@@ -146,7 +146,7 @@ cdef class Terrain:
             self, np.ndarray[np.float32_t, ndim = 1] sun_pos,
             np.ndarray[np.float32_t, ndim = 2] sw_dir_cor):
         """Compute subgrid-scale correction factors for downward direct
-        shortwave radiation for a specific sun position.
+        shortwave radiation for a specific sun position (use coherent rays).
 
         Parameters
         ----------
@@ -168,9 +168,5 @@ cdef class Terrain:
             raise ValueError("array 'sun_pos' has incorrect shape")
         if not sw_dir_cor.flags["C_CONTIGUOUS"]:
             raise ValueError("array 'sw_dir_cor' is not C-contiguous")
-
-        # Ensure that all elements of array 'sw_dir_cor' are 0.0
-        # (-> crucial because subgrid correction values are added)
-        sw_dir_cor.fill(0.0)  # default value
 
         self.thisptr.sw_dir_cor_coherent_rays(&sun_pos[0], &sw_dir_cor[0,0])
