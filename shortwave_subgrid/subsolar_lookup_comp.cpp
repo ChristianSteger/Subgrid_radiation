@@ -375,19 +375,19 @@ void sw_dir_cor_comp(
 	cout << "Number of grid cells in y-direction: " << num_gc_y 
 		<< endl;
 	cout << "Number of grid cells in x-direction: " << num_gc_x << endl;
-	
+
 	// Number of triangles
 	int num_tri = (dem_dim_in_0 - 1) * (dem_dim_in_1 - 1) * 2;
 	cout << "Number of triangles: " << num_tri << endl;
-	
+
 	// Unit conversion(s)
 	float dot_prod_min = cos(deg2rad(ang_max));
 	dist_search *= 1000.0;  // [kilometre] to [metre]
 	cout << "Search distance: " << dist_search << " m" << endl;
-	
+
 	cout << "ang_max: " << ang_max << " degree" << endl;
 	cout << "sw_dir_cor_max: " << sw_dir_cor_max  << endl;
-	
+
   	// Initialization
   	auto start_ini = std::chrono::high_resolution_clock::now();
   	RTCDevice device = initializeDevice();
@@ -396,9 +396,9 @@ void sw_dir_cor_comp(
   	auto end_ini = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time = end_ini - start_ini;
   	cout << "Total initialisation time: " << time.count() << " s" << endl;
-  		
+
 	//-------------------------------------------------------------------------
-	
+
 	auto start_ray = std::chrono::high_resolution_clock::now();
 	size_t num_rays = 0;
 
@@ -416,9 +416,6 @@ void sw_dir_cor_comp(
 				k < ((i * pixel_per_gc) + pixel_per_gc); k++) {
 				for (size_t m = (j * pixel_per_gc);
 					m < ((j * pixel_per_gc) + pixel_per_gc); m++) {
-				
-					//if ((k == 719) && (m == 1199)) {  // temporary ----------------------!!!
-					//if ((k == 677) && (m == 437)) {  // temporary ----------------------!!!
 					
 					// Loop through two triangles per pixel
 					for (size_t n = 0; n < 2; n++) {
@@ -426,14 +423,12 @@ void sw_dir_cor_comp(
 						//-----------------------------------------------------
 						// Tilted triangle
 						//-----------------------------------------------------
-						//cout << "Tilted triangle:" << endl;
 
 						size_t ind_tri_0, ind_tri_1, ind_tri_2;
 						func_ptr[n](dem_dim_1,
 							k + (pixel_per_gc * offset_gc),
 							m + (pixel_per_gc * offset_gc),
 							ind_tri_0, ind_tri_1, ind_tri_2);
-						//cout << "ind_tri: " << ind_tri_0 << ", " << ind_tri_1 << ", " << ind_tri_2 << endl;
 
     					float vert_0_x = vert_grid[ind_tri_0];
     					float vert_0_y = vert_grid[ind_tri_0 + 1];
@@ -457,10 +452,6 @@ void sw_dir_cor_comp(
 							vert_2_x, vert_2_y, vert_2_z,
 							norm_tilt_x, norm_tilt_y, norm_tilt_z,
 							area_tilt);
-						//cout << "norm_tilt_x: " << norm_tilt_x << endl;
-						//cout << "norm_tilt_y: " << norm_tilt_y << endl;
-						//cout << "norm_tilt_z: " << norm_tilt_z << endl;
-						//cout << "area_tilt: " << area_tilt << endl;
 
 						// Ray origin
   						float ray_org_x = (cent_x
@@ -473,11 +464,9 @@ void sw_dir_cor_comp(
 						//-----------------------------------------------------
 						// Horizontal triangle
 						//-----------------------------------------------------
-						//cout << "Horizontal triangle:" << endl;
 
 						func_ptr[n](dem_dim_in_1, k, m,
 							ind_tri_0, ind_tri_1, ind_tri_2);
-						//cout << "ind_tri: " << ind_tri_0 << ", " << ind_tri_1 << ", " << ind_tri_2 << endl;
 
     					vert_0_x = vert_grid_in[ind_tri_0];
     					vert_0_y = vert_grid_in[ind_tri_0 + 1];
@@ -502,24 +491,16 @@ void sw_dir_cor_comp(
 						// Loop through sun positions and compute correction
 						// factors
 						//-----------------------------------------------------
-						//cout << "Loop through sun positions:" << endl;
-					
+
 						size_t ind_lin_sun, ind_lin_cor;
 						for (size_t o = 0; o < dim_sun_0; o++) {
 							for (size_t p = 0; p < dim_sun_1; p++) {
-						
-								//if ((o == 5) && (p == 22)) { // temporary ----------------------!!!
-					
+
 								ind_lin_sun = lin_ind_3d(dim_sun_1, 3,
 									o, p, 0);
-								//cout << dim_sun_1 << ", " << 3 << ", " << o << ", " << p << ", " << 0 << endl;
-								//cout << ind_lin_sun << endl;
-						
 								ind_lin_cor = lin_ind_4d(num_gc_x,
 									dim_sun_0, dim_sun_1, i, j, o, p);
-								//cout << num_gc_x << ", " << dim_sun_0 << ", " << dim_sun_1 << ", " << i << ", " << j << ", " << o << ", " << p << endl;
-								//cout << ind_lin_cor << endl;
-							
+
 								// Compute sun unit vector
   								float sun_x = (sun_pos[ind_lin_sun]
   									- ray_org_x);
@@ -528,28 +509,23 @@ void sw_dir_cor_comp(
   								float sun_z = (sun_pos[ind_lin_sun + 2]
   									- ray_org_z);
   								vec_unit(sun_x, sun_y, sun_z);
-  								//cout << "sun_x: " << sun_x << endl;
-								//cout << "sun_y: " << sun_y << endl;
-								//cout << "sun_z: " << sun_z << endl;
-							
+
 								// Check for shadowing by Earth's sphere
 								float dot_prod_hs = (norm_hori_x * sun_x
 									+ norm_hori_y * sun_y
 									+ norm_hori_z * sun_z);
-								//cout << "angle between sun and horizontal surface normal: " << rad2deg(acos(dot_prod_hs)) << endl;
 								if (dot_prod_hs < dot_prod_rem) {
 									continue;
 								}
-							
+
 								// Check for self-shadowing
   								float dot_prod_ts = norm_tilt_x * sun_x
   									+ norm_tilt_y * sun_y
   									+ norm_tilt_z * sun_z;
-  								//cout << "angle between sun and tilted surface normal: " << rad2deg(acos(dot_prod_ts)) << endl;
 								if (dot_prod_ts < dot_prod_min) {
 									continue;
 								}
-			
+
 								// Intersect context
   								struct RTCIntersectContext context;
   								rtcInitIntersectContext(&context);
@@ -579,25 +555,21 @@ void sw_dir_cor_comp(
 										sw_dir_cor_max);
 								}
 								num_rays += 1;
-						
-								//} // temporary ----------------------!!!
-					
+
 							}
 						}
-						
+
 					}
-					
-					//} // temporary ----------------------!!!
 
 				}
 			}
 
 		}
 	}
-	
+
   	return num_rays;  // parallel
   	}, std::plus<size_t>());  // parallel
-	
+
 	auto end_ray = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time_ray = (end_ray - start_ray);
   	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
@@ -605,14 +577,14 @@ void sw_dir_cor_comp(
   	float frac_ray = (float)num_rays /
   		(float)(num_tri * dim_sun_0 * dim_sun_1);
   	cout << "Fraction of rays required: " << frac_ray << endl;
-  	
+
   	// Divide accum. correction values by number of triangles within grid cell
   	float num_tri_per_gc = pixel_per_gc * pixel_per_gc * 2.0;
   	size_t num_elem = (num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1);
   	for (size_t i = 0; i < num_elem; i++) {
 		sw_dir_cor[i] /= num_tri_per_gc;
   	}
-  	
+
     // Release resources allocated through Embree
   	rtcReleaseScene(scene);
   	rtcReleaseDevice(device);
