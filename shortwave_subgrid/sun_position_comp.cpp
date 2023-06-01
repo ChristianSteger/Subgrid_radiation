@@ -575,7 +575,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
 // Compute correction factors with coherent rays
 //#############################################################################
 
-void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
+void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
 
 	auto start_ray = std::chrono::high_resolution_clock::now();
 	size_t num_rays = 0;
@@ -592,15 +592,11 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
 		for (size_t j = 0; j < num_gc_x_cl; j++) {
 
-			float* norm_tilt = new float[tri_per_gc * 3];
-			float* ray_org = new float[tri_per_gc * 3];
-			float* norm_hori = new float[tri_per_gc * 3];
-			float* surf_enl_fac = new float[tri_per_gc];
+			RTCRay rays[tri_per_gc];
 			float* sw_dir_cor_ray = new float[tri_per_gc];
+			unsigned int num_rays_gc = 0;
 
-			// Compute triangle's centroid, surface normal and area
-			size_t ind_incr_3 = 0;
-			size_t ind_incr_1 = 0;
+			// Loop through pixels within grid cell
 			for (size_t k = (i * pixel_per_gc_cl);
 				k < ((i * pixel_per_gc_cl) + pixel_per_gc_cl); k++) {
 				for (size_t m = (j * pixel_per_gc_cl);
@@ -641,16 +637,13 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 							vert_2_x, vert_2_y, vert_2_z,
 							norm_tilt_x, norm_tilt_y, norm_tilt_z,
 							area_tilt);
-						norm_tilt[ind_incr_3] = norm_tilt_x;
-  						norm_tilt[ind_incr_3 + 1] = norm_tilt_y;
-  						norm_tilt[ind_incr_3 + 2] = norm_tilt_z;
 
 						// Ray origin
-  						ray_org[ind_incr_3] = (cent_x
+  						float ray_org_x = (cent_x
   							+ norm_tilt_x * ray_org_elev_cl);
-  						ray_org[ind_incr_3 + 1] = (cent_y
+  						float ray_org_y = (cent_y
   							+ norm_tilt_y * ray_org_elev_cl);
-  						ray_org[ind_incr_3 + 2] = (cent_z
+  						float ray_org_z = (cent_z
   							+ norm_tilt_z * ray_org_elev_cl);
 
 						//-----------------------------------------------------
@@ -676,66 +669,39 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 							vert_2_x, vert_2_y, vert_2_z,
 							norm_hori_x, norm_hori_y, norm_hori_z,
 							area_hori);
-						norm_hori[ind_incr_3] = norm_hori_x;
-  						norm_hori[ind_incr_3 + 1] = norm_hori_y;
-  						norm_hori[ind_incr_3 + 2] = norm_hori_z;
 
-						surf_enl_fac[ind_incr_1] = area_tilt / area_hori;
+						float surf_enl_fac = area_tilt / area_hori;
 
-						ind_incr_3 = ind_incr_3 + 3;
-						ind_incr_1 = ind_incr_1 + 1;
-
-					}
-
-				}
-			}
-
-			//-----------------------------------------------------------------
-			// Compute correction factors (I)
-			//-----------------------------------------------------------------
-
-			ind_incr_3 = 0;
-			ind_incr_1 = 0;
-			RTCRay rays[tri_per_gc];
-			unsigned int num_rays_gc = 0;
-			for (size_t k = (i * pixel_per_gc_cl);
-				k < ((i * pixel_per_gc_cl) + pixel_per_gc_cl); k++) {
-				for (size_t m = (j * pixel_per_gc_cl);
-					m < ((j * pixel_per_gc_cl) + pixel_per_gc_cl); m++) {
-
-					// Loop through two triangles per pixel
-					for (size_t n = 0; n < 2; n++) {
+						//-----------------------------------------------------
+						// Compute correction factor
+						//-----------------------------------------------------
 
 						// Compute sun unit vector
-  						float sun_x = (sun_pos[0] - ray_org[ind_incr_3]);
-  						float sun_y = (sun_pos[1] - ray_org[ind_incr_3 + 1]);
-  						float sun_z = (sun_pos[2] - ray_org[ind_incr_3 + 2]);
+  						float sun_x = (sun_pos[0] - ray_org_x);
+  						float sun_y = (sun_pos[1] - ray_org_y);
+  						float sun_z = (sun_pos[2] - ray_org_z);
   						vec_unit(sun_x, sun_y, sun_z);
 
 						// Check for shadowing by Earth's sphere
-						float dot_prod_hs = (norm_hori[ind_incr_3] * sun_x
-							+ norm_hori[ind_incr_3 + 1] * sun_y
-							+ norm_hori[ind_incr_3 + 2] * sun_z);
+						float dot_prod_hs = (norm_hori_x * sun_x
+							+ norm_hori_y * sun_y
+							+ norm_hori_z * sun_z);
 						if (dot_prod_hs < dot_prod_rem_cl) {
-							ind_incr_3 = ind_incr_3 + 3;
-							ind_incr_1 = ind_incr_1 + 1;
 							continue;
 						}
 
 						// Check for self-shadowing
-  						float dot_prod_ts = norm_tilt[ind_incr_3] * sun_x
-  							+ norm_tilt[ind_incr_3 + 1] * sun_y
-  							+ norm_tilt[ind_incr_3 + 2] * sun_z;
+  						float dot_prod_ts = norm_tilt_x * sun_x
+  							+ norm_tilt_y * sun_y
+  							+ norm_tilt_z * sun_z;
 						if (dot_prod_ts < dot_prod_min_cl) {
-							ind_incr_3 = ind_incr_3 + 3;
-							ind_incr_1 = ind_incr_1 + 1;
 							continue;
 						}
 
 						// Add ray
-						rays[num_rays_gc].org_x = ray_org[ind_incr_3];
-  						rays[num_rays_gc].org_y = ray_org[ind_incr_3 + 1];
-  						rays[num_rays_gc].org_z = ray_org[ind_incr_3 + 2];
+						rays[num_rays_gc].org_x = ray_org_x;
+  						rays[num_rays_gc].org_y = ray_org_y;
+  						rays[num_rays_gc].org_z = ray_org_z;
   						rays[num_rays_gc].dir_x = sun_x;
   						rays[num_rays_gc].dir_y = sun_y;
   						rays[num_rays_gc].dir_z = sun_z;
@@ -749,21 +715,14 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 						}
 						sw_dir_cor_ray[num_rays_gc] =
 							std::min(((dot_prod_ts / dot_prod_hs)
-							* surf_enl_fac[ind_incr_1]),
+							* surf_enl_fac),
 							sw_dir_cor_max_cl);
 						num_rays_gc = num_rays_gc + 1;
-						
-						ind_incr_3 = ind_incr_3 + 3;
-						ind_incr_1 = ind_incr_1 + 1;
 
 					}
 
 				}
 			}
-
-			//-----------------------------------------------------------------
-			// Compute correction factors (II)
-			//-----------------------------------------------------------------
 
   			struct RTCIntersectContext context;
   			rtcInitIntersectContext(&context);
@@ -784,10 +743,212 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
 				}
   			}
 
-			delete[] norm_tilt;
-			delete[] ray_org;
-			delete[] norm_hori;
-			delete[] surf_enl_fac;
+			delete[] sw_dir_cor_ray;
+
+			size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j);
+			sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / tri_per_gc;
+
+		}
+	}
+
+  	return num_rays;  // parallel
+  	}, std::plus<size_t>());  // parallel
+
+	auto end_ray = std::chrono::high_resolution_clock::now();
+  	std::chrono::duration<double> time_ray = (end_ray - start_ray);
+  	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
+  	cout << "Number of rays shot: " << num_rays << endl;
+  	float frac_ray = (float)num_rays / (float)num_tri_cl;
+  	cout << "Fraction of rays required: " << frac_ray << endl;
+
+}
+
+//#############################################################################
+// Compute correction factors with coherent rays (packages with 8 rays)
+//#############################################################################
+
+void CppTerrain::sw_dir_cor_coherent_8(float* sun_pos, float* sw_dir_cor) {
+
+	if (pixel_per_gc_cl % 2) {
+		cout << "Error: method is only implemented for even " <<
+			"'pixel_per_gc' values" << endl;
+		return;
+	}
+
+	auto start_ray = std::chrono::high_resolution_clock::now();
+	size_t num_rays = 0;
+
+	int tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2;
+	// number of triangles per grid cell
+
+	num_rays += tbb::parallel_reduce(
+		tbb::blocked_range<size_t>(0, num_gc_y_cl), 0.0,
+		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
+
+	// Loop through 2D-field of grid cells
+	//for (size_t i = 0; i < num_gc_y_cl; i++) {  // serial
+	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+		for (size_t j = 0; j < num_gc_x_cl; j++) {
+
+			RTCRay8 ray8;
+			float* sw_dir_cor_ray = new float[8];
+			float sw_dir_cor_agg = 0.0;
+
+			// Loop through pixels within grid cell (-> process by blocks of 4)
+			for (size_t k = (i * pixel_per_gc_cl);
+				k < ((i * pixel_per_gc_cl) + pixel_per_gc_cl); k += 2) {
+				for (size_t m = (j * pixel_per_gc_cl);
+					m < ((j * pixel_per_gc_cl) + pixel_per_gc_cl); m += 2) {
+
+					unsigned int num_rays_gc = 0;
+					int valid8[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // 0: invalid
+
+					for (size_t k_block = k; k_block < (k + 2); k_block++) {
+					for (size_t m_block = m; m_block < (m + 2); m_block++) {
+
+					// Loop through two triangles per pixel
+					for (size_t n = 0; n < 2; n++) {
+
+						//-----------------------------------------------------
+						// Tilted triangle
+						//-----------------------------------------------------
+
+						size_t ind_tri_0, ind_tri_1, ind_tri_2;
+						func_ptr[n](dem_dim_1_cl,
+							k_block + (pixel_per_gc_cl * offset_gc_cl),
+							m_block + (pixel_per_gc_cl * offset_gc_cl),
+							ind_tri_0, ind_tri_1, ind_tri_2);
+
+    					float vert_0_x = vert_grid_cl[ind_tri_0];
+    					float vert_0_y = vert_grid_cl[ind_tri_0 + 1];
+    					float vert_0_z = vert_grid_cl[ind_tri_0 + 2];
+    					float vert_1_x = vert_grid_cl[ind_tri_1];
+    					float vert_1_y = vert_grid_cl[ind_tri_1 + 1];
+   						float vert_1_z = vert_grid_cl[ind_tri_1 + 2];
+    					float vert_2_x = vert_grid_cl[ind_tri_2];
+    					float vert_2_y = vert_grid_cl[ind_tri_2 + 1];
+    					float vert_2_z = vert_grid_cl[ind_tri_2 + 2];
+
+						float cent_x, cent_y, cent_z;
+						triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
+							vert_1_x, vert_1_y, vert_1_z,
+							vert_2_x, vert_2_y, vert_2_z,
+							cent_x, cent_y, cent_z);
+
+						float norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
+						triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
+							vert_1_x, vert_1_y, vert_1_z,
+							vert_2_x, vert_2_y, vert_2_z,
+							norm_tilt_x, norm_tilt_y, norm_tilt_z,
+							area_tilt);
+
+						// Ray origin
+  						float ray_org_x = (cent_x
+  							+ norm_tilt_x * ray_org_elev_cl);
+  						float ray_org_y = (cent_y
+  							+ norm_tilt_y * ray_org_elev_cl);
+  						float ray_org_z = (cent_z
+  							+ norm_tilt_z * ray_org_elev_cl);
+
+						//-----------------------------------------------------
+						// Horizontal triangle
+						//-----------------------------------------------------
+
+						func_ptr[n](dem_dim_in_1_cl, k_block, m_block,
+							ind_tri_0, ind_tri_1, ind_tri_2);
+
+    					vert_0_x = vert_grid_in_cl[ind_tri_0];
+    					vert_0_y = vert_grid_in_cl[ind_tri_0 + 1];
+    					vert_0_z = vert_grid_in_cl[ind_tri_0 + 2];
+    					vert_1_x = vert_grid_in_cl[ind_tri_1];
+    					vert_1_y = vert_grid_in_cl[ind_tri_1 + 1];
+   						vert_1_z = vert_grid_in_cl[ind_tri_1 + 2];
+    					vert_2_x = vert_grid_in_cl[ind_tri_2];
+    					vert_2_y = vert_grid_in_cl[ind_tri_2 + 1];
+    					vert_2_z = vert_grid_in_cl[ind_tri_2 + 2];
+
+						float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
+						triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
+							vert_1_x, vert_1_y, vert_1_z,
+							vert_2_x, vert_2_y, vert_2_z,
+							norm_hori_x, norm_hori_y, norm_hori_z,
+							area_hori);
+
+						float surf_enl_fac = area_tilt / area_hori;
+
+						//-----------------------------------------------------
+						// Compute correction factor
+						//-----------------------------------------------------
+
+						// Compute sun unit vector
+  						float sun_x = (sun_pos[0] - ray_org_x);
+  						float sun_y = (sun_pos[1] - ray_org_y);
+  						float sun_z = (sun_pos[2] - ray_org_z);
+  						vec_unit(sun_x, sun_y, sun_z);
+
+						// Check for shadowing by Earth's sphere
+						float dot_prod_hs = (norm_hori_x * sun_x
+							+ norm_hori_y * sun_y
+							+ norm_hori_z * sun_z);
+						if (dot_prod_hs < dot_prod_rem_cl) {
+							continue;
+						}
+
+						// Check for self-shadowing
+  						float dot_prod_ts = norm_tilt_x * sun_x
+  							+ norm_tilt_y * sun_y
+  							+ norm_tilt_z * sun_z;
+						if (dot_prod_ts < dot_prod_min_cl) {
+							continue;
+						}
+
+						// Add ray
+						ray8.org_x[num_rays_gc] = ray_org_x;
+						ray8.org_y[num_rays_gc] = ray_org_y;
+						ray8.org_z[num_rays_gc] = ray_org_z;
+						ray8.tnear[num_rays_gc] = 0.0;
+						ray8.dir_x[num_rays_gc] = sun_x;
+						ray8.dir_y[num_rays_gc] = sun_y;
+						ray8.dir_z[num_rays_gc] = sun_z;
+						ray8.tfar[num_rays_gc] = dist_search_cl;
+						// std::numeric_limits<float>::infinity();
+						ray8.id[num_rays_gc] = num_rays_gc;
+						valid8[num_rays_gc] = -1; // -1: valid
+
+						if (dot_prod_hs < dot_prod_min_cl) {
+							dot_prod_hs = dot_prod_min_cl;
+						}
+						sw_dir_cor_ray[num_rays_gc] =
+							std::min(((dot_prod_ts / dot_prod_hs)
+							* surf_enl_fac),
+							sw_dir_cor_max_cl);
+						num_rays_gc = num_rays_gc + 1;
+
+					}
+
+					}
+					}
+
+  					struct RTCIntersectContext context;
+  					rtcInitIntersectContext(&context);
+  					context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+
+					// Intersect rays with scene
+  					rtcOccluded8(valid8, scene, &context, (RTCRay8*)&ray8);
+  					num_rays += num_rays_gc;
+
+					for (size_t n = 0; n < num_rays_gc; n++) {
+  						if (ray8.tfar[n] > 0.0) {
+							// no intersection -> 'tfar' is not updated;
+							// otherwise 'tfar' = -inf
+							sw_dir_cor_agg = sw_dir_cor_agg
+								+ sw_dir_cor_ray[n];
+						}
+					}
+
+				}
+			}
+
 			delete[] sw_dir_cor_ray;
 
 			size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j);

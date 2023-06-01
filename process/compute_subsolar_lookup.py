@@ -30,10 +30,10 @@ mpl.style.use("classic")
 # -----------------------------------------------------------------------------
 
 # Grid for subsolar points
-# subsol_lon = np.linspace(-180.0, 174.0,60, dtype=np.float64)  # 6 degree
-# subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
-subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
-subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
+subsol_lon = np.linspace(-180.0, 174.0,60, dtype=np.float64)  # 6 degree
+subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
+# subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
+# subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
@@ -44,7 +44,7 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 ellps = "sphere"  # Earth's surface approximation (sphere, GRS80 or WGS84)
-plot = True
+plot = False
 
 # -----------------------------------------------------------------------------
 # Load and check data
@@ -64,12 +64,12 @@ offset_gc = ds.attrs["offset_grid_cells_zonal"]
 #              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
 #                         315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
-# sub-domain with reduces boundary: 30 x 50 (~flat terrain)
+# sub-domain with reduces boundary: 100 x 100 (~flat terrain)
 offset_gc = int(offset_gc / 2)
-ds = ds.isel(rlat=slice(375 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        405 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-             rlon=slice(65 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        115 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        425 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+             rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        365 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)

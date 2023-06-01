@@ -31,14 +31,14 @@ mpl.style.use("classic")
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
-geom_type = "quad"  # "quad" ca. 25% faster than "grid"
+geom_type = "grid"  # "quad" or "grid"
 ang_max = 89.5
 sw_dir_cor_max = 20.0
 
 # Miscellaneous settings
 dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 ellps = "sphere"  # Earth's surface approximation (sphere, GRS80 or WGS84)
-plot = True
+plot = False
 
 # -----------------------------------------------------------------------------
 # Load and check data
@@ -51,18 +51,18 @@ pixel_per_gc = ds.attrs["sub_grid_info_zonal"]
 offset_gc = ds.attrs["offset_grid_cells_zonal"]
 # offset in number of grid cells
 # -----------------------------------------------------------------------------
-# sub-domain with reduces boundary: 30 x 50
-offset_gc = int(offset_gc / 2)
-ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-             rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# # sub-domain with reduces boundary: 30 x 50
+# offset_gc = int(offset_gc / 2)
+# ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+#              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
-# # sub-domain: 290 x 590
-# ds = ds.isel(rlat=slice(200 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-#              rlon=slice(200 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# sub-domain: 390 x 490
+ds = ds.isel(rlat=slice(100 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+             rlon=slice(100 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        590 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
@@ -174,8 +174,8 @@ sw_dir_cor = np.empty((num_gc_y, num_gc_x), dtype=np.float32)
 sw_dir_cor.fill(0.0) # default value
 
 # Compute f_cor for specific sun position
-subsol_lon = np.array([12.0], dtype=np.float64)  # (12.0, 20.0, ...) [degree]
-subsol_lat = np.array([-23.5], dtype=np.float64) # (-23.5, 0.0, 23.5) [degree]
+subsol_lon = np.array([129.0], dtype=np.float64)  # (12.0, 20.0, ...) [degree]
+subsol_lat = np.array([23.5], dtype=np.float64) # (-23.5, 0.0, 23.5) [degree]
 subsol_dist = np.empty(subsol_lon.shape, dtype=np.float32)
 subsol_dist[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
@@ -185,15 +185,21 @@ x_ecef, y_ecef, z_ecef \
 x_enu, y_enu, z_enu = swsg.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
 sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
+print((" Default: ").center(79, "-"))
 terrain.sw_dir_cor(sun_pos, sw_dir_cor)
-sw_dir_cor_def = sw_dir_cor.copy()  # default
-terrain.sw_dir_cor_coherent_rays(sun_pos, sw_dir_cor)
-sw_dir_cor_coh = sw_dir_cor.copy()  # coherent rays
+sw_dir_cor_def = sw_dir_cor.copy()
+print((" Coherent rays: ").center(79, "-"))
+terrain.sw_dir_cor_coherent(sun_pos, sw_dir_cor)
+sw_dir_cor_coh = sw_dir_cor.copy()
 print(np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
+print((" Coherent rays (packages with 8 rays): ").center(79, "-"))
+terrain.sw_dir_cor_coherent_8(sun_pos, sw_dir_cor)
+sw_dir_cor_coh_8 = sw_dir_cor.copy()
+print(np.abs(sw_dir_cor_coh_8 - sw_dir_cor_def).max())
 
 # Check output
 print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor_coh.min()
-      + ", %.2f" % sw_dir_cor_coh.max() + "]")
+      + ", %.2f" % sw_dir_cor_coh_8.max() + "]")
 
 # Test plot
 levels = np.arange(0.0, 2.0, 0.2)
@@ -202,7 +208,7 @@ norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=False,
                                extend="max")
 if plot:
     plt.figure()
-    plt.pcolormesh(sw_dir_cor_coh, cmap=cmap, norm=norm)
+    plt.pcolormesh(sw_dir_cor_coh_8, cmap=cmap, norm=norm)
     plt.colorbar()
 
 # Compare result with computed lookup table
