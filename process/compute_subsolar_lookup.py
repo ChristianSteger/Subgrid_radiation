@@ -57,12 +57,19 @@ pixel_per_gc = ds.attrs["sub_grid_info_zonal"]
 offset_gc = ds.attrs["offset_grid_cells_zonal"]
 # offset in number of grid cells
 # -----------------------------------------------------------------------------
-# sub-domain with reduces boundary: 30 x 50
+# # sub-domain with reduces boundary: 30 x 50 (complex terrain)
+# offset_gc = int(offset_gc / 2)
+# ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+#              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# -----------------------------------------------------------------------------
+# sub-domain with reduces boundary: 30 x 50 (~flat terrain)
 offset_gc = int(offset_gc / 2)
-ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-             rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+ds = ds.isel(rlat=slice(375 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        405 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+             rlon=slice(65 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        115 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
@@ -190,16 +197,23 @@ sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
 # -----------------------------------------------------------------------------
 
 # Compute
-sw_dir_cor = swsg.subsolar_lookup.sw_dir_cor(
+sw_dir_cor_def = swsg.subsolar_lookup.sw_dir_cor(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
+sw_dir_cor_coh = swsg.subsolar_lookup.sw_dir_cor_coherent_rays(
+    vert_grid, dem_dim_0, dem_dim_1,
+    vert_grid_in, dem_dim_in_0, dem_dim_in_1,
+    sun_pos, pixel_per_gc, offset_gc,
+    dist_search=dist_search, geom_type=geom_type,
+    ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
+print(np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
 
 # Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
-      + ", %.2f" % sw_dir_cor.max() + "]")
+print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor_coh.min()
+      + ", %.2f" % sw_dir_cor_coh.max() + "]")
 
 # Test plot
 levels = np.arange(0.0, 2.0, 0.2)
@@ -209,14 +223,14 @@ norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=False,
 if plot:
     ind_2, ind_3 = 0, 22
     plt.figure(figsize=(13, 7))
-    plt.pcolormesh(sw_dir_cor[:, :, ind_2, ind_3], cmap=cmap, norm=norm)
+    plt.pcolormesh(sw_dir_cor_coh[:, :, ind_2, ind_3], cmap=cmap, norm=norm)
     plt.colorbar()
 
 # Test Plot
 if plot:
     ind_0, ind_1 = 7, 17
     plt.figure(figsize=(14, 6))
-    plt.pcolormesh(subsol_lon, subsol_lat, sw_dir_cor[ind_0, ind_1, :, :],
+    plt.pcolormesh(subsol_lon, subsol_lat, sw_dir_cor_coh[ind_0, ind_1, :, :],
                    cmap=cmap, norm=norm)
     plt.xticks(range(-180, 200, 20), range(-180, 200, 20))
     plt.yticks(range(-25, 30, 5), range(-25, 30, 5))
@@ -226,21 +240,21 @@ if plot:
     plt.colorbar()
 
 # Select relevant subsolar longitude range (add -/+ 1)
-mask = (sw_dir_cor.sum(axis=(0, 1, 2)) != 0)
+mask = (sw_dir_cor_coh.sum(axis=(0, 1, 2)) != 0)
 slic = slice(np.maximum(np.where(mask)[0][0] - 1, 0),
              np.minimum(np.where(mask)[0][-1] + 2, len(mask)))
 print(mask[slic])
 print("Size of lookup table: %.2f"
-      % (sw_dir_cor[:, :, :, slic].nbytes / (10 ** 6)) + " MB")
+      % (sw_dir_cor_coh[:, :, :, slic].nbytes / (10 ** 6)) + " MB")
 
 # Save to NetCDF file
 ncfile = Dataset(filename=dir_work + "SW_dir_cor_lookup.nc", mode="w")
 ncfile.ang_max = "%.2f" % ang_max + " degrees"
 ncfile.sw_dir_cor_max = "%.2f" % sw_dir_cor_max
 # -----------------------------------------------------------------------------
-ncfile.createDimension(dimname="gc_lat", size=sw_dir_cor.shape[0])
-ncfile.createDimension(dimname="gc_lon", size=sw_dir_cor.shape[1])
-ncfile.createDimension(dimname="subsolar_lat", size=sw_dir_cor.shape[2])
+ncfile.createDimension(dimname="gc_lat", size=sw_dir_cor_coh.shape[0])
+ncfile.createDimension(dimname="gc_lon", size=sw_dir_cor_coh.shape[1])
+ncfile.createDimension(dimname="subsolar_lat", size=sw_dir_cor_coh.shape[2])
 ncfile.createDimension(dimname="subsolar_lon", size=mask[slic].size)
 # -----------------------------------------------------------------------------
 nc_sslat = ncfile.createVariable(varname="subsolar_lat", datatype="f",
@@ -257,7 +271,7 @@ nc_sslon.units = "degrees"
 nc_data = ncfile.createVariable(varname="f_cor", datatype="f",
                                 dimensions=("gc_lat", "gc_lon",
                                             "subsolar_lat", "subsolar_lon"))
-nc_data[:] = sw_dir_cor[:, :, :, slic]
+nc_data[:] = sw_dir_cor_coh[:, :, :, slic]
 nc_data.units = "-"
 # -----------------------------------------------------------------------------
 ncfile.close()

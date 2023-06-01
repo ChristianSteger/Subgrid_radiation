@@ -777,10 +777,10 @@ void CppTerrain::sw_dir_cor_coherent_rays(float* sun_pos, float* sw_dir_cor) {
   			float sw_dir_cor_agg = 0.0;
   			for (size_t k = 0; k < num_rays_gc; k++) {
   				if (rays[k].tfar > 0.0) {
-							// no intersection -> 'tfar' is not updated;
-							// otherwise 'tfar' = -inf
-							sw_dir_cor_agg = sw_dir_cor_agg
-								+ sw_dir_cor_ray[rays[k].id];
+					// no intersection -> 'tfar' is not updated;
+					// otherwise 'tfar' = -inf
+					sw_dir_cor_agg = sw_dir_cor_agg
+						+ sw_dir_cor_ray[rays[k].id];
 				}
   			}
 

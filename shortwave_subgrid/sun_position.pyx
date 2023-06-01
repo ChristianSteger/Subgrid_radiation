@@ -112,7 +112,7 @@ cdef class Terrain:
 
     def sw_dir_cor(self, np.ndarray[np.float32_t, ndim = 1] sun_pos,
                    np.ndarray[np.float32_t, ndim = 2] sw_dir_cor):
-        """Compute subgrid-scale correction factors for downward direct
+        """Compute subgrid-scale correction factors for direct downward
         shortwave radiation for a specific sun position.
 
         Parameters
@@ -145,7 +145,7 @@ cdef class Terrain:
     def sw_dir_cor_coherent_rays(
             self, np.ndarray[np.float32_t, ndim = 1] sun_pos,
             np.ndarray[np.float32_t, ndim = 2] sw_dir_cor):
-        """Compute subgrid-scale correction factors for downward direct
+        """Compute subgrid-scale correction factors for direct downward
         shortwave radiation for a specific sun position (use coherent rays).
 
         Parameters
