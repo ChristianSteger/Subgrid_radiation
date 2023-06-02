@@ -32,7 +32,7 @@ mpl.style.use("classic")
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
-geom_type = "grid"  # "grid" or "quad"
+geom_type = "quad"  # "grid" or "quad"
 ang_max = 89.5
 sw_dir_cor_max = 20.0
 
@@ -59,11 +59,17 @@ offset_gc = ds.attrs["offset_grid_cells_zonal"]
 #              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
 #                         315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
-# sub-domain: 390 x 490
-ds = ds.isel(rlat=slice(100 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-             rlon=slice(100 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        590 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# # sub-domain: 390 x 490
+# ds = ds.isel(rlat=slice(100 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+#              rlon=slice(100 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         590 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# -----------------------------------------------------------------------------
+# sub-domain: 240 x 290
+ds = ds.isel(rlat=slice(200 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        440 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+             rlon=slice(200 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
@@ -156,7 +162,7 @@ print("Size of elevation data (0.0 m surface): %.3f"
 del x_enu, y_enu, z_enu
 
 # -----------------------------------------------------------------------------
-# Compute spatially aggregated correction factors
+# Compute correction factors for single sun position
 # -----------------------------------------------------------------------------
 
 # Initialise terrain
@@ -175,7 +181,7 @@ sw_dir_cor = np.empty((num_gc_y, num_gc_x), dtype=np.float32)
 sw_dir_cor.fill(0.0) # default value
 
 # Compute f_cor for specific sun position
-subsol_lon = np.array([130.0], dtype=np.float64)  # (12.0, 20.0, ...) [degree]
+subsol_lon = np.array([12.0], dtype=np.float64)  # (12.0, 20.0, ...) [degree]
 subsol_lat = np.array([-23.5], dtype=np.float64) # (-23.5, 0.0, 23.5) [degree]
 subsol_dist = np.empty(subsol_lon.shape, dtype=np.float32)
 subsol_dist[:] = Distance(au=1).m
@@ -198,22 +204,6 @@ terrain.sw_dir_cor_coherent_8(sun_pos, sw_dir_cor)
 sw_dir_cor_coh_8 = sw_dir_cor.copy()
 print(np.abs(sw_dir_cor_coh_8 - sw_dir_cor_def).max())
 
-# Loop
-t_beg = time.time()
-for i in np.linspace(-180.0, 162.0, 10, dtype=np.float64):
-    for j in np.linspace(-23.5, 23.5, 5, dtype=np.float64):
-        subsol_lon[0] = i
-        subsol_lat[0] = j
-        x_ecef, y_ecef, z_ecef \
-            = swsg.transform.lonlat2ecef(subsol_lon, subsol_lat,
-                                         subsol_dist, ellps=ellps)
-        x_enu, y_enu, z_enu = swsg.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                                      trans_ecef2enu)
-        sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
-        terrain.sw_dir_cor(sun_pos, sw_dir_cor)
-print("Elapsed time: " + "%.2f" % (time.time() - t_beg) + " sec")
-
-
 # Check output
 print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor_coh.min()
       + ", %.2f" % sw_dir_cor_coh_8.max() + "]")
@@ -228,13 +218,35 @@ if plot:
     plt.pcolormesh(sw_dir_cor_coh_8, cmap=cmap, norm=norm)
     plt.colorbar()
 
-# Compare result with computed lookup table
+# -----------------------------------------------------------------------------
+# Compute correction factors for an array of sun positions
+# -----------------------------------------------------------------------------
+
+subsol_lon_1d = np.linspace(-180.0, 162.0, 10, dtype=np.float64)
+subsol_lat_1d = np.linspace(-23.5, 23.5, 5, dtype=np.float64)
+sw_dir_cor_arr = np.empty(sw_dir_cor.shape
+                          + (subsol_lat_1d.size, subsol_lon_1d.size),
+                          dtype=np.float32)
+subsol_dist = np.array([Distance(au=1).m], dtype=np.float32)
+t_beg = time.time()
+for ind_i, i in enumerate(subsol_lat_1d):
+    for ind_j, j in enumerate(subsol_lon_1d):
+        x_ecef, y_ecef, z_ecef \
+            = swsg.transform.lonlat2ecef(np.array([j], dtype=np.float64),
+                                         np.array([i], dtype=np.float64),
+                                         subsol_dist, ellps=ellps)
+        x_enu, y_enu, z_enu = swsg.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+                                                      trans_ecef2enu)
+        sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
+        terrain.sw_dir_cor(sun_pos, sw_dir_cor)
+        sw_dir_cor_arr[:, :, ind_i, ind_j] = sw_dir_cor
+print("Elapsed time: " + "%.2f" % (time.time() - t_beg) + " sec")
+
+# Compare result with output from 'subsolar_lookup'
 ds = xr.open_dataset(dir_work + "SW_dir_cor_lookup.nc")
-ind_lat = np.where(ds["subsolar_lat"].values == subsol_lat)[0][0]
-ind_lon = np.where(ds["subsolar_lon"].values == subsol_lon)[0][0]
-sw_dir_cor_lut = ds["f_cor"][:, :, ind_lat, ind_lon].values
+sw_dir_cor_lut = ds["f_cor"].values
 ds.close()
-dev_abs_max = np.abs(sw_dir_cor_coh - sw_dir_cor_lut).max()
+dev_abs_max = np.abs(sw_dir_cor_arr - sw_dir_cor_lut).max()
 print("Maximal absolute deviation: %.8f" % dev_abs_max)
-dev_abs_mean = np.abs(sw_dir_cor_coh - sw_dir_cor_lut).mean()
+dev_abs_mean = np.abs(sw_dir_cor_arr - sw_dir_cor_lut).mean()
 print("Mean absolute deviation: %.8f" % dev_abs_mean)
