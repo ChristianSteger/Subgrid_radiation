@@ -30,10 +30,10 @@ mpl.style.use("classic")
 # -----------------------------------------------------------------------------
 
 # Grid for subsolar points
-subsol_lon = np.linspace(-180.0, 174.0,60, dtype=np.float64)  # 6 degree
-subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
-# subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
-# subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
+# subsol_lon = np.linspace(-180.0, 174.0,60, dtype=np.float64)  # 6 degree
+# subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
+subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
+subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
@@ -57,19 +57,19 @@ pixel_per_gc = ds.attrs["sub_grid_info_zonal"]
 offset_gc = ds.attrs["offset_grid_cells_zonal"]
 # offset in number of grid cells
 # -----------------------------------------------------------------------------
-# # sub-domain with reduces boundary: 30 x 50 (complex terrain)
-# offset_gc = int(offset_gc / 2)
-# ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-#              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
-# -----------------------------------------------------------------------------
-# sub-domain with reduces boundary: 100 x 100 (~flat terrain)
+# sub-domain with reduces boundary: 30 x 50 (complex terrain)
 offset_gc = int(offset_gc / 2)
 ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        425 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+                        355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        365 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+                        315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# -----------------------------------------------------------------------------
+# # sub-domain with reduces boundary: 100 x 100 (~flat terrain)
+# offset_gc = int(offset_gc / 2)
+# ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         425 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+#              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
+#                         365 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
@@ -197,19 +197,29 @@ sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
 # -----------------------------------------------------------------------------
 
 # Compute
+print((" Default: ").center(79, "-"))
 sw_dir_cor_def = swsg.subsolar_lookup.sw_dir_cor(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
-sw_dir_cor_coh = swsg.subsolar_lookup.sw_dir_cor_coherent_rays(
+print((" Coherent rays: ").center(79, "-"))
+sw_dir_cor_coh = swsg.subsolar_lookup.sw_dir_cor_coherent(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 print(np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
+# print((" Coherent rays (packages with 8 rays): ").center(79, "-"))
+# sw_dir_cor_coh = swsg.subsolar_lookup.sw_dir_cor_coherent_8(
+#     vert_grid, dem_dim_0, dem_dim_1,
+#     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
+#     sun_pos, pixel_per_gc, offset_gc,
+#     dist_search=dist_search, geom_type=geom_type,
+#     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
+# print(np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
 
 # Check output
 print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor_coh.min()

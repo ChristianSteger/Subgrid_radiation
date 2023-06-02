@@ -19,6 +19,7 @@ from netCDF4 import Dataset
 import shortwave_subgrid as swsg
 from utilities.grid import grid_frame
 from utilities.plot import truncate_colormap
+import time
 
 mpl.style.use("classic")
 
@@ -174,8 +175,8 @@ sw_dir_cor = np.empty((num_gc_y, num_gc_x), dtype=np.float32)
 sw_dir_cor.fill(0.0) # default value
 
 # Compute f_cor for specific sun position
-subsol_lon = np.array([129.0], dtype=np.float64)  # (12.0, 20.0, ...) [degree]
-subsol_lat = np.array([23.5], dtype=np.float64) # (-23.5, 0.0, 23.5) [degree]
+subsol_lon = np.array([130.0], dtype=np.float64)  # (12.0, 20.0, ...) [degree]
+subsol_lat = np.array([-23.5], dtype=np.float64) # (-23.5, 0.0, 23.5) [degree]
 subsol_dist = np.empty(subsol_lon.shape, dtype=np.float32)
 subsol_dist[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
@@ -196,6 +197,22 @@ print((" Coherent rays (packages with 8 rays): ").center(79, "-"))
 terrain.sw_dir_cor_coherent_8(sun_pos, sw_dir_cor)
 sw_dir_cor_coh_8 = sw_dir_cor.copy()
 print(np.abs(sw_dir_cor_coh_8 - sw_dir_cor_def).max())
+
+# Loop
+t_beg = time.time()
+for i in np.linspace(-180.0, 162.0, 10, dtype=np.float64):
+    for j in np.linspace(-23.5, 23.5, 5, dtype=np.float64):
+        subsol_lon[0] = i
+        subsol_lat[0] = j
+        x_ecef, y_ecef, z_ecef \
+            = swsg.transform.lonlat2ecef(subsol_lon, subsol_lat,
+                                         subsol_dist, ellps=ellps)
+        x_enu, y_enu, z_enu = swsg.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+                                                      trans_ecef2enu)
+        sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
+        terrain.sw_dir_cor(sun_pos, sw_dir_cor)
+print("Elapsed time: " + "%.2f" % (time.time() - t_beg) + " sec")
+
 
 # Check output
 print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor_coh.min()
