@@ -32,10 +32,10 @@ mpl.style.use("classic")
 # Grid for subsolar points
 # subsol_lon = np.linspace(-180.0, 174.0,60, dtype=np.float64)  # 6 degree
 # subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
-# subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
-# subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
-subsol_lon = np.linspace(-180.0, 162.0, 10, dtype=np.float64)  # 38 degree
-subsol_lat = np.linspace(-23.5, 23.5, 5, dtype=np.float64)  # 11.75 degree
+subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
+subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
+# subsol_lon = np.linspace(-180.0, 162.0, 10, dtype=np.float64)  # 38 degree
+# subsol_lat = np.linspace(-23.5, 23.5, 5, dtype=np.float64)  # 11.75 degree
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
@@ -46,7 +46,7 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 ellps = "sphere"  # Earth's surface approximation (sphere, GRS80 or WGS84)
-plot = False
+plot = True
 
 # -----------------------------------------------------------------------------
 # Load and check data
@@ -202,34 +202,35 @@ sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
 # -----------------------------------------------------------------------------
 # Compute spatially aggregated correction factors
 # -----------------------------------------------------------------------------
+
 # Compute
-print((" Default: ").center(79, "-"))
 sw_dir_cor_def = swsg.subsolar_lookup.sw_dir_cor(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
-print((" Coherent rays: ").center(79, "-"))
 sw_dir_cor_coh = swsg.subsolar_lookup.sw_dir_cor_coherent(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
-print(np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
-print((" Coherent rays (packages with 8 rays): ").center(79, "-"))
-sw_dir_cor_coh = swsg.subsolar_lookup.sw_dir_cor_coherent_8(
+print("Maximal absolute deviation: %.6f"
+      % np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
+sw_dir_cor_coh_rp8 = swsg.subsolar_lookup.sw_dir_cor_coherent_rp8(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
-# print(np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
+print("Maximal absolute deviation: %.6f"
+      % np.abs(sw_dir_cor_coh_rp8 - sw_dir_cor_def).max())
+sw_dir_cor = sw_dir_cor_coh_rp8  # select output that is further considered
 
 # Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor_coh.min()
-      + ", %.2f" % sw_dir_cor_coh.max() + "]")
+print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
+      + ", %.2f" % sw_dir_cor.max() + "]")
 
 # Test plot
 levels = np.arange(0.0, 2.0, 0.2)
@@ -239,14 +240,14 @@ norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=False,
 if plot:
     ind_2, ind_3 = 0, 22
     plt.figure(figsize=(13, 7))
-    plt.pcolormesh(sw_dir_cor_coh[:, :, ind_2, ind_3], cmap=cmap, norm=norm)
+    plt.pcolormesh(sw_dir_cor[:, :, ind_2, ind_3], cmap=cmap, norm=norm)
     plt.colorbar()
 
 # Test Plot
 if plot:
     ind_0, ind_1 = 7, 17
     plt.figure(figsize=(14, 6))
-    plt.pcolormesh(subsol_lon, subsol_lat, sw_dir_cor_coh[ind_0, ind_1, :, :],
+    plt.pcolormesh(subsol_lon, subsol_lat, sw_dir_cor[ind_0, ind_1, :, :],
                    cmap=cmap, norm=norm)
     plt.xticks(range(-180, 200, 20), range(-180, 200, 20))
     plt.yticks(range(-25, 30, 5), range(-25, 30, 5))
@@ -256,21 +257,21 @@ if plot:
     plt.colorbar()
 
 # Select relevant subsolar longitude range (add -/+ 1)
-mask = (sw_dir_cor_coh.sum(axis=(0, 1, 2)) != 0)
+mask = (sw_dir_cor.sum(axis=(0, 1, 2)) != 0)
 slic = slice(np.maximum(np.where(mask)[0][0] - 1, 0),
              np.minimum(np.where(mask)[0][-1] + 2, len(mask)))
 print(mask[slic])
 print("Size of lookup table: %.2f"
-      % (sw_dir_cor_coh[:, :, :, slic].nbytes / (10 ** 6)) + " MB")
+      % (sw_dir_cor[:, :, :, slic].nbytes / (10 ** 6)) + " MB")
 
 # Save to NetCDF file
 ncfile = Dataset(filename=dir_work + "SW_dir_cor_lookup.nc", mode="w")
 ncfile.ang_max = "%.2f" % ang_max + " degrees"
 ncfile.sw_dir_cor_max = "%.2f" % sw_dir_cor_max
 # -----------------------------------------------------------------------------
-ncfile.createDimension(dimname="gc_lat", size=sw_dir_cor_coh.shape[0])
-ncfile.createDimension(dimname="gc_lon", size=sw_dir_cor_coh.shape[1])
-ncfile.createDimension(dimname="subsolar_lat", size=sw_dir_cor_coh.shape[2])
+ncfile.createDimension(dimname="gc_lat", size=sw_dir_cor.shape[0])
+ncfile.createDimension(dimname="gc_lon", size=sw_dir_cor.shape[1])
+ncfile.createDimension(dimname="subsolar_lat", size=sw_dir_cor.shape[2])
 ncfile.createDimension(dimname="subsolar_lon", size=mask[slic].size)
 # -----------------------------------------------------------------------------
 nc_sslat = ncfile.createVariable(varname="subsolar_lat", datatype="f",
@@ -287,7 +288,7 @@ nc_sslon.units = "degrees"
 nc_data = ncfile.createVariable(varname="f_cor", datatype="f",
                                 dimensions=("gc_lat", "gc_lon",
                                             "subsolar_lat", "subsolar_lon"))
-nc_data[:] = sw_dir_cor_coh[:, :, :, slic]
+nc_data[:] = sw_dir_cor[:, :, :, slic]
 nc_data.units = "-"
 # -----------------------------------------------------------------------------
 ncfile.close()

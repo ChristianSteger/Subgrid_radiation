@@ -250,7 +250,7 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
   		rtc_geom_type = RTC_GEOMETRY_TYPE_TRIANGLE;
   	} else if (strcmp(geom_type, "quad") == 0) {
   		rtc_geom_type = RTC_GEOMETRY_TYPE_QUAD;
-  	} else { 	
+  	} else {
   		rtc_geom_type = RTC_GEOMETRY_TYPE_GRID;
   	}
 
@@ -359,6 +359,10 @@ void sw_dir_cor_comp(
 	char* geom_type,
 	float ang_max,
 	float sw_dir_cor_max) {
+	
+	cout << "--------------------------------------------------------" << endl;
+	cout << "Compute lookup table with default method" << endl;
+	cout << "--------------------------------------------------------" << endl;
 
 	// Hard-coded settings
 	float ray_org_elev = 0.05;
@@ -576,10 +580,10 @@ void sw_dir_cor_comp(
   	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
   	cout << "Number of rays shot: " << num_rays << endl;
   	float frac_ray = (float)num_rays /
-  		(float)(num_tri * dim_sun_0 * dim_sun_1);
+  		((float)num_tri * (float)dim_sun_0 * (float)dim_sun_1);
   	cout << "Fraction of rays required: " << frac_ray << endl;
 
-  	// Divide accum. correction values by number of triangles within grid cell
+  	// Divide accumulated values by number of triangles within grid cell
   	float num_tri_per_gc = pixel_per_gc * pixel_per_gc * 2.0;
   	size_t num_elem = (num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1);
   	for (size_t i = 0; i < num_elem; i++) {
@@ -595,6 +599,8 @@ void sw_dir_cor_comp(
   	cout << "Total run time: " << time.count() << " s" << endl;
 
 	//-------------------------------------------------------------------------
+
+	cout << "--------------------------------------------------------" << endl;
 
 }
 
@@ -617,6 +623,10 @@ void sw_dir_cor_comp_coherent(
 	float ang_max,
 	float sw_dir_cor_max) {
 
+	cout << "--------------------------------------------------------" << endl;
+	cout << "Compute lookup table with coherent rays" << endl;
+	cout << "--------------------------------------------------------" << endl;
+
 	// Hard-coded settings
 	float ray_org_elev = 0.05;
 	// value to elevate ray origin (-> avoids potential issue with numerical
@@ -635,7 +645,7 @@ void sw_dir_cor_comp_coherent(
 	// Number of triangles
 	int num_tri = (dem_dim_in_0 - 1) * (dem_dim_in_1 - 1) * 2;
 	cout << "Number of triangles: " << num_tri << endl;
-	int tri_per_gc = pixel_per_gc * pixel_per_gc * 2;
+	int num_tri_per_gc = pixel_per_gc * pixel_per_gc * 2;
 
 	// Unit conversion(s)
 	float dot_prod_min = cos(deg2rad(ang_max));
@@ -644,7 +654,6 @@ void sw_dir_cor_comp_coherent(
 
 	cout << "ang_max: " << ang_max << " degree" << endl;
 	cout << "sw_dir_cor_max: " << sw_dir_cor_max  << endl;
-	cout << "use coherent rays"  << endl;
 
   	// Initialisation
   	auto start_ini = std::chrono::high_resolution_clock::now();
@@ -669,11 +678,11 @@ void sw_dir_cor_comp_coherent(
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
 		for (size_t j = 0; j < num_gc_x; j++) {
 
-			float* norm_tilt = new float[tri_per_gc * 3];
-			float* ray_org = new float[tri_per_gc * 3];
-			float* norm_hori = new float[tri_per_gc * 3];
-			float* surf_enl_fac = new float[tri_per_gc];
-			float* sw_dir_cor_ray = new float[tri_per_gc];
+			float* norm_tilt = new float[num_tri_per_gc * 3];
+			float* ray_org = new float[num_tri_per_gc * 3];
+			float* norm_hori = new float[num_tri_per_gc * 3];
+			float* surf_enl_fac = new float[num_tri_per_gc];
+			float* sw_dir_cor_ray = new float[num_tri_per_gc];
 
 			// Compute triangle's centroid, surface normal and area
 			size_t ind_incr_3 = 0;
@@ -771,7 +780,7 @@ void sw_dir_cor_comp_coherent(
 			// Loop through sun positions and compute correction factors
 			//-----------------------------------------------------------------
 
-			RTCRay rays[tri_per_gc];
+			RTCRay rays[num_tri_per_gc];
 
 			size_t ind_lin_sun;
 			for (size_t o = 0; o < dim_sun_0; o++) {
@@ -882,7 +891,7 @@ void sw_dir_cor_comp_coherent(
 
 					size_t ind_lin_cor = lin_ind_4d(num_gc_x,
 						dim_sun_0, dim_sun_1, i, j, o, p);
-					sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / tri_per_gc;
+					sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / num_tri_per_gc;
 
 				}
 			}
@@ -904,7 +913,7 @@ void sw_dir_cor_comp_coherent(
   	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
   	cout << "Number of rays shot: " << num_rays << endl;
   	float frac_ray = (float)num_rays /
-  		(float)(num_tri * dim_sun_0 * dim_sun_1);
+  		((float)num_tri * (float)dim_sun_0 * (float)dim_sun_1);
   	cout << "Fraction of rays required: " << frac_ray << endl;
 
     // Release resources allocated through Embree
@@ -917,13 +926,15 @@ void sw_dir_cor_comp_coherent(
 
 	//-------------------------------------------------------------------------
 
+	cout << "--------------------------------------------------------" << endl;
+
 }
 
 //-----------------------------------------------------------------------------
 // Use coherent rays (packages with 8 rays)
 //-----------------------------------------------------------------------------
 
-void sw_dir_cor_comp_coherent_8(
+void sw_dir_cor_comp_coherent_rp8(
 	float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
 	float* vert_grid_in,
@@ -937,6 +948,11 @@ void sw_dir_cor_comp_coherent_8(
 	char* geom_type,
 	float ang_max,
 	float sw_dir_cor_max) {
+
+	cout << "--------------------------------------------------------" << endl;
+	cout << "Compute lookup table with coherent rays" << endl;
+	cout << "(packages with 8 rays)" << endl;
+	cout << "--------------------------------------------------------" << endl;
 
 	// Hard-coded settings
 	float ray_org_elev = 0.05;
@@ -956,7 +972,6 @@ void sw_dir_cor_comp_coherent_8(
 	// Number of triangles
 	int num_tri = (dem_dim_in_0 - 1) * (dem_dim_in_1 - 1) * 2;
 	cout << "Number of triangles: " << num_tri << endl;
-	int tri_per_gc = pixel_per_gc * pixel_per_gc * 2;
 
 	// Unit conversion(s)
 	float dot_prod_min = cos(deg2rad(ang_max));
@@ -965,7 +980,6 @@ void sw_dir_cor_comp_coherent_8(
 
 	cout << "ang_max: " << ang_max << " degree" << endl;
 	cout << "sw_dir_cor_max: " << sw_dir_cor_max  << endl;
-	cout << "use coherent rays"  << endl;
 
   	// Initialisation
   	auto start_ini = std::chrono::high_resolution_clock::now();
@@ -999,10 +1013,10 @@ void sw_dir_cor_comp_coherent_8(
 
 			// Loop through pixels within grid cell (-> process by blocks of 4)
 			for (size_t k = (i * pixel_per_gc);
-				k < ((i * pixel_per_gc) + pixel_per_gc); k++) {
+				k < ((i * pixel_per_gc) + pixel_per_gc); k += 2) {
 				for (size_t m = (j * pixel_per_gc);
-					m < ((j * pixel_per_gc) + pixel_per_gc); m++) {
-					
+					m < ((j * pixel_per_gc) + pixel_per_gc); m += 2) {
+
 					size_t ind_incr_3 = 0;
 					size_t ind_incr_1 = 0;
 					for (size_t k_block = k; k_block < (k + 2); k_block++) {
@@ -1088,33 +1102,33 @@ void sw_dir_cor_comp_coherent_8(
 						ind_incr_1 = ind_incr_1 + 1;
 
 					}
-					
+
 					}
 					}
-					
+
 					//---------------------------------------------------------
 					// Loop through sun positions and compute correction
 					// factors
 					//---------------------------------------------------------
-			
+
 					for (size_t o = 0; o < dim_sun_0; o++) {
 						for (size_t p = 0; p < dim_sun_1; p++) {
-						
+
 							ind_incr_3 = 0;
-							ind_incr_1 = 0;		
+							ind_incr_1 = 0;
 							unsigned int num_rays_gc = 0;
 							int valid8[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 							// 0: invalid
-							
-							size_t ind_lin_sun 
+
+							size_t ind_lin_sun
 								= lin_ind_3d(dim_sun_1, 3, o, p, 0);
-							
+
 							//-------------------------------------------------
 							// Compute correction factors (I)
 							//-------------------------------------------------
-							
+
 							for (size_t q = 0; q < 8; q++) {
-							
+
 								// Compute sun unit vector
   								float sun_x = (sun_pos[ind_lin_sun]
   									- ray_org[ind_incr_3]);
@@ -1145,7 +1159,7 @@ void sw_dir_cor_comp_coherent_8(
 									ind_incr_1 = ind_incr_1 + 1;
 									continue;
 								}
-								
+
 								// Add ray
 								ray8.org_x[num_rays_gc]
 									= ray_org[ind_incr_3];
@@ -1172,14 +1186,14 @@ void sw_dir_cor_comp_coherent_8(
 								num_rays_gc = num_rays_gc + 1;
 
 								ind_incr_3 = ind_incr_3 + 3;
-								ind_incr_1 = ind_incr_1 + 1;	
+								ind_incr_1 = ind_incr_1 + 1;
 
 							}
-							
+
 							//-------------------------------------------------
 							// Compute correction factors (II)
 							//-------------------------------------------------
-							
+
 							struct RTCIntersectContext context;
   							rtcInitIntersectContext(&context);
   							context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
@@ -1188,7 +1202,22 @@ void sw_dir_cor_comp_coherent_8(
   							rtcOccluded8(valid8, scene, &context,
   								(RTCRay8*)&ray8);
   							num_rays += num_rays_gc;
-							
+
+  							float sw_dir_cor_agg = 0.0;
+  							for (size_t n = 0; n < num_rays_gc; n++) {
+  								if (ray8.tfar[n] > 0.0) {
+								// no intersection -> 'tfar' is not updated;
+								// otherwise 'tfar' = -inf
+								sw_dir_cor_agg = sw_dir_cor_agg
+									+ sw_dir_cor_ray[n];
+								}
+							}
+
+							size_t ind_lin_cor = lin_ind_4d(num_gc_x,
+								dim_sun_0, dim_sun_1, i, j, o, p);
+							sw_dir_cor[ind_lin_cor] = sw_dir_cor[ind_lin_cor]
+								+ sw_dir_cor_agg;
+
 						}
 					}
 
@@ -1212,8 +1241,15 @@ void sw_dir_cor_comp_coherent_8(
   	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
   	cout << "Number of rays shot: " << num_rays << endl;
   	float frac_ray = (float)num_rays /
-  		(float)(num_tri * dim_sun_0 * dim_sun_1);
+  		((float)num_tri * (float)dim_sun_0 * (float)dim_sun_1);
   	cout << "Fraction of rays required: " << frac_ray << endl;
+
+  	// Divide accumulated values by number of triangles within grid cell
+  	float num_tri_per_gc = pixel_per_gc * pixel_per_gc * 2.0;
+  	size_t num_elem = (num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1);
+  	for (size_t i = 0; i < num_elem; i++) {
+		sw_dir_cor[i] /= num_tri_per_gc;
+  	}
 
     // Release resources allocated through Embree
   	rtcReleaseScene(scene);
@@ -1224,5 +1260,7 @@ void sw_dir_cor_comp_coherent_8(
   	cout << "Total run time: " << time.count() << " s" << endl;
 
 	//-------------------------------------------------------------------------
+
+	cout << "--------------------------------------------------------" << endl;
 
 }

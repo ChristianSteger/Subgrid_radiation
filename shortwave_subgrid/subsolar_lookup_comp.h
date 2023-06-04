@@ -33,8 +33,8 @@ void sw_dir_cor_comp_coherent(
 	char* geom_type,
 	float ang_max,
 	float sw_dir_cor_max);
-	
-void sw_dir_cor_comp_coherent_8(
+
+void sw_dir_cor_comp_coherent_rp8(
 	float* vert_grid,
 	int dem_dim_0, int dem_dim_1,
 	float* vert_grid_in,

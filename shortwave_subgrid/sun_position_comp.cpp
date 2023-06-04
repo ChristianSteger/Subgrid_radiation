@@ -580,7 +580,7 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
 	auto start_ray = std::chrono::high_resolution_clock::now();
 	size_t num_rays = 0;
 
-	int tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2;
+	int num_tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2;
 	// number of triangles per grid cell
 
 	num_rays += tbb::parallel_reduce(
@@ -592,8 +592,8 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
 		for (size_t j = 0; j < num_gc_x_cl; j++) {
 
-			RTCRay rays[tri_per_gc];
-			float* sw_dir_cor_ray = new float[tri_per_gc];
+			RTCRay rays[num_tri_per_gc];
+			float* sw_dir_cor_ray = new float[num_tri_per_gc];
 			unsigned int num_rays_gc = 0;
 
 			// Loop through pixels within grid cell
@@ -746,7 +746,7 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
 			delete[] sw_dir_cor_ray;
 
 			size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j);
-			sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / tri_per_gc;
+			sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / num_tri_per_gc;
 
 		}
 	}
@@ -767,7 +767,7 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
 // Compute correction factors with coherent rays (packages with 8 rays)
 //#############################################################################
 
-void CppTerrain::sw_dir_cor_coherent_8(float* sun_pos, float* sw_dir_cor) {
+void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
 
 	if (pixel_per_gc_cl % 2) {
 		cout << "Error: method is only implemented for even " <<
@@ -778,7 +778,7 @@ void CppTerrain::sw_dir_cor_coherent_8(float* sun_pos, float* sw_dir_cor) {
 	auto start_ray = std::chrono::high_resolution_clock::now();
 	size_t num_rays = 0;
 
-	int tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2;
+	float num_tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2.0;
 	// number of triangles per grid cell
 
 	num_rays += tbb::parallel_reduce(
@@ -952,7 +952,7 @@ void CppTerrain::sw_dir_cor_coherent_8(float* sun_pos, float* sw_dir_cor) {
 			delete[] sw_dir_cor_ray;
 
 			size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j);
-			sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / tri_per_gc;
+			sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / num_tri_per_gc;
 
 		}
 	}

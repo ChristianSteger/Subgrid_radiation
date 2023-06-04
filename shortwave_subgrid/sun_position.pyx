@@ -12,7 +12,7 @@ cdef extern from "sun_position_comp.h" namespace "shapes":
                         int, int, float, char*, float, float)
         void sw_dir_cor(float*, float*)
         void sw_dir_cor_coherent(float*, float*)
-        void sw_dir_cor_coherent_8(float *, float *)
+        void sw_dir_cor_coherent_rp8(float *, float *)
 
 cdef class Terrain:
 
@@ -139,9 +139,9 @@ cdef class Terrain:
         if not sw_dir_cor.flags["C_CONTIGUOUS"]:
             raise ValueError("array 'sw_dir_cor' is not C-contiguous")
 
-        # Ensure that all elements of array 'sw_dir_cor' are 0.0
-        # (-> crucial because subgrid correction values are added)
-        sw_dir_cor.fill(0.0)  # default value
+        sw_dir_cor.fill(0.0)
+        # -> ensure that all elements of array 'sw_dir_cor' are 0.0 (crucial
+        # because subgrid correction values are iteratively added)
 
         self.thisptr.sw_dir_cor(&sun_pos[0], &sw_dir_cor[0,0])
 
@@ -174,19 +174,18 @@ cdef class Terrain:
         if not sw_dir_cor.flags["C_CONTIGUOUS"]:
             raise ValueError("array 'sw_dir_cor' is not C-contiguous")
 
-        # Ensure that all elements of array 'sw_dir_cor' are 0.0
-        # (-> crucial because subgrid correction values are added)
-        sw_dir_cor.fill(0.0)  # default value
+        sw_dir_cor.fill(0.0)
 
         self.thisptr.sw_dir_cor_coherent(&sun_pos[0], &sw_dir_cor[0,0])
 
 # -----------------------------------------------------------------------------
 
-    def sw_dir_cor_coherent_8(
+    def sw_dir_cor_coherent_rp8(
             self, np.ndarray[np.float32_t, ndim = 1] sun_pos,
             np.ndarray[np.float32_t, ndim = 2] sw_dir_cor):
         """Compute subgrid-scale correction factors for direct downward
-        shortwave radiation for a specific sun position (use coherent rays).
+        shortwave radiation for a specific sun position (use coherent rays
+        with packages of 8 rays).
 
         Parameters
         ----------
@@ -209,8 +208,6 @@ cdef class Terrain:
         if not sw_dir_cor.flags["C_CONTIGUOUS"]:
             raise ValueError("array 'sw_dir_cor' is not C-contiguous")
 
-        # Ensure that all elements of array 'sw_dir_cor' are 0.0
-        # (-> crucial because subgrid correction values are added)
-        sw_dir_cor.fill(0.0)  # default value
+        sw_dir_cor.fill(0.0)
 
-        self.thisptr.sw_dir_cor_coherent_8(&sun_pos[0], &sw_dir_cor[0,0])
+        self.thisptr.sw_dir_cor_coherent_rp8(&sun_pos[0], &sw_dir_cor[0,0])

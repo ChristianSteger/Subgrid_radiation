@@ -130,7 +130,9 @@ def sw_dir_cor(
     cdef np.ndarray[np.float32_t, ndim = 4, mode = "c"] \
         sw_dir_cor = np.empty((len_in_0, len_in_1, dim_sun_0, dim_sun_1),
                               dtype=np.float32)
-    sw_dir_cor.fill(0.0) # default value
+    sw_dir_cor.fill(0.0)
+    # -> ensure that all elements of array 'sw_dir_cor' are 0.0 (crucial
+    # because subgrid correction values are iteratively added)
 
     sw_dir_cor_comp(
         &vert_grid[0],
@@ -274,7 +276,7 @@ def sw_dir_cor_coherent(
     cdef np.ndarray[np.float32_t, ndim = 4, mode = "c"] \
         sw_dir_cor = np.empty((len_in_0, len_in_1, dim_sun_0, dim_sun_1),
                               dtype=np.float32)
-    sw_dir_cor.fill(0.0) # default value
+    sw_dir_cor.fill(0.0)
 
     sw_dir_cor_comp_coherent(
         &vert_grid[0],
@@ -298,7 +300,7 @@ def sw_dir_cor_coherent(
 # -----------------------------------------------------------------------------
 
 cdef extern from "subsolar_lookup_comp.h":
-    void sw_dir_cor_comp_coherent_8(
+    void sw_dir_cor_comp_coherent_rp8(
             float* vert_grid,
             int dem_dim_0, int dem_dim_1,
             float* vert_grid_in,
@@ -313,7 +315,7 @@ cdef extern from "subsolar_lookup_comp.h":
             float ang_max,
             float sw_dir_cor_max)
 
-def sw_dir_cor_coherent_8(
+def sw_dir_cor_coherent_rp8(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
         int dem_dim_0, int dem_dim_1,
         np.ndarray[np.float32_t, ndim = 1] vert_grid_in,
@@ -326,7 +328,8 @@ def sw_dir_cor_coherent_8(
         float ang_max=89.0,
         float sw_dir_cor_max=25.0):
     """Compute subsolar lookup table of subgrid-scale correction factors
-    for direct downward shortwave radiation (use coherent rays).
+    for direct downward shortwave radiation (use coherent rays with packages
+    of 8 rays).
 
     Parameters
     ----------
@@ -418,9 +421,11 @@ def sw_dir_cor_coherent_8(
     cdef np.ndarray[np.float32_t, ndim = 4, mode = "c"] \
         sw_dir_cor = np.empty((len_in_0, len_in_1, dim_sun_0, dim_sun_1),
                               dtype=np.float32)
-    sw_dir_cor.fill(0.0) # default value
+    sw_dir_cor.fill(0.0)
+    # -> ensure that all elements of array 'sw_dir_cor' are 0.0 (crucial
+    # because subgrid correction values are iteratively added)
 
-    sw_dir_cor_comp_coherent_8(
+    sw_dir_cor_comp_coherent_rp8(
         &vert_grid[0],
         dem_dim_0, dem_dim_1,
         &vert_grid_in[0],

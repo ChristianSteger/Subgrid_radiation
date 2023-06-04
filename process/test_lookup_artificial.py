@@ -27,7 +27,7 @@ lu_lat = np.linspace(0.0, 90.0, 10, dtype=np.float64)  # 10 degree
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
-geom_type = "quad"  # "quad" ca. 25% faster than "grid"
+geom_type = "grid"  # "grid" or "quad"
 ang_max = 89.5
 sw_dir_cor_max = 20.0
 
@@ -101,7 +101,7 @@ sun_pos = np.concatenate((x_sun[:, :, np.newaxis],
 # -----------------------------------------------------------------------------
 
 # Compute
-sw_dir_cor = swsg.subsolar_lookup.sw_dir_cor(
+sw_dir_cor = swsg.subsolar_lookup.sw_dir_cor_coherent_rp8(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
