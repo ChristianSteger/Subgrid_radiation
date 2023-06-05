@@ -222,10 +222,10 @@ if plot:
 # Compute correction factors for an array of sun positions
 # -----------------------------------------------------------------------------
 
-subsol_lon_1d = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
-subsol_lat_1d = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
 # subsol_lon_1d = np.linspace(-180.0, 162.0, 10, dtype=np.float64)  # 38 degree
 # subsol_lat_1d = np.linspace(-23.5, 23.5, 5, dtype=np.float64)  # 11.75 degree
+subsol_lon_1d = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
+subsol_lat_1d = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
 sw_dir_cor_arr = np.empty(sw_dir_cor.shape
                           + (subsol_lat_1d.size, subsol_lon_1d.size),
                           dtype=np.float32)
