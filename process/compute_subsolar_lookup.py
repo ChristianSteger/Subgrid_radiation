@@ -20,10 +20,10 @@ import shortwave_subgrid as swsg
 # Grid for subsolar points
 # subsol_lon = np.linspace(-180.0, 162.0, 10, dtype=np.float64)  # 38 degree
 # subsol_lat = np.linspace(-23.5, 23.5, 5, dtype=np.float64)  # 11.75 degree
-subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
-subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
-# subsol_lon = np.linspace(-180.0, 175.0, 72, dtype=np.float64)  # 5 degree
-# subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
+# subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
+# subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
+subsol_lon = np.linspace(-180.0, 175.0, 72, dtype=np.float64)  # 5 degree
+subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
@@ -48,12 +48,12 @@ pixel_per_gc = ds.attrs["sub_grid_info_zonal"]
 offset_gc = ds.attrs["offset_grid_cells_zonal"]
 # offset in number of grid cells
 # -----------------------------------------------------------------------------
-# # sub-domain with reduces boundary: 30 x 50
-# offset_gc = int(offset_gc / 2)
-# ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-#              rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# sub-domain with reduces boundary: 30 x 50
+offset_gc = int(offset_gc / 2)
+ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+             rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
 # # sub-domain: 240 x 290
 # ds = ds.isel(rlat=slice(200 * pixel_per_gc - pixel_per_gc * offset_gc,
@@ -143,8 +143,6 @@ sw_dir_cor = swsg.subsolar_lookup.sw_dir_cor_coherent_rp8(
 # Check output
 print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
       + ", %.2f" % sw_dir_cor.max() + "]")
-
-# Select relevant subsolar longitude range (add -/+ 1)
 print("Size of lookup table: %.2f" % (sw_dir_cor.nbytes / (10 ** 6)) + " MB")
 
 # Save to NetCDF file
