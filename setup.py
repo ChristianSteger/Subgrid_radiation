@@ -47,28 +47,28 @@ extra_objects_cpp = [path_lib_conda + i + lib_end for i in ["libembree3"]]
 os.environ["CC"] = compiler
 
 ext_modules = [
-    Extension("shortwave_subgrid.transform",
-              ["shortwave_subgrid/transform.pyx"],
+    Extension("subgrid_radiation.transform",
+              ["subgrid_radiation/transform.pyx"],
               libraries=libraries_cython,
               extra_compile_args=extra_compile_args_cython,
               extra_link_args=["-fopenmp"],
               include_dirs=[np.get_include()]),
-    Extension("shortwave_subgrid.subsolar_lookup",
-              sources=["shortwave_subgrid/subsolar_lookup.pyx", "shortwave_subgrid/subsolar_lookup_comp.cpp"],
+    Extension("subgrid_radiation.subsolar_lookup",
+              sources=["subgrid_radiation/subsolar_lookup.pyx", "subgrid_radiation/subsolar_lookup_comp.cpp"],
               include_dirs=include_dirs_cpp,
               extra_objects=extra_objects_cpp,
               extra_compile_args=["-O3"],
               language="c++"),
-    Extension("shortwave_subgrid.sun_position",
-              sources=["shortwave_subgrid/sun_position.pyx", "shortwave_subgrid/sun_position_comp.cpp"],
+    Extension("subgrid_radiation.sun_position",
+              sources=["subgrid_radiation/sun_position.pyx", "subgrid_radiation/sun_position_comp.cpp"],
               include_dirs=include_dirs_cpp,
               extra_objects=extra_objects_cpp,
               extra_compile_args=["-O3"],
               language="c++")
     ]
 
-setup(name="shortwave_subgrid",
+setup(name="subgrid_radiation",
       version="0.1",
-      packages=["shortwave_subgrid"],
+      packages=["subgrid_radiation"],
       cmdclass={"build_ext": build_ext},
       ext_modules=ext_modules)

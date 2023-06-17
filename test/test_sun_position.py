@@ -16,7 +16,7 @@ import matplotlib as mpl
 from skyfield.api import Distance
 from cmcrameri import cm
 from netCDF4 import Dataset
-import shortwave_subgrid as swsg
+import subgrid_radiation as subrad
 from utilities.grid import grid_frame
 from utilities.plot import truncate_colormap
 import time
@@ -115,12 +115,12 @@ if plot:
 # -----------------------------------------------------------------------------
 
 # Transform elevation data (geographic/geodetic -> ENU coordinates)
-x_ecef, y_ecef, z_ecef = swsg.transform.lonlat2ecef(lon, lat, elevation,
+x_ecef, y_ecef, z_ecef = subrad.transform.lonlat2ecef(lon, lat, elevation,
                                                     ellps=ellps)
 dem_dim_0, dem_dim_1 = elevation.shape
-trans_ecef2enu = swsg.transform.TransformerEcef2enu(
+trans_ecef2enu = subrad.transform.TransformerEcef2enu(
     lon_or=lon.mean(), lat_or=lat.mean(), ellps=ellps)
-x_enu, y_enu, z_enu = swsg.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
 del x_ecef, y_ecef, z_ecef
 
@@ -131,7 +131,7 @@ if plot:
     plt.colorbar()
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid = swsg.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid = subrad.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 print("Size of elevation data: %.3f" % (vert_grid.nbytes / (10 ** 9))
       + " GB")
 del x_enu, y_enu, z_enu
@@ -141,10 +141,10 @@ slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
             slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc))
 elevation_zero = np.zeros_like(elevation)
 x_ecef, y_ecef, z_ecef \
-    = swsg.transform.lonlat2ecef(lon[slice_in], lat[slice_in],
+    = subrad.transform.lonlat2ecef(lon[slice_in], lat[slice_in],
                                  elevation_zero[slice_in], ellps=ellps)
 dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
-x_enu, y_enu, z_enu = swsg.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
 del x_ecef, y_ecef, z_ecef
 del lon, lat, elevation
@@ -156,7 +156,7 @@ if plot:
     plt.colorbar()
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid_in = swsg.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid_in = subrad.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 print("Size of elevation data (0.0 m surface): %.3f"
       % (vert_grid_in.nbytes / (10 ** 9)) + " GB")
 del x_enu, y_enu, z_enu
@@ -166,7 +166,7 @@ del x_enu, y_enu, z_enu
 # -----------------------------------------------------------------------------
 
 # Initialise terrain
-terrain = swsg.sun_position.Terrain()
+terrain = subrad.sun_position.Terrain()
 terrain.initialise(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
@@ -187,9 +187,9 @@ subsol_dist = np.empty(subsol_lon.shape, dtype=np.float32)
 subsol_dist[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
 x_ecef, y_ecef, z_ecef \
-    = swsg.transform.lonlat2ecef(subsol_lon, subsol_lat,
+    = subrad.transform.lonlat2ecef(subsol_lon, subsol_lat,
                                  subsol_dist, ellps=ellps)
-x_enu, y_enu, z_enu = swsg.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
 sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
 print((" Default: ").center(79, "-"))
@@ -234,10 +234,10 @@ t_beg = time.time()
 for ind_i, i in enumerate(subsol_lat_1d):
     for ind_j, j in enumerate(subsol_lon_1d):
         x_ecef, y_ecef, z_ecef \
-            = swsg.transform.lonlat2ecef(np.array([j], dtype=np.float64),
+            = subrad.transform.lonlat2ecef(np.array([j], dtype=np.float64),
                                          np.array([i], dtype=np.float64),
                                          subsol_dist, ellps=ellps)
-        x_enu, y_enu, z_enu = swsg.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+        x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                                       trans_ecef2enu)
         sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
         # terrain.sw_dir_cor(sun_pos, sw_dir_cor)

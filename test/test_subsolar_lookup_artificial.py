@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from cmcrameri import cm
-import shortwave_subgrid as swsg
+import subgrid_radiation as subrad
 
 mpl.style.use("classic")
 
@@ -73,7 +73,7 @@ offset_gc = 10
 
 # Merge vertex coordinates and pad geometry buffer
 dem_dim_0, dem_dim_1 = x.shape
-vert_grid = swsg.auxiliary.rearrange_pad_buffer(x, y, z)
+vert_grid = subrad.auxiliary.rearrange_pad_buffer(x, y, z)
 print("Size of elevation data: %.3f" % (vert_grid.nbytes / (10 ** 9))
       + " GB")
 
@@ -82,7 +82,7 @@ slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
             slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc))
 z_zero = np.zeros_like(z)
 dem_dim_in_0, dem_dim_in_1 = z_zero[slice_in].shape
-vert_grid_in = swsg.auxiliary.rearrange_pad_buffer(x[slice_in], y[slice_in],
+vert_grid_in = subrad.auxiliary.rearrange_pad_buffer(x[slice_in], y[slice_in],
                                                    z_zero[slice_in])
 print("Size of elevation data (0.0 m surface): %.3f"
       % (vert_grid_in.nbytes / (10 ** 9)) + " GB")
@@ -102,7 +102,7 @@ sun_pos = np.concatenate((x_sun[:, :, np.newaxis],
 # -----------------------------------------------------------------------------
 
 # Compute
-sw_dir_cor = swsg.subsolar_lookup.sw_dir_cor_coherent_rp8(
+sw_dir_cor = subrad.subsolar_lookup.sw_dir_cor_coherent_rp8(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,

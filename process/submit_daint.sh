@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --job-name="swsg_0"
+#SBATCH --job-name="subrad"
 #SBATCH --account="pr133"
 #SBATCH --time=01:58:00
 #SBATCH --nodes=1
@@ -9,8 +9,8 @@
 #SBATCH --partition=normal
 #SBATCH --constraint=gpu
 #SBATCH --hint=nomultithread
-#SBATCH --output=swsg_0.o
-#SBATCH --error=swsg_0.e
+#SBATCH --output=subrad.o
+#SBATCH --error=subrad.e
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
