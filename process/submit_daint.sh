@@ -15,5 +15,5 @@
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 conda activate raytracing
-srun -u python compute_subsolar_lookup.py
+srun -u python compute_sun_position_array.py
 ~                                        
