@@ -1,6 +1,8 @@
-# Description: Remap MERIT DEM to rotated longitude/latitude grid of regional
-#              climate model with a target resolution of 3 arc seconds (~90 m).
-#              Assume a spherical shape of the Earth.
+# Description: Remap MERIT DEM to rotated longitude/latitude grid of model
+#              with a target resolution of 3 arc seconds (~90 m). Assume a
+#              spherical shape of the Earth. Split large target domains in
+#              sub-domains.
+#
 # Notes:
 # - limitation: script only works correctly if required interpolation domain
 #   does not cross the true North/South Pole or the -/+180 degree meridian
@@ -17,11 +19,9 @@ import xarray as xr
 import subprocess
 import time
 import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import scipy
-from scipy.interpolate import RegularGridInterpolator
+import pyinterp
 from netCDF4 import Dataset
 from packaging import version
 from utilities.grid import grid_frame
@@ -32,85 +32,157 @@ mpl.style.use("classic")
 # Settings
 # -----------------------------------------------------------------------------
 
-# Regional climate model grid specification (-> rotated lon/lat COSMO grid)
+# Rotated latitude/longitude COSMO grid (fine resolution)
 pollat = 43.0 			# Latitude of the rotated North Pole
 pollon = -170.0 		# Longitude of the rotated North Pole
 ie_tot = 800			# Number of grid cells (zonal)
 je_tot = 600			# Number of grid cells (meridional)
-dlon = 0.02				# Grid spacing (zonal)
-dlat = 0.02				# Grid spacing (meridional)
-startlon_tot = -6.2     # Centre longitude of lower left grid cell
-startlat_tot = -6.6     # Centre latitude of lower left grid cell
+drlon = 0.02			# Grid spacing (zonal)
+drlat = 0.02			# Grid spacing (meridional)
+startrlon_tot = -6.2    # Centre longitude of lower left grid cell
+startrlat_tot = -6.6    # Centre latitude of lower left grid cell
+
+# # Rotated latitude/longitude COSMO grid (coarse resolution)
+# pollat = 43.0 			# Latitude of the rotated North Pole
+# pollon = -170.0 		# Longitude of the rotated North Pole
+# ie_tot = 361			# Number of grid cells (zonal)
+# je_tot = 361			# Number of grid cells (meridional)
+# drlon = 0.11			# Grid spacing (zonal)
+# drlat = 0.11			# Grid spacing (meridional)
+# startrlon_tot = -23.33  # Centre longitude of lower left grid cell
+# startrlat_tot = -19.36  # Centre latitude of lower left grid cell
 
 # Miscellaneous settings
-bound_width = 100.0     # Width for additional terrain at the boundary [km]
-path_merit = "/Users/csteger/Dropbox/IAC/Data/DEMs/MERIT/Tiles/"
-# path_merit = "/store/c2sm/extpar_raw_data/topo/merit/"  # CSCS
-dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
+bound_width = 100.0  # width for additional terrain at the boundary [km]
+path_dem = "/Users/csteger/Dropbox/IAC/Data/DEMs/MERIT/Tiles/"
+# path_dem = "/store/c2sm/extpar_raw_data/topo/merit/"  # CSCS
+path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
+file_out = "MERIT_remapped_COSMO_%.2f" % drlon + "deg.nc"
+plot_map = True
 
 # Constants
-radius_earth = 6371229.0  # radius of Earth (according to COSMO/ICON) [m]
-merit_res = 3.0 / 3600.0  # resolution of MERIT DEM (3 arc second) [degree]
+radius_earth = 6371_229.0  # radius of Earth (according to COSMO/ICON) [m]
+dem_res = 3.0 / 3600.0  # resolution of MERIT DEM (3 arc second) [degree]
 
 # -----------------------------------------------------------------------------
-# Determine required MERIT tiles
+# Function(s)
 # -----------------------------------------------------------------------------
 
-# Check SciPy version
-if version.parse(scipy.__version__) < version.parse("1.10.0"):
-    raise ImportError("SciPy version 1.10.0 required. Excessive memory "
-                      + "requirements of function 'RegularGridInterpolator'"
-                        "in older versions")
+
+# Compute required geographic domain
+def geo_domain_extent(rlon, rlat, ccrs_rot_pole, ccrs_geo, add_saf=0.1):
+    """Computes extent of domain specified in rotated coordinates in geographic
+    coordinates.
+
+    Parameters
+    ----------
+    rlon : ndarray of double
+        Array (one-dimensional) with rotated longitude [degree]
+    rlat : ndarray of double
+        Array (one-dimensional)) with rotated latitudes [degree]
+    ccrs_rot_pole : cartopy.crs.RotatedPole
+        Cartopy object with rotated pole specifications
+    ccrs_geo : cartopy.crs.PlateCarree
+        Cartopy object with geographic coordinate system specifications
+    add_saf : float
+        'Safety' margin [degree]
+
+    Returns
+    -------
+    geo_extent : tuple of floats
+        Extent of geographic domain (lon_min, lon_max, lat_min, lat_max)
+        [degree]"""
+
+    rlon_frame, rlat_frame = grid_frame(rlon, rlat, offset=0)
+    coord_geo = ccrs_geo.transform_points(ccrs_rot_pole,
+                                          rlon_frame, rlat_frame)
+    geo_extent = (coord_geo[:, 0].min() - add_saf,
+                  coord_geo[:, 0].max() + add_saf,
+                  coord_geo[:, 1].min() - add_saf,
+                  coord_geo[:, 1].max() + add_saf)
+    return geo_extent
+
+
+# -----------------------------------------------------------------------------
+# Determine required DEM tiles and unzip them
+# -----------------------------------------------------------------------------
+
+# Ensure that integer number of DEM pixel fit inside a grid cell
+if (not (drlon / dem_res).is_integer()) \
+        or (not (drlat / dem_res).is_integer()):
+    raise ValueError("Model grid spacing is not evenly divisible "
+                     + "by DEM grid spacing")
 
 # Compute extended COSMO grid
 bound_add = 360.0 / (2.0 * np.pi * radius_earth) * (bound_width * 1000.0)
-gc_add_lon = int(np.ceil(bound_add / dlon))
-rlon_cosmo = np.linspace(startlon_tot - (gc_add_lon * dlon),
-                         startlon_tot - (gc_add_lon * dlon)
-                         + dlon * (ie_tot + 2 * gc_add_lon - 1),
-                         ie_tot + 2 * gc_add_lon, dtype=np.float64)
-gc_add_lat = int(np.ceil(bound_add / dlat))
-rlat_cosmo = np.linspace(startlat_tot - (gc_add_lat * dlat),
-                         startlat_tot - (gc_add_lat * dlat)
-                         + dlat * (je_tot + 2 * gc_add_lat - 1),
-                         je_tot + 2 * gc_add_lat, dtype=np.float64)
+gc_add_rlat = int(np.ceil(bound_add / drlat))
+rlat_cosmo = np.linspace(startrlat_tot - (gc_add_rlat * drlat),
+                         startrlat_tot - (gc_add_rlat * drlat)
+                         + drlat * (je_tot + 2 * gc_add_rlat - 1),
+                         je_tot + 2 * gc_add_rlat, dtype=np.float64)
+gc_add_rlon = int(np.ceil(bound_add / drlon))
+rlon_cosmo = np.linspace(startrlon_tot - (gc_add_rlon * drlon),
+                         startrlon_tot - (gc_add_rlon * drlon)
+                         + drlon * (ie_tot + 2 * gc_add_rlon - 1),
+                         ie_tot + 2 * gc_add_rlon, dtype=np.float64)
+print("Number of grid cells added on each side of domain (rlat/rlon):")
+print(str(gc_add_rlat) + ", " + str(gc_add_rlon))
 
-# Compute MERIT grid (-> edge coordinates)
-if (not (dlon / merit_res).is_integer()) \
-        or (not (dlat / merit_res).is_integer()):
-    raise ValueError("COSMO grid spacing is not evenly divisible "
-                     + "by MERIT grid spacing")
-rlon_edge_merit = np.linspace(rlon_cosmo[0] - dlon / 2.0,
-                              rlon_cosmo[-1] + dlon / 2.0,
-                              rlon_cosmo.size * int(dlon / merit_res) + 1)
-rlat_edge_merit = np.linspace(rlat_cosmo[0] - dlat / 2.0,
-                              rlat_cosmo[-1] + dlat / 2.0,
-                              rlat_cosmo.size * int(dlat / merit_res) + 1)
+# Compute DEM grid (-> edge coordinates)
+rlon_edge_dem = np.linspace(rlon_cosmo[0] - drlon / 2.0,
+                            rlon_cosmo[-1] + drlon / 2.0,
+                            rlon_cosmo.size * int(drlon / dem_res) + 1)
+rlat_edge_dem = np.linspace(rlat_cosmo[0] - drlat / 2.0,
+                            rlat_cosmo[-1] + drlat / 2.0,
+                            rlat_cosmo.size * int(drlat / dem_res) + 1)
 print("Maximal absolute deviation in grid spacing:")
-print("{:.2e}".format(np.abs(np.diff(rlon_edge_merit) - merit_res).max()))
-print("{:.2e}".format(np.abs(np.diff(rlat_edge_merit) - merit_res).max()))
-print("Size of interpolated MERIT grid: "
-      + str(rlon_edge_merit.size) + " x " + str(rlat_edge_merit.size))
+print("{:.2e}".format(np.abs(np.diff(rlon_edge_dem) - dem_res).max()))
+print("{:.2e}".format(np.abs(np.diff(rlat_edge_dem) - dem_res).max()))
+print("Size of interpolated DEM grid: "
+      + str(rlon_edge_dem.size) + " x " + str(rlat_edge_dem.size))
 
-# Determine required MERIT tiles
-rlon_frame, rlat_frame = grid_frame(rlon_edge_merit, rlat_edge_merit, offset=0)
+# Coordinate systems
 globe = ccrs.Globe(datum="WGS84", ellipse="sphere")
 ccrs_rot_pole = ccrs.RotatedPole(pole_latitude=pollat, pole_longitude=pollon,
                                  globe=globe)
 ccrs_geo = ccrs.PlateCarree(globe=globe)
-coord = ccrs_geo.transform_points(ccrs_rot_pole, rlon_frame, rlat_frame)
-add = 0.1  # safety margin [degree]
-geo_extent = [coord[:, 0].min() - add, coord[:, 0].max() + add,
-              coord[:, 1].min() - add, coord[:, 1].max() + add]
-# (lon_min, lon_max, lat_min, lat_max)
+
+# Compute required geographical domain
+geo_extent = geo_domain_extent(rlon_edge_dem, rlat_edge_dem,
+                               ccrs_rot_pole, ccrs_geo)
 print("Required geographical extent [degree]:")
 print("Longitude: %.2f" % geo_extent[0] + " - %.2f" % geo_extent[1])
 print("Latitude: %.2f" % geo_extent[2] + " - %.2f" % geo_extent[3])
+
+# Overview plot
+if plot_map:
+    plt.figure(figsize=(12, 8))
+    ax = plt.axes(projection=ccrs_geo)
+    ax.coastlines(zorder=1)
+    plt.hlines(y=range(-90, 120, 30), xmin=-180, xmax=180, color="red",
+               zorder=2)
+    plt.vlines(x=range(-180, 210, 30), ymin=-90, ymax=90, color="red",
+               zorder=2)
+    plt.axis([geo_extent[0] - 3.0, geo_extent[1] + 3.0,
+              geo_extent[2] - 3.0, geo_extent[3] + 3.0])
+    rlon_plt, rlat_plt = grid_frame(rlon_edge_dem[0:None:int(drlon / dem_res)],
+                                    rlat_edge_dem[0:None:int(drlat / dem_res)],
+                                    offset=0)
+    poly = plt.Polygon(list(zip(rlon_plt, rlat_plt)), facecolor="none",
+                       edgecolor="blue", transform=ccrs_rot_pole, zorder=3,
+                       linewidth=2.0)
+    ax.add_patch(poly)
+    gl = ax.gridlines(draw_labels=True, linestyle="--", lw=0.5, color="black",
+                      zorder=0)
+    gl.top_labels = False
+    gl.right_labels = False
+
+# Determine required DEM tiles
 lon_min = int(np.floor(geo_extent[0] / 30.0) * 30.0)
 lon_max = int(np.ceil(geo_extent[1] / 30.0) * 30.0)
 lat_min = int(np.floor(geo_extent[2] / 30.0) * 30.0)
 lat_max = int(np.ceil(geo_extent[3] / 30.0) * 30.0)
-tiles_merit = []
+tiles_dem = []
 for i in range(lat_min, lat_max, 30):
     for j in range(lon_min, lon_max, 30):
         p1 = "N" + str(i + 30).zfill(2) if (i + 30) >= 0 \
@@ -119,158 +191,170 @@ for i in range(lat_min, lat_max, 30):
         p3 = "E" + str(j).zfill(3) if j >= 0 else "W" + str(abs(j)).zfill(3)
         p4 = "E" + str(j + 30).zfill(3) if (j + 30) >= 0 \
             else "W" + str(abs(j + 30)).zfill(3)
-        tiles_merit.append("MERIT_" + p1 + "-" + p2 + "_" + p3 + "-" + p4)
+        tiles_dem.append("MERIT_" + p1 + "-" + p2 + "_" + p3 + "-" + p4)
         # -> tile name without file ending
+print("The following DEM tiles are required:\n" + "\n".join(tiles_dem))
 
-# -----------------------------------------------------------------------------
-# Regrid MERIT DEM bilinearly
-# -----------------------------------------------------------------------------
-
-# Unzip MERIT tiles
+# Unzip DEM tiles
 cmd = "gunzip -c"
-for i in tiles_merit:
-    sf = path_merit + i + ".nc.xz"
-    tf = dir_work + i + ".nc"
-    subprocess.call(cmd + " " + sf + " > " + tf, shell=True)
-    print("File " + i + ".nc unzipped")
-
-# Merge MERIT tiles and crop domain
-time.sleep(1.0)
-ds = xr.open_mfdataset([dir_work + i + ".nc" for i in tiles_merit])
-ds = ds.sel(lon=slice(geo_extent[0], geo_extent[1]),
-            lat=slice(geo_extent[3], geo_extent[2]))
-lon = ds["lon"].values.astype(np.float64)  # geographic longitude [degree]
-lat = ds["lat"].values.astype(np.float64)   # geographic latitude [degree]
-elevation = ds["Elevation"].values.astype(np.float64)  # ~5.0 GB
-# -> function 'RegularGridInterpolator' only works with np.float64
-ds.close()
-
-# Set elevation of sea grid cells to 0.0 m
-elevation[np.isnan(elevation)] = 0.0
-
-# Interpolation (bilinear) in blocks
-f_ip = RegularGridInterpolator((lat, lon), elevation, method="linear",
-                               bounds_error=True)
-block_size = 5000
-elevation_ip = np.empty((rlat_edge_merit.size, rlon_edge_merit.size),
-                        dtype=np.float32)
-lon_ip = np.empty_like(elevation_ip)
-lat_ip = np.empty_like(elevation_ip)
-steps_rlat = int(np.ceil(rlat_edge_merit.size / block_size))
-steps_rlon = int(np.ceil(rlon_edge_merit.size / block_size))
-for i in range(steps_rlat):
-    for j in range(steps_rlon):
-        slic = (slice(i * block_size, (i + 1) * block_size),
-                slice(j * block_size, (j + 1) * block_size))
-        rlon, rlat = np.meshgrid(rlon_edge_merit[slic[1]],
-                                 rlat_edge_merit[slic[0]])
-        coord = ccrs_geo.transform_points(ccrs_rot_pole, rlon, rlat)
-        pts_ip = np.vstack((coord[:, :, 1].ravel(), coord[:, :, 0].ravel())) \
-            .transpose()
-        elevation_ip[slic] = f_ip(pts_ip).reshape(rlon.shape)
-        lon_ip[slic] = coord[:, :, 0]
-        lat_ip[slic] = coord[:, :, 1]
-        print("Step " + str((i * steps_rlon) + j + 1)
-              + " of " + str(steps_rlat * steps_rlon) + " completed")
-
-# Save to NetCDF file
-ncfile = Dataset(filename=dir_work + "MERIT_remapped_COSMO.nc", mode="w")
-ncfile.sub_grid_info = "MERIT pixels per COSMO grid cell"
-ncfile.sub_grid_info_zonal = int(dlon / merit_res)
-ncfile.sub_grid_info_meridional = int(dlat / merit_res)
-ncfile.offset_grid_cells_zonal = gc_add_lon
-ncfile.offset_grid_cells_meridional = gc_add_lat
-ncfile.createDimension(dimname="rlat", size=elevation_ip.shape[0])
-ncfile.createDimension(dimname="rlon", size=elevation_ip.shape[1])
-# -----------------------------------------------------------------------------
-nc_rlat = ncfile.createVariable(varname="rlat", datatype="f",
-                                dimensions="rlat")
-nc_rlat[:] = rlat_edge_merit
-nc_rlat.long_name = "latitude in rotated pole grid"
-nc_rlat.units = "degrees"
-nc_rlon = ncfile.createVariable(varname="rlon", datatype="f",
-                                dimensions="rlon")
-nc_rlon[:] = rlon_edge_merit
-nc_rlon.long_name = "longitude in rotated pole grid"
-nc_rlon.units = "degrees"
-# -----------------------------------------------------------------------------
-nc_lat = ncfile.createVariable(varname="lat", datatype="f",
-                               dimensions=("rlat", "rlon"))
-nc_lat[:] = lat_ip
-nc_lat.long_name = "geographical latitude"
-nc_lat.units = "degrees_north"
-nc_lon = ncfile.createVariable(varname="lon", datatype="f",
-                               dimensions=("rlat", "rlon"))
-nc_lon[:] = lon_ip
-nc_lon.long_name = "geographical longitude"
-nc_lon.units = "degrees_east"
-# -----------------------------------------------------------------------------
-nc_data = ncfile.createVariable(varname="Elevation", datatype="f",
-                                dimensions=("rlat", "rlon"))
-nc_data[:] = elevation_ip
-nc_data.units = "m"
-# -----------------------------------------------------------------------------
-nc_meta = ncfile.createVariable("rotated_pole", "S1",)
-nc_meta.grid_mapping_name = "rotated_latitude_longitude"
-nc_meta.grid_north_pole_longitude = pollon
-nc_meta.grid_north_pole_latitude = pollat
-nc_meta.north_pole_grid_longitude = 0.0
-# -----------------------------------------------------------------------------
-ncfile.close()
-
-time.sleep(1.0)
-for i in [dir_work + i + ".nc" for i in tiles_merit]:
-    os.remove(i)
+for i in tiles_dem:
+    sf = path_dem + i + ".nc.xz"
+    tf = path_work + i + ".nc"
+    if not os.path.isfile(tf):
+        t_beg = time.time()
+        subprocess.call(cmd + " " + sf + " > " + tf, shell=True)
+        print("File " + i + ".nc unzipped (%.1f" % (time.time() - t_beg)
+              + " s)")
 
 # -----------------------------------------------------------------------------
-# Test loading of remapped MERIT data
+# Regrid DEM bilinearly to model sub-grid
+# (-> split a large domain due to Embree's grid size limitation of
+#  32_767 x 32_767)
 # -----------------------------------------------------------------------------
 
-# Load data for sub-region
-ds = xr.open_dataset(dir_work + "MERIT_remapped_COSMO.nc")
-# ds = ds.isel(rlon=slice(6600, 7500), rlat=slice(8100, 8700))
-ds = ds.isel(rlon=slice(6750, 7050), rlat=slice(8400, 8650))
-rlon = ds["rlon"].values
-rlat = ds["rlat"].values
-lon = ds["lon"].values
-lat = ds["lat"].values
-elevation = ds["Elevation"].values
-pole_lon = ds["rotated_pole"].grid_north_pole_longitude
-pole_lat = ds["rotated_pole"].grid_north_pole_latitude
-num_gc = ds.attrs["sub_grid_info_zonal"]
-offset = ds.attrs["offset_grid_cells_zonal"]
-ds.close()
+len_max = 32_767  # maximal length along one dimension (according to Embree)
+num_subdom_y = int(np.ceil(rlat_edge_dem.size / len_max))
+num_subdom_x = int(np.ceil(rlon_edge_dem.size / len_max))
+flag_subdom = (num_subdom_y > 1) or (num_subdom_x > 1)
+if flag_subdom:
+    print("DEM domain is split in sub-domains: ("
+          + str(num_subdom_y) + ", " + str(num_subdom_x) + ")")
 
-# Reference points (-> check if geo-referencing correct...)
-ref_points = {"Eiger": (46.577608, 8.005287),
-              "Moench": (46.55849, 7.9973),
-              "Jungfrau": (46.538, 7.9637),
-              "Schreckhorn": (46.589139, 8.118536),
-              "Finsteraarhorn": (46.537222, 8.126111)}
+# Loop through subdomains
+num_pixel_y = int(drlat / dem_res) * gc_add_rlat
+num_pixel_x = int(drlon / dem_res) * gc_add_rlon
+ind_y = (num_pixel_y,
+         num_pixel_y + int(je_tot / 2) * int(drlat / dem_res),
+         rlat_edge_dem.size - 1 - num_pixel_y)
+ind_x = (num_pixel_x,
+         num_pixel_x + int(ie_tot / 2) * int(drlon / dem_res),
+         rlon_edge_dem.size - 1 - num_pixel_x)
+if not flag_subdom:
+    ind_y = (ind_y[0], ind_y[-1])
+    ind_x = (ind_x[0], ind_x[-1])
+for i in range(num_subdom_y):
+    for j in range(num_subdom_x):
 
-# Test plot
-ccrs_rot_pole = ccrs.RotatedPole(pole_latitude=pole_lat,
-                                 pole_longitude=pole_lon)
-plt.figure(figsize=(10, 6))
-ax = plt.axes(projection=ccrs.PlateCarree())
-plt.pcolormesh(rlon, rlat, elevation, transform=ccrs_rot_pole)
-plt.colorbar()
-ax.add_feature(cfeature.BORDERS.with_scale("10m"), linestyle="-")
-for i in ref_points.keys():
-    plt.scatter(ref_points[i][1], ref_points[i][0], marker="^", s=50,
-                color="black", transform=ccrs.PlateCarree())
-ax.set_aspect("auto")
-gl = ax.gridlines(crs=ccrs.PlateCarree(), linewidth=0.5, color="black",
-                  alpha=0.8, linestyle="-", draw_labels=True)
-gl.top_labels = False
-gl.right_labels = False
+        # Compute required geographical domain
+        slice_y = slice(ind_y[i] - num_pixel_y, ind_y[i + 1] + num_pixel_y + 1)
+        slice_x = slice(ind_x[j] - num_pixel_x, ind_x[j + 1] + num_pixel_x + 1)
+        rlon_edge_dem_sd = rlon_edge_dem[slice_x]
+        rlat_edge_dem_sd = rlat_edge_dem[slice_y]
+        geo_extent = geo_domain_extent(rlon_edge_dem_sd,
+                                       rlat_edge_dem_sd,
+                                       ccrs_rot_pole, ccrs_geo)
 
-# Load inner domain (without boundary width)
-ds = xr.open_dataset(dir_work + "MERIT_remapped_COSMO.nc")
-offset = ds.attrs["offset_grid_cells_zonal"] * ds.attrs["sub_grid_info_zonal"]
-print("Size of full domain: " + "%.2f" % (ds["Elevation"].nbytes
-                                          / (10 ** 9) * 3) + " GB")
-ds = ds.isel(rlon=slice(offset, -offset), rlat=slice(offset, -offset))
-print("Size of inner domain: " + "%.2f" % (ds["Elevation"].nbytes
-                                           / (10 ** 9) * 3) + " GB")
-ds.close()
+        # Merge DEM tiles and crop domain
+        ds = xr.open_mfdataset([path_work + i + ".nc" for i in tiles_dem])
+        ds = ds.sel(lon=slice(geo_extent[0], geo_extent[1]),
+                    lat=slice(geo_extent[3], geo_extent[2]))
+        lon = ds["lon"].values.astype(np.float64)  # geographic longitude [deg]
+        lat = ds["lat"].values.astype(np.float64)  # geographic latitude [deg]
+        elevation = ds["Elevation"].values  # np.float32
+        print(elevation.shape)
+        ds.close()
+
+        # Set elevation of sea grid cells to 0.0 m
+        mask_water = np.ones_like(elevation)
+        mask_water[~np.isnan(elevation)] = np.nan
+        elevation[np.isnan(elevation)] = 0.0
+
+        # Bilinear interpolation in blocks
+        t_beg = time.time()
+        x_axis = pyinterp.Axis(lon)
+        y_axis = pyinterp.Axis(lat)
+        grid_elev = pyinterp.Grid2D(y_axis, x_axis, elevation)
+        grid_lsm = pyinterp.Grid2D(y_axis, x_axis, mask_water)
+        block_size = 5000
+        elevation_ip = np.empty((rlat_edge_dem_sd.size,
+                                 rlon_edge_dem_sd.size),
+                                dtype=np.float32)
+        mask_water_ip = np.empty((rlat_edge_dem_sd.size,
+                                  rlon_edge_dem_sd.size),
+                                 dtype=np.float32)
+        lon_ip = np.empty_like(elevation_ip)
+        lat_ip = np.empty_like(elevation_ip)
+        steps_rlat = int(np.ceil(rlat_edge_dem_sd.size / block_size))
+        steps_rlon = int(np.ceil(rlon_edge_dem_sd.size / block_size))
+        print("Number of steps in block-wise interpolation: "
+              + str(steps_rlat * steps_rlon))
+        for k in range(steps_rlat):
+            for m in range(steps_rlon):
+                slic = (slice(k * block_size, (k + 1) * block_size),
+                        slice(m * block_size, (m + 1) * block_size))
+                rlon, rlat = np.meshgrid(rlon_edge_dem_sd[slic[1]],
+                                         rlat_edge_dem_sd[slic[0]])
+                coord = ccrs_geo.transform_points(ccrs_rot_pole, rlon, rlat)
+                y_ip = coord[:, :, 1].ravel()
+                x_ip = coord[:, :, 0].ravel()
+                elevation_ip[slic] \
+                    = pyinterp.bivariate(grid_elev, y_ip, x_ip,
+                                         interpolator="bilinear",
+                                         bounds_error=True, num_threads=0) \
+                    .reshape(rlon.shape)
+                mask_water_ip[slic] \
+                    = pyinterp.bivariate(grid_lsm, y_ip, x_ip,
+                                         interpolator="bilinear",
+                                         bounds_error=True, num_threads=0) \
+                    .reshape(rlon.shape)
+                lon_ip[slic] = coord[:, :, 0]
+                lat_ip[slic] = coord[:, :, 1]
+                print("Step " + str((k * steps_rlon) + m + 1)
+                      + " of " + str(steps_rlat * steps_rlon) + " completed")
+        print("Bilinear interpolation completed (%.1f" % (time.time() - t_beg)
+              + " s)")
+
+        # Save to NetCDF file
+        if not flag_subdom:
+            file_out_p = file_out
+        else:
+            file_out_p = file_out[:-3] + "_y" + str(i) + "_x" + str(j) + ".nc"
+        ncfile = Dataset(filename=path_work + file_out_p,  mode="w")
+        ncfile.num_grid_cells_inner_zonal = ie_tot
+        ncfile.num_grid_cells_inner_meridional = je_tot
+        ncfile.pixels_per_grid_cell_zonal = int(drlon / dem_res)
+        ncfile.pixels_per_grid_cell_meridional = int(drlat / dem_res)
+        ncfile.offset_grid_cells_zonal = gc_add_rlon
+        ncfile.offset_grid_cells_meridional = gc_add_rlat
+        ncfile.createDimension(dimname="rlat", size=elevation_ip.shape[0])
+        ncfile.createDimension(dimname="rlon", size=elevation_ip.shape[1])
+        # ---------------------------------------------------------------------
+        nc_rlat = ncfile.createVariable(varname="rlat", datatype="f",
+                                        dimensions="rlat")
+        nc_rlat[:] = rlat_edge_dem_sd
+        nc_rlat.long_name = "latitude in rotated pole grid"
+        nc_rlat.units = "degrees"
+        nc_rlon = ncfile.createVariable(varname="rlon", datatype="f",
+                                        dimensions="rlon")
+        nc_rlon[:] = rlon_edge_dem_sd
+        nc_rlon.long_name = "longitude in rotated pole grid"
+        nc_rlon.units = "degrees"
+        # ---------------------------------------------------------------------
+        nc_lat = ncfile.createVariable(varname="lat", datatype="f",
+                                       dimensions=("rlat", "rlon"))
+        nc_lat[:] = lat_ip
+        nc_lat.long_name = "geographical latitude"
+        nc_lat.units = "degrees_north"
+        nc_lon = ncfile.createVariable(varname="lon", datatype="f",
+                                       dimensions=("rlat", "rlon"))
+        nc_lon[:] = lon_ip
+        nc_lon.long_name = "geographical longitude"
+        nc_lon.units = "degrees_east"
+        # ---------------------------------------------------------------------
+        nc_data = ncfile.createVariable(varname="Elevation", datatype="f",
+                                        dimensions=("rlat", "rlon"))
+        nc_data[:] = elevation_ip
+        nc_data.units = "m"
+        # ---------------------------------------------------------------------
+        nc_data = ncfile.createVariable(varname="water_mask", datatype="i1",
+                                        dimensions=("rlat", "rlon"))
+        nc_data[:] = np.isfinite(mask_water_ip).astype(np.int8)
+        nc_data.units = "m"
+        # ---------------------------------------------------------------------
+        nc_meta = ncfile.createVariable("rotated_pole", "S1",)
+        nc_meta.grid_mapping_name = "rotated_latitude_longitude"
+        nc_meta.grid_north_pole_longitude = pollon
+        nc_meta.grid_north_pole_latitude = pollat
+        nc_meta.north_pole_grid_longitude = 0.0
+        # ---------------------------------------------------------------------
+        ncfile.close()
