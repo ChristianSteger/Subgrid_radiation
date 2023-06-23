@@ -113,15 +113,15 @@ if (not (drlon / dem_res).is_integer()) \
     raise ValueError("Model grid spacing is not evenly divisible "
                      + "by DEM grid spacing")
 
-# Compute extended COSMO grid
+# Compute extended model grid
 bound_add = 360.0 / (2.0 * np.pi * radius_earth) * (bound_width * 1000.0)
 gc_add_rlat = int(np.ceil(bound_add / drlat))
-rlat_cosmo = np.linspace(startrlat_tot - (gc_add_rlat * drlat),
+rlat_model = np.linspace(startrlat_tot - (gc_add_rlat * drlat),
                          startrlat_tot - (gc_add_rlat * drlat)
                          + drlat * (je_tot + 2 * gc_add_rlat - 1),
                          je_tot + 2 * gc_add_rlat, dtype=np.float64)
 gc_add_rlon = int(np.ceil(bound_add / drlon))
-rlon_cosmo = np.linspace(startrlon_tot - (gc_add_rlon * drlon),
+rlon_model = np.linspace(startrlon_tot - (gc_add_rlon * drlon),
                          startrlon_tot - (gc_add_rlon * drlon)
                          + drlon * (ie_tot + 2 * gc_add_rlon - 1),
                          ie_tot + 2 * gc_add_rlon, dtype=np.float64)
@@ -129,12 +129,14 @@ print("Number of grid cells added on each side of domain (rlat/rlon):")
 print(str(gc_add_rlat) + ", " + str(gc_add_rlon))
 
 # Compute DEM grid (-> edge coordinates)
-rlon_edge_dem = np.linspace(rlon_cosmo[0] - drlon / 2.0,
-                            rlon_cosmo[-1] + drlon / 2.0,
-                            rlon_cosmo.size * int(drlon / dem_res) + 1)
-rlat_edge_dem = np.linspace(rlat_cosmo[0] - drlat / 2.0,
-                            rlat_cosmo[-1] + drlat / 2.0,
-                            rlat_cosmo.size * int(drlat / dem_res) + 1)
+pixel_per_gc_x = int(drlon / dem_res)
+rlon_edge_dem = np.linspace(rlon_model[0] - drlon / 2.0,
+                            rlon_model[-1] + drlon / 2.0,
+                            rlon_model.size * pixel_per_gc_x + 1)
+pixel_per_gc_y = int(drlat / dem_res)
+rlat_edge_dem = np.linspace(rlat_model[0] - drlat / 2.0,
+                            rlat_model[-1] + drlat / 2.0,
+                            rlat_model.size * pixel_per_gc_y + 1)
 print("Maximal absolute deviation in grid spacing:")
 print("{:.2e}".format(np.abs(np.diff(rlon_edge_dem) - dem_res).max()))
 print("{:.2e}".format(np.abs(np.diff(rlat_edge_dem) - dem_res).max()))
@@ -165,8 +167,8 @@ if plot_map:
                zorder=2)
     plt.axis([geo_extent[0] - 3.0, geo_extent[1] + 3.0,
               geo_extent[2] - 3.0, geo_extent[3] + 3.0])
-    rlon_plt, rlat_plt = grid_frame(rlon_edge_dem[0:None:int(drlon / dem_res)],
-                                    rlat_edge_dem[0:None:int(drlat / dem_res)],
+    rlon_plt, rlat_plt = grid_frame(rlon_edge_dem[0:None:pixel_per_gc_x],
+                                    rlat_edge_dem[0:None:pixel_per_gc_y],
                                     offset=0)
     poly = plt.Polygon(list(zip(rlon_plt, rlat_plt)), facecolor="none",
                        edgecolor="blue", transform=ccrs_rot_pole, zorder=3,
@@ -221,13 +223,13 @@ if flag_subdom:
           + str(num_subdom_y) + ", " + str(num_subdom_x) + ")")
 
 # Loop through subdomains
-num_pixel_y = int(drlat / dem_res) * gc_add_rlat
-num_pixel_x = int(drlon / dem_res) * gc_add_rlon
+num_pixel_y = pixel_per_gc_y * gc_add_rlat
+num_pixel_x = pixel_per_gc_x * gc_add_rlon
 ind_y = (num_pixel_y,
-         num_pixel_y + int(je_tot / 2) * int(drlat / dem_res),
+         num_pixel_y + int(je_tot / 2) * pixel_per_gc_y,
          rlat_edge_dem.size - 1 - num_pixel_y)
 ind_x = (num_pixel_x,
-         num_pixel_x + int(ie_tot / 2) * int(drlon / dem_res),
+         num_pixel_x + int(ie_tot / 2) * pixel_per_gc_x,
          rlon_edge_dem.size - 1 - num_pixel_x)
 if not flag_subdom:
     ind_y = (ind_y[0], ind_y[-1])
@@ -312,8 +314,8 @@ for i in range(num_subdom_y):
         ncfile = Dataset(filename=path_work + file_out_p,  mode="w")
         ncfile.num_grid_cells_inner_zonal = ie_tot
         ncfile.num_grid_cells_inner_meridional = je_tot
-        ncfile.pixels_per_grid_cell_zonal = int(drlon / dem_res)
-        ncfile.pixels_per_grid_cell_meridional = int(drlat / dem_res)
+        ncfile.pixels_per_grid_cell_zonal = pixel_per_gc_x
+        ncfile.pixels_per_grid_cell_meridional = pixel_per_gc_y
         ncfile.offset_grid_cells_zonal = gc_add_rlon
         ncfile.offset_grid_cells_meridional = gc_add_rlat
         ncfile.createDimension(dimname="rlat", size=elevation_ip.shape[0])
@@ -346,7 +348,7 @@ for i in range(num_subdom_y):
         nc_data[:] = elevation_ip
         nc_data.units = "m"
         # ---------------------------------------------------------------------
-        nc_data = ncfile.createVariable(varname="water_mask", datatype="i1",
+        nc_data = ncfile.createVariable(varname="mask_water", datatype="i1",
                                         dimensions=("rlat", "rlon"))
         nc_data[:] = np.isfinite(mask_water_ip).astype(np.int8)
         nc_data.units = "m"
@@ -356,5 +358,22 @@ for i in range(num_subdom_y):
         nc_meta.grid_north_pole_longitude = pollon
         nc_meta.grid_north_pole_latitude = pollat
         nc_meta.north_pole_grid_longitude = 0.0
+        # ---------------------------------------------------------------------
+        rlat_model_sd = rlat_model[int(slice_y.start / pixel_per_gc_y)
+                                   :int((slice_y.stop - 1) / pixel_per_gc_y)]
+        ncfile.createDimension(dimname="rlat_gc", size=rlat_model_sd.size)
+        nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f",
+                                        dimensions="rlat_gc")
+        nc_rlat[:] = rlat_model_sd
+        nc_rlat.long_name = "latitude of grid cells in rotated pole grid"
+        nc_rlat.units = "degrees"
+        rlon_model_sd = rlon_model[int(slice_x.start / pixel_per_gc_x)
+                                   :int((slice_x.stop - 1) / pixel_per_gc_x)]
+        ncfile.createDimension(dimname="rlon_gc", size=rlon_model_sd.size)
+        nc_rlon = ncfile.createVariable(varname="rlon_gc", datatype="f",
+                                        dimensions="rlon_gc")
+        nc_rlon[:] = rlon_model_sd
+        nc_rlon.long_name = "longitude of grid cells in rotated pole grid"
+        nc_rlon.units = "degrees"
         # ---------------------------------------------------------------------
         ncfile.close()
