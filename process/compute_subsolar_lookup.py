@@ -34,7 +34,6 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 file_out = "SW_dir_cor_lookup.nc"
-ellps = "sphere"  # Earth's surface approximation (sphere, GRS80 or WGS84)
 
 # -----------------------------------------------------------------------------
 # Load data
@@ -77,10 +76,10 @@ print("Coordinate transformation")
 
 # Transform elevation data (geographic/geodetic -> ENU coordinates)
 x_ecef, y_ecef, z_ecef = subrad.transform.lonlat2ecef(lon, lat, elevation,
-                                                    ellps=ellps)
+                                                    ellps="sphere")
 dem_dim_0, dem_dim_1 = elevation.shape
 trans_ecef2enu = subrad.transform.TransformerEcef2enu(
-    lon_or=lon.mean(), lat_or=lat.mean(), ellps=ellps)
+    lon_or=lon.mean(), lat_or=lat.mean(), ellps="sphere")
 x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
 del x_ecef, y_ecef, z_ecef
@@ -97,7 +96,7 @@ slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
 elevation_zero = np.zeros_like(elevation)
 x_ecef, y_ecef, z_ecef \
     = subrad.transform.lonlat2ecef(lon[slice_in], lat[slice_in],
-                                 elevation_zero[slice_in], ellps=ellps)
+                                 elevation_zero[slice_in], ellps="sphere")
 dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
 x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
@@ -116,7 +115,7 @@ subsol_dist_2d[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
 x_ecef, y_ecef, z_ecef \
     = subrad.transform.lonlat2ecef(subsol_lon_2d, subsol_lat_2d,
-                                 subsol_dist_2d, ellps=ellps)
+                                 subsol_dist_2d, ellps="sphere")
 x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
 

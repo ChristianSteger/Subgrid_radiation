@@ -16,7 +16,8 @@ import matplotlib as mpl
 from skyfield.api import Distance
 from cmcrameri import cm
 from netCDF4 import Dataset
-import subgrid_radiation as subrad
+from subgrid_radiation import transform, auxiliary
+from subgrid_radiation import sun_position_array
 from utilities.grid import grid_frame
 from utilities.plot import truncate_colormap
 
@@ -42,8 +43,7 @@ ang_max = 89.5
 sw_dir_cor_max = 20.0
 
 # Miscellaneous settings
-dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
-ellps = "sphere"  # Earth's surface approximation (sphere, GRS80 or WGS84)
+path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 plot = True
 
 # -----------------------------------------------------------------------------
@@ -51,8 +51,8 @@ plot = True
 # -----------------------------------------------------------------------------
 
 # Load data
-ds = xr.open_dataset(dir_work + "MERIT_remapped_COSMO.nc")
-pixel_per_gc = ds.attrs["sub_grid_info_zonal"]
+ds = xr.open_dataset(path_work + "MERIT_remapped_COSMO_0.02deg.nc")
+pixel_per_gc = ds.attrs["pixels_per_grid_cell_zonal"]
 # pixel per grid cell (along one dimension)
 offset_gc = ds.attrs["offset_grid_cells_zonal"]
 # offset in number of grid cells
@@ -120,13 +120,13 @@ if plot:
 # -----------------------------------------------------------------------------
 
 # Transform elevation data (geographic/geodetic -> ENU coordinates)
-x_ecef, y_ecef, z_ecef = subrad.transform.lonlat2ecef(lon, lat, elevation,
-                                                    ellps=ellps)
+x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(lon, lat, elevation,
+                                              ellps="sphere")
 dem_dim_0, dem_dim_1 = elevation.shape
-trans_ecef2enu = subrad.transform.TransformerEcef2enu(
-    lon_or=lon.mean(), lat_or=lat.mean(), ellps=ellps)
-x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                              trans_ecef2enu)
+trans_ecef2enu = transform.TransformerEcef2enu(
+    lon_or=lon.mean(), lat_or=lat.mean(), ellps="sphere")
+x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+                                         trans_ecef2enu)
 del x_ecef, y_ecef, z_ecef
 
 # Test plot
@@ -136,7 +136,7 @@ if plot:
     plt.colorbar()
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid = subrad.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 print("Size of elevation data: %.3f" % (vert_grid.nbytes / (10 ** 9))
       + " GB")
 del x_enu, y_enu, z_enu
@@ -146,11 +146,11 @@ slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
             slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc))
 elevation_zero = np.zeros_like(elevation)
 x_ecef, y_ecef, z_ecef \
-    = subrad.transform.lonlat2ecef(lon[slice_in], lat[slice_in],
-                                 elevation_zero[slice_in], ellps=ellps)
+    = transform.lonlat2ecef(lon[slice_in], lat[slice_in],
+                            elevation_zero[slice_in], ellps="sphere")
 dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
-x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                              trans_ecef2enu)
+x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+                                         trans_ecef2enu)
 del x_ecef, y_ecef, z_ecef
 
 # Test plot
@@ -160,7 +160,7 @@ if plot:
     plt.colorbar()
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid_in = subrad.auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid_in = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
 print("Size of elevation data (0.0 m surface): %.3f"
       % (vert_grid_in.nbytes / (10 ** 9)) + " GB")
 del x_enu, y_enu, z_enu
@@ -171,10 +171,10 @@ subsol_dist_2d = np.empty(subsol_lon_2d.shape, dtype=np.float32)
 subsol_dist_2d[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
 x_ecef, y_ecef, z_ecef \
-    = subrad.transform.lonlat2ecef(subsol_lon_2d, subsol_lat_2d,
-                                 subsol_dist_2d, ellps=ellps)
-x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                              trans_ecef2enu)
+    = transform.lonlat2ecef(subsol_lon_2d, subsol_lat_2d, subsol_dist_2d,
+                            ellps="sphere")
+x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
+                                         trans_ecef2enu)
 
 # Test plot
 if plot:
@@ -202,13 +202,13 @@ sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
 # -----------------------------------------------------------------------------
 
 # Compute
-sw_dir_cor_def = subrad.subsolar_lookup.sw_dir_cor(
+sw_dir_cor_def = sun_position_array.rays.sw_dir_cor(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
-sw_dir_cor_coh = subrad.subsolar_lookup.sw_dir_cor_coherent(
+sw_dir_cor_coh = sun_position_array.rays.sw_dir_cor_coherent(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
@@ -216,7 +216,7 @@ sw_dir_cor_coh = subrad.subsolar_lookup.sw_dir_cor_coherent(
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 print("Maximal absolute deviation: %.6f"
       % np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
-sw_dir_cor_coh_rp8 = subrad.subsolar_lookup.sw_dir_cor_coherent_rp8(
+sw_dir_cor_coh_rp8 = sun_position_array.rays.sw_dir_cor_coherent_rp8(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
@@ -263,7 +263,7 @@ print("Size of lookup table: %.2f"
       % (sw_dir_cor[:, :, :, slic].nbytes / (10 ** 6)) + " MB")
 
 # Save to NetCDF file
-ncfile = Dataset(filename=dir_work + "SW_dir_cor_lookup.nc", mode="w")
+ncfile = Dataset(filename=path_work + "SW_dir_cor_lookup.nc", mode="w")
 ncfile.ang_max = "%.2f" % ang_max + " degrees"
 ncfile.sw_dir_cor_max = "%.2f" % sw_dir_cor_max
 # -----------------------------------------------------------------------------
@@ -292,6 +292,6 @@ nc_data.units = "-"
 ncfile.close()
 
 # Test load
-ds = xr.open_dataset(dir_work + "SW_dir_cor_lookup.nc")
+ds = xr.open_dataset(path_work + "SW_dir_cor_lookup.nc")
 f_cor = ds["f_cor"].values
 ds.close()

@@ -49,7 +49,7 @@ file_out = "SW_dir_cor_lookup.nc"
 print("Load data")
 
 # Load data
-ds = xr.open_dataset(path_work + "MERIT_remapped_COSMO_0.11deg_y0_x0.nc")
+ds = xr.open_dataset(path_work + "MERIT_remapped_COSMO_0.11deg_y1_x1.nc")
 num_gc_in_x = ds.attrs["num_grid_cells_inner_zonal"]
 num_gc_in_y = ds.attrs["num_grid_cells_inner_meridional"]
 # number of grid cells in inner domain
@@ -124,12 +124,19 @@ plt.axis([rlon_gc[0] - d_rlon_h, rlon_gc[-1] + d_rlon_h,
           rlat_gc[0] - d_rlat_h, rlat_gc[-1] + d_rlat_h])
 plt.title("Minimal chhord distance from coastline [km]",
           fontsize=12, fontweight="bold", y=1.01, loc="left")
-frac_mask = (dist_chord > (dist_search * 1000.0)).sum() / dist_chord.size
+temp = dist_chord[offset_gc_y:-offset_gc_y, offset_gc_x:-offset_gc_x]
+frac_mask = (temp > (dist_search * 1000.0)).sum() / temp.size
 plt.title("Masked grid cells: %.1f" % (frac_mask * 100.0) + " %",
           fontsize=11, y=1.01, loc="right")
 fig.savefig(path_work + "ocean_grid_cell_masking.png", dpi=500,
             bbox_inches="tight")
 plt.close(fig)
+
+# Mask for grid cells
+mask = ~(dist_chord[offset_gc_y:-offset_gc_y, offset_gc_x:-offset_gc_x]
+         > (dist_search * 1000.0))
+plt.figure()
+plt.pcolormesh(mask)
 
 # -----------------------------------------------------------------------------
 # Coordinate transformation
@@ -143,10 +150,10 @@ print("Coordinate transformation")
 
 # Transform elevation data (geographic/geodetic -> ENU coordinates)
 x_ecef, y_ecef, z_ecef = subrad.transform.lonlat2ecef(lon, lat, elevation,
-                                                    ellps=ellps)
+                                                    ellps="sphere")
 dem_dim_0, dem_dim_1 = elevation.shape
 trans_ecef2enu = subrad.transform.TransformerEcef2enu(
-    lon_or=lon.mean(), lat_or=lat.mean(), ellps=ellps)
+    lon_or=lon.mean(), lat_or=lat.mean(), ellps="sphere")
 x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
 del x_ecef, y_ecef, z_ecef
@@ -163,7 +170,7 @@ slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
 elevation_zero = np.zeros_like(elevation)
 x_ecef, y_ecef, z_ecef \
     = subrad.transform.lonlat2ecef(lon[slice_in], lat[slice_in],
-                                 elevation_zero[slice_in], ellps=ellps)
+                                 elevation_zero[slice_in], ellps="sphere")
 dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
 x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
@@ -182,7 +189,7 @@ subsol_dist_2d[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
 x_ecef, y_ecef, z_ecef \
     = subrad.transform.lonlat2ecef(subsol_lon_2d, subsol_lat_2d,
-                                 subsol_dist_2d, ellps=ellps)
+                                 subsol_dist_2d, ellps="sphere")
 x_enu, y_enu, z_enu = subrad.transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                               trans_ecef2enu)
 

@@ -9,7 +9,7 @@ import os
 # Default
 # -----------------------------------------------------------------------------
 
-cdef extern from "subsolar_lookup_comp.h":
+cdef extern from "rays_comp.h":
     void sw_dir_cor_comp(
             float* vert_grid,
             int dem_dim_0, int dem_dim_1,
@@ -155,7 +155,7 @@ def sw_dir_cor(
 # Use coherent rays
 # -----------------------------------------------------------------------------
 
-cdef extern from "subsolar_lookup_comp.h":
+cdef extern from "rays_comp.h":
     void sw_dir_cor_comp_coherent(
             float* vert_grid,
             int dem_dim_0, int dem_dim_1,
@@ -299,7 +299,7 @@ def sw_dir_cor_coherent(
 # Use coherent rays (packages with 8 rays)
 # -----------------------------------------------------------------------------
 
-cdef extern from "subsolar_lookup_comp.h":
+cdef extern from "rays_comp.h":
     void sw_dir_cor_comp_coherent_rp8(
             float* vert_grid,
             int dem_dim_0, int dem_dim_1,
