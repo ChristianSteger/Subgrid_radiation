@@ -36,7 +36,7 @@ def sw_dir_cor_svf(
         np.ndarray[np.float32_t, ndim = 3] sun_pos,
         int pixel_per_gc,
         int offset_gc,
-        np.ndarray[np.uint8_t, ndim = 2] mask,
+        np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
         int hori_azim_num=72,
         str geom_type="grid",
@@ -70,7 +70,8 @@ def sw_dir_cor_svf(
         Offset number of grid cells
     mask : ndarray of uint8
         Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
-        'sky_view_factor' are computed.
+        'sky_view_factor' are computed. Masked (0) grid cells are filled with
+        NaN.
     dist_search : float
         Search distance for topographic shadowing [kilometre]
     hori_azim_num : int
@@ -113,6 +114,12 @@ def sw_dir_cor_svf(
         raise ValueError("value for 'pixel_per_gc' must be larger than 1")
     if offset_gc < 0:
         raise ValueError("value for 'offset_gc' must be larger than 0")
+    num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
+    num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
+    if mask is None:
+        mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+    if (mask.shape[0] != num_gc_y) or (mask.shape[1] != num_gc_x):
+        raise ValueError("shape of mask is inconsistent with other input")
     if mask.dtype != "uint8":
         raise TypeError("data type of mask must be 'uint8'")
     if dist_search < 0.1:

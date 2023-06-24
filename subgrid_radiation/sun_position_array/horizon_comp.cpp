@@ -61,6 +61,21 @@ inline void vec_unit(float &v_x, float &v_y, float &v_z) {
 	   v_z = v_z / mag;
 }
 
+// Linear index from subscripts (2D-array)
+inline size_t lin_ind_2d(size_t dim_1, size_t ind_0, size_t ind_1) {
+	/* Parameters
+       ----------
+	   dim_1: second dimension length of two-dimensional array [-]
+	   ind_0: first array indices [-]
+	   ind_1: second array indices [-]
+
+	   Returns
+       ----------
+	   ind_lin: linear index of array [-]
+	*/
+	return (ind_0 * dim_1 + ind_1);
+}
+
 // Linear index from subscripts (3D-array)
 inline size_t lin_ind_3d(size_t dim_1, size_t dim_2,
 	size_t ind_0, size_t ind_1, size_t ind_2) {
@@ -417,6 +432,9 @@ void sw_dir_cor_svf_comp(
 	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
 		for (size_t j = 0; j < num_gc_x; j++) {
 
+			size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
+			if (mask[lin_ind_gc] == 1) {
+
 			// Loop through 2D-field of DEM pixels
 			for (size_t k = (i * pixel_per_gc);
 				k < ((i * pixel_per_gc) + pixel_per_gc); k++) {
@@ -570,6 +588,12 @@ void sw_dir_cor_svf_comp(
 					}
 
 				}
+			}
+
+			} else {
+
+				sky_view_factor[lin_ind_gc] = -999.9;
+
 			}
 
 		}
