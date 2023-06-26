@@ -771,15 +771,13 @@ void sw_dir_cor_svf_comp(
 	auto start_ray = std::chrono::high_resolution_clock::now();
 	size_t num_rays = 0;
 
-	num_rays += tbb::parallel_reduce(
-		tbb::blocked_range<size_t>(0, num_gc_y), 0.0,
-		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
-		
-	float* temporary = new float[num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1];
+// 	num_rays += tbb::parallel_reduce(
+// 		tbb::blocked_range<size_t>(0, num_gc_y), 0.0,
+// 		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
 
 	// Loop through 2D-field of grid cells
-	//for (size_t i = 0; i < num_gc_y; i++) {  // serial
-	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+	for (size_t i = 0; i < num_gc_y; i++) {  // serial
+	//for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
 		for (size_t j = 0; j < num_gc_x; j++) {
 
 			size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
@@ -787,9 +785,6 @@ void sw_dir_cor_svf_comp(
 
 			float* horizon = new float[hori_azim_num + 2];
 			// save horizon in 'periodical' array for interpolation...
-			float* buffer = new float[pixel_per_gc * pixel_per_gc * 2
-				* dim_sun_0 * dim_sun_1];
-			size_t ind_buf = 0;
 
 			// Loop through 2D-field of DEM pixels
 			for (size_t k = (i * pixel_per_gc);
@@ -992,24 +987,24 @@ void sw_dir_cor_svf_comp(
 														sun_z};
 								float sun_local[3];
 								mat_vec_mult(rot, sun_global, sun_local);
- 								
+  								
 								// Check for terrain or self-shadowing
-								float sun_elev = asin(sun_local[2]);
-								float sun_azim = atan2(sun_local[0],
-													   sun_local[1]);
-								if (sun_azim < 0.0) {
-									sun_azim += (2.0 * M_PI);
-								}
-								// sun azimuth angle in range [0.0, 2.0 * pi]
-								int ind_0 = int(sun_azim / azim_spac);							
-								float weight = (sun_azim
-									- (ind_0 * azim_spac)) / azim_spac;
-								float horizon_sun = horizon[ind_0] 
-									* (1.0 - weight)
-									+ horizon[ind_0 + 1] * weight;
-								if (sun_elev <= horizon_sun) {
-									continue;								
-								}
+//								float sun_elev = asin(sun_local[2]);
+// 								float sun_azim = atan2(sun_local[0],
+// 													   sun_local[1]);
+// 								if (sun_azim < 0.0) {
+// 									sun_azim += (2.0 * M_PI);
+// 								}
+// 								sun azimuth angle in range [0.0, 2.0 * pi]
+// 								int ind_0 = int(sun_azim / azim_spac);							
+// 								float weight = (sun_azim
+// 									- (ind_0 * azim_spac)) / azim_spac;
+// 								float horizon_sun = horizon[ind_0] 
+// 									* (1.0 - weight)
+// 									+ horizon[ind_0 + 1] * weight;
+// 								if (sun_elev <= horizon_sun) {
+// 									continue;								
+// 								}
 								
 								// Compute correction factor for illuminated
 								// case
@@ -1022,15 +1017,11 @@ void sw_dir_cor_svf_comp(
 								if (dot_prod_hs < dot_prod_min) {
 									dot_prod_hs = dot_prod_min;
 								}
-//   								temporary[ind_lin_cor] =
-//   									temporary[ind_lin_cor]
-//   									+ std::min(((dot_prod_ts
-//   									/ dot_prod_hs) * surf_enl_fac),
-//   									sw_dir_cor_max);
-  								buffer[ind_buf] =
+  								sw_dir_cor[ind_lin_cor] =
+  									sw_dir_cor[ind_lin_cor]
   									+ std::min(((dot_prod_ts
   									/ dot_prod_hs) * surf_enl_fac),
-  									sw_dir_cor_max);
+  									sw_dir_cor_max); // + sun_elev;
 
 							}
 						}
@@ -1040,31 +1031,7 @@ void sw_dir_cor_svf_comp(
 				}
 			}
 
-
- 			float* temp = new float[dim_sun_0 * dim_sun_1];
-			for (size_t k = 0; k < (dim_sun_0 * dim_sun_1) ; k++) {
-				
-				float agg = 0.0;
-				size_t ind = k;
-				for (size_t m = 0; m < (pixel_per_gc * pixel_per_gc * 2) ; m++) {
-			
-					agg += buffer[ind];
-					ind += dim_sun_0 * dim_sun_1;
-				
-				}
-				temp[k] = agg;
-				
-				//size_t ind_test = lin_ind_4d(num_gc_x, dim_sun_0, dim_sun_1, i, j, 0, 0);
-				temporary[0] = temp[0];
-				
-			}
-			for (size_t k = 0; k < (dim_sun_0 * dim_sun_1) ; k++) {
-				temporary[k] = temp[k];
-			}
-
 			delete[] horizon;
-			delete[] buffer;
-			delete[] temp;
 
 			} else {
 			
@@ -1079,14 +1046,10 @@ void sw_dir_cor_svf_comp(
 
 		}
 	}
-	
-// 	for (size_t i = 0; i < (num_gc_y, num_gc_x, dim_sun_0 * dim_sun_1) ; i++) {
-// 		sw_dir_cor[i] = temporary[i];
-// 	}
-	delete[] temporary;
 
-  	return num_rays;  // parallel
-  	}, std::plus<size_t>());  // parallel
+
+//   	return num_rays;  // parallel
+//   	}, std::plus<size_t>());  // parallel
 
 	auto end_ray = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time_ray = (end_ray - start_ray);

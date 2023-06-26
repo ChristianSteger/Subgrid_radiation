@@ -83,8 +83,8 @@ offset_gc = 10
 num_gc_y = int((x.shape[0] - 1) / pixel_per_gc) - 2 * offset_gc
 num_gc_x = int((x.shape[1] - 1) / pixel_per_gc) - 2 * offset_gc
 mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
-# mask[:] = 0
-# mask[:40, :40] = 1
+mask[:] = 0
+mask[:20, :20] = 1
 
 # Merge vertex coordinates and pad geometry buffer
 dem_dim_0, dem_dim_1 = x.shape
