@@ -24,8 +24,10 @@ mpl.style.use("classic")
 # -----------------------------------------------------------------------------
 
 # Grid for lookup positions
-lu_lon = np.linspace(-180.0, 170.0, 36, dtype=np.float64)  # 10 degree
-lu_lat = np.linspace(0.0, 90.0, 10, dtype=np.float64)  # 10 degree
+# lu_lon = np.linspace(-180.0, 170.0, 36, dtype=np.float64)  # 10 degree
+# lu_lat = np.linspace(0.0, 90.0, 10, dtype=np.float64)  # 10 degree
+lu_lon = np.linspace(-180.0, 175.0, 72, dtype=np.float64)  # 5 degree
+lu_lat = np.linspace(0.0, 90.0, 19, dtype=np.float64)  # 5 degree
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]

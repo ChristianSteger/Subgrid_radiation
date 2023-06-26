@@ -18,6 +18,9 @@ void sw_dir_cor_svf_comp(
 	uint8_t* mask,
 	float dist_search,
 	int hori_azim_num,
+	float hori_acc,
+	char* ray_algorithm,
+	float elev_ang_low_lim,
 	char* geom_type,
 	float ang_max,
 	float sw_dir_cor_max);

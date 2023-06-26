@@ -22,6 +22,10 @@ using namespace std;
 // Auxiliary functions
 //#############################################################################
 
+// ----------------------------------------------------------------------------
+// Unit conversion
+// ----------------------------------------------------------------------------
+
 // Convert degree to radian
 inline float deg2rad(float ang) {
 	/* Parameters
@@ -47,19 +51,9 @@ inline float rad2deg(float ang) {
 	return ((ang / M_PI) * 180.0);
 }
 
-// Unit vector
-inline void vec_unit(float &v_x, float &v_y, float &v_z) {
-	/* Parameters
-       ----------
-	   v_x: x-component of vector [arbitrary]
-	   v_y: y-component of vector [arbitrary]
-	   v_z: z-component of vector [arbitrary]
-	*/
-	   float mag = sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
-	   v_x = v_x / mag;
-	   v_y = v_y / mag;
-	   v_z = v_z / mag;
-}
+// ----------------------------------------------------------------------------
+// Compute linear array index from multidimensional subscripts
+// ----------------------------------------------------------------------------
 
 // Linear index from subscripts (2D-array)
 inline size_t lin_ind_2d(size_t dim_1, size_t ind_0, size_t ind_1) {
@@ -114,6 +108,63 @@ inline size_t lin_ind_4d(size_t dim_1, size_t dim_2, size_t dim_3,
 	return (ind_0 * (dim_1 * dim_2 * dim_3) + ind_1 * (dim_2 * dim_3)
 		+ ind_2 * dim_3 + ind_3);
 }
+
+// ----------------------------------------------------------------------------
+// Vector and matrix operations
+// ----------------------------------------------------------------------------
+
+// Unit vector
+inline void vec_unit(float &v_x, float &v_y, float &v_z) {
+	/* Parameters
+       ----------
+	   v_x: x-component of vector [arbitrary]
+	   v_y: y-component of vector [arbitrary]
+	   v_z: z-component of vector [arbitrary]
+	*/
+	   float mag = sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
+	   v_x = v_x / mag;
+	   v_y = v_y / mag;
+	   v_z = v_z / mag;
+}
+
+// Cross product
+inline void cross_prod(float a_x, float a_y, float a_z, float b_x, float b_y,
+	float b_z, float &c_x, float &c_y, float &c_z) {
+	/* Parameters
+       ----------
+	   a_x: x-component of vector a [arbitrary]
+	   a_y: y-component of vector a [arbitrary]
+	   a_z: z-component of vector a [arbitrary]
+	   b_x: x-component of vector b [arbitrary]
+	   b_y: y-component of vector b [arbitrary]
+	   b_z: z-component of vector b [arbitrary]
+	   c_x: x-component of vector c [arbitrary]
+	   c_y: y-component of vector c [arbitrary]
+	   c_z: z-component of vector c [arbitrary]
+	*/
+	c_x = a_y * b_z - a_z * b_y;
+    c_y = a_z * b_x - a_x * b_z;
+    c_z = a_x * b_y - a_y * b_x;
+}
+
+// Matrix-vector multiplication
+inline void mat_vec_mult(float (&mat)[3][3], float (&vec)[3],
+	float (&vec_res)[3]) {
+	/* Parameters
+       ----------
+	   mat: matrix with 3 x 3 elements [arbitrary]
+	   vec: vector with 3 elements [arbitrary]
+	   vec_res: resulting vector with 3 elements [arbitrary]
+	*/
+	vec_res[0] = mat[0][0] * vec[0] + mat[0][1] * vec[1] + mat[0][2] * vec[2];
+    vec_res[1] = mat[1][0] * vec[0] + mat[1][1] * vec[1] + mat[1][2] * vec[2];
+    vec_res[2] = mat[2][0] * vec[0] + mat[2][1] * vec[1] + mat[2][2] * vec[2];
+
+}
+
+// ----------------------------------------------------------------------------
+// Triangle operations
+// ----------------------------------------------------------------------------
 
 // Triangle surface normal and area
 inline void triangle_normal_area(
@@ -353,6 +404,255 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
 }
 
 //#############################################################################
+// Ray casting
+//#############################################################################
+
+bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
+	float dy, float dz, float dist_search) {
+
+	// Intersect context
+  	struct RTCIntersectContext context;
+  	rtcInitIntersectContext(&context);
+
+  	// Ray structure
+  	struct RTCRay ray;
+  	ray.org_x = ox;
+  	ray.org_y = oy;
+  	ray.org_z = oz;
+  	ray.dir_x = dx;
+  	ray.dir_y = dy;
+  	ray.dir_z = dz;
+  	ray.tnear = 0.0;
+  	//ray.tfar = std::numeric_limits<float>::infinity();
+  	ray.tfar = dist_search;
+  	//ray.mask = -1;
+  	//ray.flags = 0;
+
+  	// Intersect ray with scene
+  	rtcOccluded1(scene, &context, &ray);
+
+  	return (ray.tfar < 0.0);
+
+}
+
+//#############################################################################
+// Horizon detection algorithms
+//#############################################################################
+
+//-----------------------------------------------------------------------------
+// Discrete sampling
+//-----------------------------------------------------------------------------
+
+void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
+	size_t azim_num, float hori_acc, float dist_search,
+	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+	RTCScene scene, size_t &num_rays, float* hori_buffer,
+	float* azim_sin, float* azim_cos, float* elev_ang,
+	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
+
+  	for (size_t k = 0; k < azim_num; k++) {
+
+		int ind_elev = 0;
+		int ind_elev_prev = 0;
+  		bool hit = true;
+  		while (hit) {
+
+			ind_elev_prev = ind_elev;
+			ind_elev = min(ind_elev + 10, elev_num - 1);
+			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+							elev_cos[ind_elev] * azim_cos[k],
+							elev_sin[ind_elev]};
+			float ray_rot[3];
+			mat_vec_mult(rot_inv, ray, ray_rot);
+  			hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search);
+  			num_rays += 1;
+
+  		}
+  		hori_buffer[k] = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
+
+  	}
+
+}
+
+//-----------------------------------------------------------------------------
+// Binary search
+//-----------------------------------------------------------------------------
+
+void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
+	size_t azim_num, float hori_acc, float dist_search,
+	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+	RTCScene scene, size_t &num_rays, float* hori_buffer,
+	float* azim_sin, float* azim_cos, float* elev_ang,
+	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
+
+  	for (size_t k = 0; k < azim_num; k++) {
+
+  		float lim_up = elev_ang_up_lim;
+  		float lim_low = elev_ang_low_lim;
+  		float elev_samp = (lim_up + lim_low) / 2.0;
+  		int ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+  			/ (hori_acc / 5.0)));
+
+  		while (max(lim_up - elev_ang[ind_elev],
+  			elev_ang[ind_elev] - lim_low) > hori_acc) {
+
+			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+							elev_cos[ind_elev] * azim_cos[k],
+							elev_sin[ind_elev]};
+			float ray_rot[3];
+			mat_vec_mult(rot_inv, ray, ray_rot);
+  			bool hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search);
+  			num_rays += 1;
+
+  			if (hit) {
+  				lim_low = elev_ang[ind_elev];
+  			} else {
+  				lim_up = elev_ang[ind_elev];
+  			}
+  			elev_samp = (lim_up + lim_low) / 2.0;
+  			ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+  				/ (hori_acc / 5.0)));
+
+  		}
+  		hori_buffer[k] = elev_samp;
+
+  	}
+
+}
+
+//-----------------------------------------------------------------------------
+// Guess horizon from previous azimuth direction
+//-----------------------------------------------------------------------------
+
+void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
+	size_t azim_num, float hori_acc, float dist_search,
+	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+	RTCScene scene, size_t &num_rays, float* hori_buffer,
+	float* azim_sin, float* azim_cos, float* elev_ang,
+	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
+
+	// ------------------------------------------------------------------------
+  	// First azimuth direction (binary search)
+  	// ------------------------------------------------------------------------
+
+  	float lim_up = elev_ang_up_lim;
+  	float lim_low = elev_ang_low_lim;
+  	float elev_samp = (lim_up + lim_low) / 2.0;
+  	int ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+  		/ (hori_acc / 5.0)));
+
+  	while (max(lim_up - elev_ang[ind_elev],
+  		elev_ang[ind_elev] - lim_low) > hori_acc) {
+
+		float ray[3] = {elev_cos[ind_elev] * azim_sin[0],
+						elev_cos[ind_elev] * azim_cos[0],
+						elev_sin[ind_elev]};
+		float ray_rot[3];
+		mat_vec_mult(rot_inv, ray, ray_rot);
+  		bool hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+  			ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  			dist_search);
+  		num_rays += 1;
+
+  		if (hit) {
+  			lim_low = elev_ang[ind_elev];
+  		} else {
+  			lim_up = elev_ang[ind_elev];
+  		}
+  		elev_samp = (lim_up + lim_low) / 2.0;
+  		ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+  			/ (hori_acc / 5.0)));
+
+  	}
+
+  	hori_buffer[0] = elev_samp;
+  	int ind_elev_prev_azim = ind_elev;
+
+	// ------------------------------------------------------------------------
+	// Remaining azimuth directions (guess horizon from previous
+	// azimuth direction)
+	// ------------------------------------------------------------------------
+
+	for (size_t k = 1; k < azim_num; k++) {
+
+		// Move upwards
+		ind_elev = max(ind_elev_prev_azim - 5, 0);
+		int ind_elev_prev = 0;
+		bool hit = true;
+		int count = 0;
+		while (hit) {
+
+			ind_elev_prev = ind_elev;
+			ind_elev = min(ind_elev + 10, elev_num - 1);
+			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+							elev_cos[ind_elev] * azim_cos[k],
+							elev_sin[ind_elev]};
+			float ray_rot[3];
+			mat_vec_mult(rot_inv, ray, ray_rot);
+  			hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search);
+  			num_rays += 1;
+  			count += 1;
+
+		}
+
+		if (count > 1) {
+
+  			elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
+  			ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+  				/ (hori_acc / 5.0)));
+  			hori_buffer[k] = elev_ang[ind_elev];
+  			ind_elev_prev_azim = ind_elev;
+  			continue;
+
+		}
+
+		// Move downwards
+		ind_elev = min(ind_elev_prev_azim + 5, elev_num - 1);
+		hit = false;
+		while (!hit) {
+
+			ind_elev_prev = ind_elev;
+			ind_elev = max(ind_elev - 10, 0);
+			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+							elev_cos[ind_elev] * azim_cos[k],
+							elev_sin[ind_elev]};
+			float ray_rot[3];
+			mat_vec_mult(rot_inv, ray, ray_rot);
+  			hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+  				dist_search);
+  			num_rays += 1;
+
+		}
+
+  		elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
+  		ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+  			/ (hori_acc / 5.0)));
+  		hori_buffer[k] = elev_ang[ind_elev];
+  		ind_elev_prev_azim = ind_elev;
+
+	}
+
+}
+
+//-----------------------------------------------------------------------------
+// Declare function pointer and assign function
+//-----------------------------------------------------------------------------
+
+void (*function_pointer)(float ray_org_x, float ray_org_y, float ray_org_z,
+	size_t azim_num, float hori_acc, float dist_search,
+	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+	RTCScene scene, size_t &num_rays, float* hori_buffer,
+	float* azim_sin, float* azim_cos, float* elev_ang,
+	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]);
+
+//#############################################################################
 // Main functions
 //#############################################################################
 
@@ -374,10 +674,13 @@ void sw_dir_cor_svf_comp(
 	uint8_t* mask,
 	float dist_search,
 	int hori_azim_num,
+	float hori_acc,
+	char* ray_algorithm,
+	float elev_ang_low_lim,
 	char* geom_type,
 	float ang_max,
 	float sw_dir_cor_max) {
-	
+
 	cout << "--------------------------------------------------------" << endl;
 	cout << "Compute lookup table with default method" << endl;
 	cout << "--------------------------------------------------------" << endl;
@@ -389,6 +692,7 @@ void sw_dir_cor_svf_comp(
 	float dot_prod_rem = cos(deg2rad(94.0));
 	// threshold depends on radius (r) of Earth and mountain elevation
 	// maximum (em)
+	float elev_ang_up_lim = 89.98;  // upper limit for elevation angle [degree]
 
 	// Number of grid cells
 	int num_gc_y = (dem_dim_in_0 - 1) / pixel_per_gc;
@@ -405,6 +709,22 @@ void sw_dir_cor_svf_comp(
 	float dot_prod_min = cos(deg2rad(ang_max));
 	dist_search *= 1000.0;  // [kilometre] to [metre]
 	cout << "Search distance: " << dist_search << " m" << endl;
+  	hori_acc = deg2rad(hori_acc);
+  	elev_ang_low_lim = deg2rad(elev_ang_low_lim);
+  	elev_ang_up_lim = deg2rad(elev_ang_up_lim);
+
+	// Select algorithm for horizon detection
+  	cout << "Horizon detection algorithm: ";
+  	if (strcmp(ray_algorithm, "discrete_sampling") == 0) {
+    	cout << "discrete_sampling" << endl;
+  		function_pointer = ray_discrete_sampling;
+  	} else if (strcmp(ray_algorithm, "binary_search") == 0) {
+    	cout << "binary search" << endl;
+    	function_pointer = ray_binary_search;
+  	} else if (strcmp(ray_algorithm, "guess_constant") == 0) {
+    	cout << "guess horizon from previous azimuth direction" << endl;
+    	function_pointer = ray_guess_const;
+	}
 
 	cout << "ang_max: " << ang_max << " degree" << endl;
 	cout << "sw_dir_cor_max: " << sw_dir_cor_max  << endl;
@@ -418,14 +738,44 @@ void sw_dir_cor_svf_comp(
   	std::chrono::duration<double> time = end_ini - start_ini;
   	cout << "Total initialisation time: " << time.count() << " s" << endl;
 
-	//-------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
+  	// Allocate and initialise arrays with evaluated trigonometric functions
+    // ------------------------------------------------------------------------
 
+    // Azimuth angles (allocate on stack)
+    float azim_sin[hori_azim_num];
+    float azim_cos[hori_azim_num];
+    float ang;
+    for (int i = 0; i < hori_azim_num; i++) {
+    	ang = ((2 * M_PI) / hori_azim_num * i);
+    	azim_sin[i] = sin(ang);
+    	azim_cos[i] = cos(ang);
+    }
+
+    // Elevation angles (allocate on stack)
+    int elev_num = ((int)ceil((elev_ang_up_lim - elev_ang_low_lim)
+    	/ (hori_acc / 5.0)) + 1);
+    float elev_ang[elev_num];
+    float elev_sin[elev_num];
+    float elev_cos[elev_num];
+    for (int i = 0; i < elev_num; i++) {
+    	ang = elev_ang_up_lim - (hori_acc / 5.0) * i;
+    	elev_ang[elev_num - i - 1] = ang;
+    	elev_sin[elev_num - i - 1] = sin(ang);
+    	elev_cos[elev_num - i - 1] = cos(ang);
+    }
+    float azim_spac = (2.0 * M_PI) / hori_azim_num;
+
+	//-------------------------------------------------------------------------
+	
 	auto start_ray = std::chrono::high_resolution_clock::now();
 	size_t num_rays = 0;
 
 	num_rays += tbb::parallel_reduce(
 		tbb::blocked_range<size_t>(0, num_gc_y), 0.0,
 		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
+		
+	float* temporary = new float[num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1];
 
 	// Loop through 2D-field of grid cells
 	//for (size_t i = 0; i < num_gc_y; i++) {  // serial
@@ -434,6 +784,12 @@ void sw_dir_cor_svf_comp(
 
 			size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
 			if (mask[lin_ind_gc] == 1) {
+
+			float* horizon = new float[hori_azim_num + 2];
+			// save horizon in 'periodical' array for interpolation...
+			float* buffer = new float[pixel_per_gc * pixel_per_gc * 2
+				* dim_sun_0 * dim_sun_1];
+			size_t ind_buf = 0;
 
 			// Loop through 2D-field of DEM pixels
 			for (size_t k = (i * pixel_per_gc);
@@ -512,10 +868,106 @@ void sw_dir_cor_svf_comp(
 						float surf_enl_fac = area_tilt / area_hori;
 
 						//-----------------------------------------------------
+						// Compute horizon in local ENU coordinate system
+						//-----------------------------------------------------
+						
+						// Approximate north vector (orthogonal to x-axis of 
+						// global ENU coordinate system; orientation of 
+						// coordinate system in which horizon is computed can 
+						// be arbitrary as long as the z-axis aligns with the
+						// local horizontal surface normal)
+						float north_x = 0.0;
+						float north_y = 1.0;
+						float north_z = -norm_hori_y / norm_hori_z;
+						vec_unit(north_x, north_y, north_z);
+
+  						float east_x, east_y, east_z;
+						cross_prod(north_x, north_y, north_z,
+							norm_hori_x, norm_hori_y, norm_hori_z,
+							east_x, east_y, east_z);
+						float rot_inv[3][3] = {{east_x, north_x, norm_hori_x},
+											   {east_y, north_y, norm_hori_y},
+											   {east_z, north_z, norm_hori_z}};
+											   
+						//if ((i == 0) && (j == 0) && (k == 0) && (m == 0)) {
+						
+// 						cout << "norm_hori_x: " << norm_hori_x << endl;
+// 						cout << "norm_hori_y: " << norm_hori_y << endl;
+// 						cout << "norm_hori_z: " << norm_hori_z << endl;
+// 						cout << "north_x: " << north_x << endl;
+// 						cout << "north_y: " << north_y << endl;
+// 						cout << "north_z: " << north_z << endl;
+// 						cout << "east_x: " << east_x << endl;
+// 						cout << "east_y: " << east_y << endl;
+// 						cout << "east_z: " << east_z << endl;
+						
+  						function_pointer(ray_org_x, ray_org_y, ray_org_z,
+  				 			hori_azim_num, hori_acc, dist_search,
+  				 			elev_ang_low_lim, elev_ang_up_lim, elev_num,
+  				 			scene, num_rays, &horizon[0],
+  				 			azim_sin, azim_cos, elev_ang,
+  				 			elev_cos, elev_sin, rot_inv);
+  				 		
+//   				 		cout << "horizon: " << endl;
+//   				 		for (size_t o = 0; o < hori_azim_num; o++) {
+//   				 			cout << rad2deg(horizon[o]) << endl;
+  				 		
+  				 		//}
+  				 			
+  				 		//}
+
+						//-----------------------------------------------------
+						// Compute sky view factor
+						//-----------------------------------------------------
+						
+						// Rotate tilt vector from global to local ENU
+						// coordinate system										   
+						float rot[3][3] = {{east_x, east_y, east_z},
+										   {north_x, north_y, north_z},
+										   {norm_hori_x, norm_hori_y,
+										    norm_hori_z}};	   
+						float tilt_global[3] = {norm_tilt_x, norm_tilt_y,
+												norm_tilt_z};
+						float tilt_local[3];
+						mat_vec_mult(rot, tilt_global, tilt_local);
+
+						// Compute sky view factor
+						float agg = 0.0;
+						for (size_t o = 0; o < hori_azim_num; o++) {
+
+                			// Compute plane-sphere intersection
+                			float hori_plane = atan(-azim_sin[o]
+                				* tilt_local[0] / tilt_local[2]
+                				- azim_cos[o] * tilt_local[1] / tilt_local[2]);
+                			float hori_elev;
+							if (horizon[o] >= hori_plane) {
+								hori_elev = horizon[o];
+							} else {
+								hori_elev =  hori_plane;
+							}
+
+                			// Compute inner integral
+                			agg = agg + ((tilt_local[0] * azim_sin[o]
+                				+ tilt_local[1] * azim_cos[o]) * ((M_PI / 2.0)
+                				- hori_elev - (sin(2.0 * hori_elev) / 2.0))
+                				+ tilt_local[2] * pow(cos(hori_elev), 2));						
+
+						}
+
+						sky_view_factor[lin_ind_gc] 
+							= sky_view_factor[lin_ind_gc]
+							+ (azim_spac / (2.0 * M_PI)) * agg;
+
+						//-----------------------------------------------------
 						// Loop through sun positions and compute correction
 						// factors
 						//-----------------------------------------------------
-
+						
+						horizon[hori_azim_num] = horizon[0];
+						horizon[hori_azim_num + 1] = horizon[1];
+						// sun azimuth angle is between [0.0, 360.0] degree
+						// (including 360.0 deg!)
+						
 						size_t ind_lin_sun, ind_lin_cor;
 						for (size_t o = 0; o < dim_sun_0; o++) {
 							for (size_t p = 0; p < dim_sun_1; p++) {
@@ -533,54 +985,52 @@ void sw_dir_cor_svf_comp(
   								float sun_z = (sun_pos[ind_lin_sun + 2]
   									- ray_org_z);
   								vec_unit(sun_x, sun_y, sun_z);
-
-								// Check for shadowing by Earth's sphere
+   								
+								// Rotate sun vector from global to local ENU
+								// coordinate system
+								float sun_global[3] = {sun_x, sun_y,
+														sun_z};
+								float sun_local[3];
+								mat_vec_mult(rot, sun_global, sun_local);
+ 								
+								// Check for terrain or self-shadowing
+								float sun_elev = asin(sun_local[2]);
+								float sun_azim = atan2(sun_local[0],
+													   sun_local[1]);
+								if (sun_azim < 0.0) {
+									sun_azim += (2.0 * M_PI);
+								}
+								// sun azimuth angle in range [0.0, 2.0 * pi]
+								int ind_0 = int(sun_azim / azim_spac);							
+								float weight = (sun_azim
+									- (ind_0 * azim_spac)) / azim_spac;
+								float horizon_sun = horizon[ind_0] 
+									* (1.0 - weight)
+									+ horizon[ind_0 + 1] * weight;
+								if (sun_elev <= horizon_sun) {
+									continue;								
+								}
+								
+								// Compute correction factor for illuminated
+								// case
 								float dot_prod_hs = (norm_hori_x * sun_x
 									+ norm_hori_y * sun_y
 									+ norm_hori_z * sun_z);
-								if (dot_prod_hs < dot_prod_rem) {
-									continue;
-								}
-
-								// Check for self-shadowing
   								float dot_prod_ts = norm_tilt_x * sun_x
   									+ norm_tilt_y * sun_y
   									+ norm_tilt_z * sun_z;
-								if (dot_prod_ts < dot_prod_min) {
-									continue;
+								if (dot_prod_hs < dot_prod_min) {
+									dot_prod_hs = dot_prod_min;
 								}
-
-								// Intersect context
-  								struct RTCIntersectContext context;
-  								rtcInitIntersectContext(&context);
-
-  								// Ray structure
-  								struct RTCRay ray;
-  								ray.org_x = ray_org_x;
-  								ray.org_y = ray_org_y;
-  								ray.org_z = ray_org_z;
-  								ray.dir_x = sun_x;
-  								ray.dir_y = sun_y;
-  								ray.dir_z = sun_z;
-  								ray.tnear = 0.0;
-  								ray.tfar = dist_search;
-  								// std::numeric_limits<float>::infinity();
-
-  								// Intersect ray with scene
-  								rtcOccluded1(scene, &context, &ray);
-								if (ray.tfar > 0.0) {
-									// no intersection -> 'tfar' is not
-									// updated; otherwise 'tfar' = -inf
-									if (dot_prod_hs < dot_prod_min) {
-										dot_prod_hs = dot_prod_min;
-									}
-									sw_dir_cor[ind_lin_cor] =
-										sw_dir_cor[ind_lin_cor]
-										+ std::min(((dot_prod_ts
-										/ dot_prod_hs) * surf_enl_fac),
-										sw_dir_cor_max);
-								}
-								num_rays += 1;
+//   								temporary[ind_lin_cor] =
+//   									temporary[ind_lin_cor]
+//   									+ std::min(((dot_prod_ts
+//   									/ dot_prod_hs) * surf_enl_fac),
+//   									sw_dir_cor_max);
+  								buffer[ind_buf] =
+  									+ std::min(((dot_prod_ts
+  									/ dot_prod_hs) * surf_enl_fac),
+  									sw_dir_cor_max);
 
 							}
 						}
@@ -590,14 +1040,50 @@ void sw_dir_cor_svf_comp(
 				}
 			}
 
-			} else {
 
-				sky_view_factor[lin_ind_gc] = -999.9;
+ 			float* temp = new float[dim_sun_0 * dim_sun_1];
+			for (size_t k = 0; k < (dim_sun_0 * dim_sun_1) ; k++) {
+				
+				float agg = 0.0;
+				size_t ind = k;
+				for (size_t m = 0; m < (pixel_per_gc * pixel_per_gc * 2) ; m++) {
+			
+					agg += buffer[ind];
+					ind += dim_sun_0 * dim_sun_1;
+				
+				}
+				temp[k] = agg;
+				
+				//size_t ind_test = lin_ind_4d(num_gc_x, dim_sun_0, dim_sun_1, i, j, 0, 0);
+				temporary[0] = temp[0];
+				
+			}
+			for (size_t k = 0; k < (dim_sun_0 * dim_sun_1) ; k++) {
+				temporary[k] = temp[k];
+			}
+
+			delete[] horizon;
+			delete[] buffer;
+			delete[] temp;
+
+			} else {
+			
+				size_t ind_lin = lin_ind_4d(num_gc_x, dim_sun_0, dim_sun_1,
+					i, j, 0, 0);
+				for (size_t k = 0; k < (dim_sun_0 * dim_sun_1) ; k++) {
+					sw_dir_cor[ind_lin + k] = NAN;
+				}
+				sky_view_factor[lin_ind_gc] = NAN;
 
 			}
 
 		}
 	}
+	
+// 	for (size_t i = 0; i < (num_gc_y, num_gc_x, dim_sun_0 * dim_sun_1) ; i++) {
+// 		sw_dir_cor[i] = temporary[i];
+// 	}
+	delete[] temporary;
 
   	return num_rays;  // parallel
   	}, std::plus<size_t>());  // parallel
@@ -615,6 +1101,10 @@ void sw_dir_cor_svf_comp(
   	size_t num_elem = (num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1);
   	for (size_t i = 0; i < num_elem; i++) {
 		sw_dir_cor[i] /= num_tri_per_gc;
+  	}
+  	num_elem = (num_gc_y * num_gc_x);
+  	for (size_t i = 0; i < num_elem; i++) {
+  		sky_view_factor[i] /= num_tri_per_gc;
   	}
 
     // Release resources allocated through Embree

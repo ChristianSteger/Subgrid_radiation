@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from cmcrameri import cm
 from subgrid_radiation import auxiliary
+from subgrid_radiation.sun_position_array import horizon
 from subgrid_radiation import sun_position_array
 
 mpl.style.use("classic")
@@ -24,15 +25,20 @@ mpl.style.use("classic")
 # -----------------------------------------------------------------------------
 
 # Grid for lookup positions
-lu_lon = np.linspace(-180.0, 170.0, 36, dtype=np.float64)  # 10 degree
-lu_lat = np.linspace(0.0, 90.0, 10, dtype=np.float64)  # 10 degree
+# lu_lon = np.linspace(-180.0, 170.0, 36, dtype=np.float64)  # 10 degree
+# lu_lat = np.linspace(0.0, 90.0, 10, dtype=np.float64)  # 10 degree
+lu_lon = np.linspace(-180.0, 175.0, 72, dtype=np.float64)  # 5 degree
+lu_lat = np.linspace(0.0, 90.0, 19, dtype=np.float64)  # 5 degree
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
 ang_max = 89.5
 sw_dir_cor_max = 20.0
-hori_azim_num = 72
+hori_azim_num = 60  # 90
+hori_acc = 1.5  # 1.0
+ray_algorithm = "guess_constant"
+elev_ang_low_lim = -85.0  # -15.0
 
 # Miscellaneous settings
 dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
@@ -77,7 +83,8 @@ offset_gc = 10
 num_gc_y = int((x.shape[0] - 1) / pixel_per_gc) - 2 * offset_gc
 num_gc_x = int((x.shape[1] - 1) / pixel_per_gc) - 2 * offset_gc
 mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
-mask[:10, :10] = 0
+# mask[:] = 0
+# mask[:40, :40] = 1
 
 # Merge vertex coordinates and pad geometry buffer
 dem_dim_0, dem_dim_1 = x.shape
@@ -114,13 +121,19 @@ sw_dir_cor, sky_view_factor = sun_position_array.horizon.sw_dir_cor_svf(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
-    dist_search=dist_search, hori_azim_num=hori_azim_num,
-    geom_type=geom_type,
+    mask=mask, dist_search=dist_search, hori_azim_num=hori_azim_num,
+    hori_acc=hori_acc, ray_algorithm=ray_algorithm,
+    elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 
+# Test plot
+plt.figure()
+plt.pcolormesh(sky_view_factor)
+plt.colorbar()
+
 # Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
-      + ", %.2f" % sw_dir_cor.max() + "]")
+print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
+      + ", %.2f" % np.nanmax(sw_dir_cor) + "]")
 
 # Test plot
 if plot:

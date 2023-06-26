@@ -24,6 +24,9 @@ cdef extern from "horizon_comp.h":
             np.npy_uint8 * mask,
             float dist_search,
             int hori_azim_num,
+            float hori_acc,
+            char* ray_algorithm,
+            float elev_ang_low_lim,
             char* geom_type,
             float ang_max,
             float sw_dir_cor_max)
@@ -38,7 +41,10 @@ def sw_dir_cor_svf(
         int offset_gc,
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
-        int hori_azim_num=72,
+        int hori_azim_num=90,
+        float hori_acc=1.0,
+        str ray_algorithm="guess_constant",
+        float elev_ang_low_lim = -15.0,
         str geom_type="grid",
         float ang_max=89.0,
         float sw_dir_cor_max=25.0):
@@ -76,6 +82,13 @@ def sw_dir_cor_svf(
         Search distance for topographic shadowing [kilometre]
     hori_azim_num : int
         Number of azimuth sectors for horizon computation
+    hori_acc : float
+        Accuracy of horizon computation [degree]
+    ray_algorithm : str
+        Algorithm for horizon detection (discrete_sampling, binary_search,
+        guess_constant)
+    elev_ang_low_lim : float
+        Lower limit for elevation angle search [degree]
     geom_type : str
         Embree geometry type (triangle, quad, grid)
     ang_max : float
@@ -124,6 +137,11 @@ def sw_dir_cor_svf(
         raise TypeError("data type of mask must be 'uint8'")
     if dist_search < 0.1:
         raise ValueError("'dist_search' must be at least 100.0 m")
+    if hori_acc > 10.0:
+        raise ValueError("limit of hori_acc (10 degree) is exceeded")
+    if ray_algorithm not in ("discrete_sampling", "binary_search",
+                             "guess_constant"):
+        raise ValueError("invalid input argument for ray_algorithm")
     if geom_type not in ("triangle", "quad", "grid"):
         raise ValueError("invalid input argument for geom_type")
     if (ang_max < 85.0) or (ang_max > 89.99):
@@ -142,6 +160,7 @@ def sw_dir_cor_svf(
     sun_pos = np.ascontiguousarray(sun_pos)
 
     # Convert input strings to bytes
+    ray_algorithm_c = ray_algorithm.encode("utf-8")
     geom_type_c = geom_type.encode("utf-8")
 
     # Allocate array for shortwave correction factors
@@ -157,6 +176,7 @@ def sw_dir_cor_svf(
     # because subgrid correction values are iteratively added) -> probably no longer needed with horizon...
     cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
         sky_view_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
+    sky_view_factor.fill(0.0)  # accumulated over pixels within grid cell
 
     sw_dir_cor_svf_comp(
         &vert_grid[0],
@@ -172,6 +192,9 @@ def sw_dir_cor_svf(
         &mask[0, 0],
         dist_search,
         hori_azim_num,
+        hori_acc,
+        ray_algorithm_c,
+        elev_ang_low_lim,
         geom_type_c,
         ang_max,
         sw_dir_cor_max)
