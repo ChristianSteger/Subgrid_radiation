@@ -35,8 +35,9 @@ dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
 ang_max = 89.5
 sw_dir_cor_max = 20.0
-hori_azim_num = 60  # 90
-hori_acc = 1.5  # 1.0
+# hori_azim_num, hori_acc = 45, 2.0
+hori_azim_num, hori_acc = 60, 1.5
+# hori_azim_num, hori_acc = 72, 1.25
 ray_algorithm = "guess_constant"
 elev_ang_low_lim = -85.0  # -15.0
 
@@ -84,8 +85,8 @@ offset_gc = 10
 num_gc_y = int((x.shape[0] - 1) / pixel_per_gc) - 2 * offset_gc
 num_gc_x = int((x.shape[1] - 1) / pixel_per_gc) - 2 * offset_gc
 mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
-# mask[:] = 0
-# mask[:40, :40] = 1
+#mask[:] = 0
+#mask[20:40, 20:40] = 1
 
 # Merge vertex coordinates and pad geometry buffer
 dem_dim_0, dem_dim_1 = x.shape
@@ -128,34 +129,28 @@ sw_dir_cor, sky_view_factor, area_increase_factor, sky_view_area_factor \
         elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type,
         ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 
-# Test plot
-plt.figure()
-plt.pcolormesh(sky_view_factor)
-plt.colorbar()
-plt.title("Sky view factor [-]")
-plt.figure()
-plt.pcolormesh(area_increase_factor)
-plt.colorbar()
-plt.title("Area increase factor [-]")
-plt.figure()
-plt.pcolormesh(sky_view_area_factor)
-plt.colorbar()
-plt.title("Sky view area factor [-]")
+# Test plot for sky view factor related quantities
+data_2d = {"sky_view_factor": sky_view_factor,
+            "area_increase_factor": area_increase_factor,
+            "sky_view_area_factor": sky_view_area_factor}
+for i in data_2d.keys():
+    plt.figure()
+    plt.pcolormesh(data_2d[i])
+    plt.colorbar()
+    plt.title(i.replace("_", " ") + " [-]", fontweight="bold", loc="left", y=1.01, fontsize=13)
+    txt = "(min/max: %.3f" % np.nanmin(data_2d[i]) + ", %.3f" % np.nanmax(data_2d[i]) + ")"
+    plt.title(txt, loc="right", y=1.01, fontsize=12)
 print("Spatial mean of sky view area factor: %.2f"
-      % np.nanmean(sky_view_area_factor))
+      % np.nanmean(data_2d["sky_view_area_factor"]))
 
-# Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
-      + ", %.2f" % np.nanmax(sw_dir_cor) + "]")
-
-# Test plot
+# Test plot for f_cor
 if plot:
     levels = np.arange(0.0, 2.0, 0.2)
     cmap = cm.roma_r
     norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=False,
                                    extend="max")
     plt.figure()
-    ind_2, ind_3 = 3, 0  # 3, 0
+    ind_2, ind_3 = 5, 0  # 3, 0
     plt.pcolormesh(sw_dir_cor[:, :, ind_2, ind_3], cmap=cmap, norm=norm)
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")
@@ -164,17 +159,6 @@ if plot:
               + ", %.2f" % lu_lon[ind_3] + " [degree]",
               fontsize=12, fontweight="bold", y=1.01)
     print("Spatially averaged 'sw_dir_cor': %.5f"
-          % sw_dir_cor[:, :, ind_2, ind_3].mean())
-
-# Test plot (sky view factor)
-plt.figure()
-plt.pcolormesh(sky_view_factor)
-plt.colorbar()
-
-
-# Test
-horizon = np.arange(hori_azim_num)
-horizon = np.append(horizon, horizon[0])
-num = int(hori_azim_num / 4)
-for i in range(4):
-    print(horizon[(num * i):(num * (i + 1) + 1)])
+          % np.nanmean(sw_dir_cor[:, :, ind_2, ind_3]))
+print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
+      + ", %.2f" % np.nanmax(sw_dir_cor) + "]")

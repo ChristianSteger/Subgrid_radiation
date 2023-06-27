@@ -786,9 +786,8 @@ void sw_dir_cor_svf_comp(
 			if (mask[lin_ind_gc] == 1) {
 
 			float* horizon = new float[hori_azim_num + 1];
-			// save horizon in 'periodical' array for interpolation...
-			float* horizon_quad_min = new float[4];
-			float* horizon_quad_max = new float[4];
+			float* horizon_sin = new float[hori_azim_num + 1];
+			// save horizon in 'periodical' array for interpolation
 
 			// Loop through 2D-field of DEM pixels
 			for (size_t k = (i * pixel_per_gc);
@@ -970,17 +969,31 @@ void sw_dir_cor_svf_comp(
 						// Loop through sun positions and compute correction
 						// factors
 						//-----------------------------------------------------
-						
-						// Compute minimal/maximal horizon per quadrant
-						horizon[hori_azim_num] = horizon[0];
-						// sun azimuth angle is between [0.0, 360.0] degree
-						// (including 360.0 deg!)
-						float horizon_min = 90.0;
-						float horizon_max = 0.0;
-						for (size_t o = 0; o < 4; o++) {
-						
+
+						// Compute sine of horizon
+						for (size_t o = 0; o < hori_azim_num; o++) {
+							horizon_sin[o] = sin(horizon[o]);
 						}
-						
+
+						// Make horizon data periodical
+						horizon[hori_azim_num] = horizon[0];
+						horizon_sin[hori_azim_num] = horizon_sin[0];
+
+						// Compute minimal/maximal of sine of horizon
+						float horizon_sin_min = 1.0;
+						float horizon_sin_max = -1.0;
+						for (size_t p = 0; p < hori_azim_num; p++) {
+							if (horizon_sin[p] < horizon_sin_min) {
+								horizon_sin_min = horizon_sin[p];
+							}
+							if (horizon_sin[p] > horizon_sin_max) {
+								horizon_sin_max = horizon_sin[p];
+							}
+						}
+						if (horizon_sin_min < 0.0) {
+							horizon_sin_min = 0.0;
+						}
+
 						size_t ind_lin_sun, ind_lin_cor;
 						for (size_t o = 0; o < dim_sun_0; o++) {
 							for (size_t p = 0; p < dim_sun_1; p++) {
@@ -998,49 +1011,80 @@ void sw_dir_cor_svf_comp(
   								float sun_z = (sun_pos[ind_lin_sun + 2]
   									- ray_org_z);
   								vec_unit(sun_x, sun_y, sun_z);
-   								
+
 								// Rotate sun vector from global to local ENU
 								// coordinate system
-								float sun_global[3] = {sun_x, sun_y,
-														sun_z};
+								float sun_global[3] = {sun_x, sun_y, sun_z};
 								float sun_local[3];
 								mat_vec_mult(rot, sun_global, sun_local);
-  								
+
 								// Check for terrain or self-shadowing
-// 								float sun_elev = asin(sun_local[2]);
-// 								float sun_azim = atan2(sun_local[0],
-// 													   sun_local[1]);
-// 								if (sun_azim < 0.0) {
-// 									sun_azim += (2.0 * M_PI);
-// 								}
-// 								sun azimuth angle in range [0.0, 2.0 * pi]
-// 								int ind_0 = int(sun_azim / azim_spac);							
-// 								float weight = (sun_azim
-// 									- (ind_0 * azim_spac)) / azim_spac;
-// 								float horizon_sun = horizon[ind_0] 
-// 									* (1.0 - weight)
-// 									+ horizon[ind_0 + 1] * weight;
-// 								if (sun_elev <= horizon_sun) {
-// 									continue;								
-// 								}
-								
+								bool check_horizon_sun = true;
+								if (sun_local[2] <= horizon_sin_min) {
+									continue;  // shadow (+= 0.0)
+								} else if (sun_local[2] > horizon_sin_max) {
+									check_horizon_sun = false;  // illuminated
+								}
+								if (check_horizon_sun) {
+
+									float sun_azim = atan2(sun_local[0],
+														   sun_local[1]);
+									if (sun_azim < 0.0) {
+										sun_azim += (2.0 * M_PI);
+									}
+									// sun azimuth angle in range [0.0, 2.0 * pi]
+									int ind_0 = int(sun_azim / azim_spac);
+									float weight = (sun_azim
+										- (ind_0 * azim_spac)) / azim_spac;
+									float horizon_sin_sun = horizon_sin[ind_0]
+										* (1.0 - weight)
+										+ horizon_sin[ind_0 + 1] * weight;
+									if (sun_local[2] <= horizon_sin_sun) {
+										continue;  // shadow (+= 0.0)
+									}
+								}
+
 								// Compute correction factor for illuminated
 								// case
 								float dot_prod_hs = (norm_hori_x * sun_x
 									+ norm_hori_y * sun_y
 									+ norm_hori_z * sun_z);
+								if (dot_prod_hs < dot_prod_min) {
+									dot_prod_hs = dot_prod_min;
+								}
   								float dot_prod_ts = norm_tilt_x * sun_x
   									+ norm_tilt_y * sun_y
   									+ norm_tilt_z * sun_z;
-								if (dot_prod_hs < dot_prod_min) {
-									dot_prod_hs = dot_prod_min;
+								if (dot_prod_ts < dot_prod_min) {
+									dot_prod_ts = dot_prod_min;
 								}
   								sw_dir_cor[ind_lin_cor] =
   									sw_dir_cor[ind_lin_cor]
   									+ std::min(((dot_prod_ts
   									/ dot_prod_hs) * surf_enl_fac),
   									sw_dir_cor_max);
-  									//sw_dir_cor_max + sun_elev + sun_azim); ////////////// temporary!
+
+//   								float temp = std::min(((dot_prod_ts / dot_prod_hs) * surf_enl_fac), sw_dir_cor_max);
+//   								if (temp < -0.1) {
+//   									cout << "sw_dir_cor_subgrid " << temp << endl;
+//   									cout << "------------------------------------" << endl;
+//   									cout << "dot_prod_ts " << dot_prod_ts << endl;
+//   									cout << "dot_prod_hs " << dot_prod_hs << endl;
+//   									cout << "surf_enl_fac " << surf_enl_fac << endl;
+//   									cout << "------------------------------------" << endl;
+//   									cout << "sun: " << sun_x << ", " << sun_y << ", " << sun_z << endl;
+//   									cout << "norm_tilt: " << norm_tilt_x << ", " << norm_tilt_y << ", " << norm_tilt_z << endl;
+//   									cout << "------------------------------------" << endl;
+//   									cout << "horizon_sin_min " << horizon_sin_min << endl;
+//   									cout << "horizon_sin_max " << horizon_sin_max << endl;
+//   									cout << "sun_local[2]" << sun_local[2] << endl;
+//   									cout << "------------------------------------" << endl;
+//   									for (size_t q = 0; q < hori_azim_num; q++) {
+//   										cout << rad2deg(horizon[q]) << endl;
+//   									}
+//   									cout << "------------------------------------" << endl;
+//   									return;
+//  								}
 
 							}
 						}
@@ -1051,8 +1095,7 @@ void sw_dir_cor_svf_comp(
 			}
 
 			delete[] horizon;
-			delete[] horizon_quad_min;
-			delete[] horizon_quad_max;
+			delete[] horizon_sin;
 
 			} else {
 			
@@ -1077,10 +1120,18 @@ void sw_dir_cor_svf_comp(
 	auto end_ray = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time_ray = (end_ray - start_ray);
   	cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
+
+	// Print number of rays needed for location and azimuth direction
   	cout << "Number of rays shot: " << num_rays << endl;
-  	float frac_ray = (float)num_rays /
-  		((float)num_tri * (float)dim_sun_0 * (float)dim_sun_1);
-  	cout << "Fraction of rays required: " << frac_ray << endl;
+  	int gc_proc = 0;
+  	for (size_t i = 0; i < (num_gc_y * num_gc_x); i++) {
+		if (mask[i] == 1) {
+			gc_proc += 1;
+		}
+	}
+	int tri_proc = (gc_proc * pixel_per_gc * pixel_per_gc * 2) * hori_azim_num;
+  	float ratio = (float)num_rays / (float)tri_proc;
+  	printf("Average number of rays per location and azimuth: %.2f \n", ratio);
 
   	// Divide accumulated values by number of triangles within grid cell
   	float num_tri_per_gc = pixel_per_gc * pixel_per_gc * 2.0;
