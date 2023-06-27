@@ -57,40 +57,40 @@ inline float rad2deg(float ang) {
 
 // Linear index from subscripts (2D-array)
 inline size_t lin_ind_2d(size_t dim_1, size_t ind_0, size_t ind_1) {
-	/* Parameters
+    /* Parameters
        ----------
-	   dim_1: second dimension length of two-dimensional array [-]
-	   ind_0: first array indices [-]
-	   ind_1: second array indices [-]
+       dim_1: second dimension length of two-dimensional array [-]
+       ind_0: first array indices [-]
+       ind_1: second array indices [-]
 
-	   Returns
+       Returns
        ----------
-	   ind_lin: linear index of array [-]
-	*/
-	return (ind_0 * dim_1 + ind_1);
+       ind_lin: linear index of array [-]
+    */
+    return (ind_0 * dim_1 + ind_1);
 }
 
 // Linear index from subscripts (3D-array)
 inline size_t lin_ind_3d(size_t dim_1, size_t dim_2,
-	size_t ind_0, size_t ind_1, size_t ind_2) {
-	/* Parameters
+    size_t ind_0, size_t ind_1, size_t ind_2) {
+    /* Parameters
        ----------
-	   dim_1: second dimension length of three-dimensional array [-]
-	   dim_2: third dimension length of three-dimensional array [-]
-	   ind_0: first array indices [-]
-	   ind_1: second array indices [-]
-	   ind_2: third array indices [-]
+       dim_1: second dimension length of three-dimensional array [-]
+       dim_2: third dimension length of three-dimensional array [-]
+       ind_0: first array indices [-]
+       ind_1: second array indices [-]
+       ind_2: third array indices [-]
 
-	   Returns
+       Returns
        ----------
-	   ind_lin: linear index of array [-]
-	*/
-	return (ind_0 * (dim_1 * dim_2) + ind_1 * dim_2 + ind_2);
+       ind_lin: linear index of array [-]
+    */
+    return (ind_0 * (dim_1 * dim_2) + ind_1 * dim_2 + ind_2);
 }
 
 // Linear index from subscripts (4D-array)
 inline size_t lin_ind_4d(size_t dim_1, size_t dim_2, size_t dim_3,
-	size_t ind_0, size_t ind_1, size_t ind_2, size_t ind_3) {
+    size_t ind_0, size_t ind_1, size_t ind_2, size_t ind_3) {
 	/* Parameters
        ----------
 	   dim_1: second dimension length of four-dimensional array [-]
@@ -115,48 +115,48 @@ inline size_t lin_ind_4d(size_t dim_1, size_t dim_2, size_t dim_3,
 
 // Unit vector
 inline void vec_unit(float &v_x, float &v_y, float &v_z) {
-	/* Parameters
+    /* Parameters
        ----------
-	   v_x: x-component of vector [arbitrary]
-	   v_y: y-component of vector [arbitrary]
-	   v_z: z-component of vector [arbitrary]
-	*/
-	   float mag = sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
-	   v_x = v_x / mag;
-	   v_y = v_y / mag;
-	   v_z = v_z / mag;
+       v_x: x-component of vector [arbitrary]
+       v_y: y-component of vector [arbitrary]
+       v_z: z-component of vector [arbitrary]
+    */
+    float mag = sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
+    v_x = v_x / mag;
+    v_y = v_y / mag;
+    v_z = v_z / mag;
 }
 
 // Cross product
 inline void cross_prod(float a_x, float a_y, float a_z, float b_x, float b_y,
-	float b_z, float &c_x, float &c_y, float &c_z) {
-	/* Parameters
+    float b_z, float &c_x, float &c_y, float &c_z) {
+    /* Parameters
        ----------
-	   a_x: x-component of vector a [arbitrary]
-	   a_y: y-component of vector a [arbitrary]
-	   a_z: z-component of vector a [arbitrary]
-	   b_x: x-component of vector b [arbitrary]
-	   b_y: y-component of vector b [arbitrary]
-	   b_z: z-component of vector b [arbitrary]
-	   c_x: x-component of vector c [arbitrary]
-	   c_y: y-component of vector c [arbitrary]
-	   c_z: z-component of vector c [arbitrary]
-	*/
-	c_x = a_y * b_z - a_z * b_y;
+       a_x: x-component of vector a [arbitrary]
+       a_y: y-component of vector a [arbitrary]
+       a_z: z-component of vector a [arbitrary]
+       b_x: x-component of vector b [arbitrary]
+       b_y: y-component of vector b [arbitrary]
+       b_z: z-component of vector b [arbitrary]
+       c_x: x-component of vector c [arbitrary]
+       c_y: y-component of vector c [arbitrary]
+       c_z: z-component of vector c [arbitrary]
+    */
+    c_x = a_y * b_z - a_z * b_y;
     c_y = a_z * b_x - a_x * b_z;
     c_z = a_x * b_y - a_y * b_x;
 }
 
 // Matrix-vector multiplication
 inline void mat_vec_mult(float (&mat)[3][3], float (&vec)[3],
-	float (&vec_res)[3]) {
-	/* Parameters
+    float (&vec_res)[3]) {
+    /* Parameters
        ----------
-	   mat: matrix with 3 x 3 elements [arbitrary]
-	   vec: vector with 3 elements [arbitrary]
-	   vec_res: resulting vector with 3 elements [arbitrary]
-	*/
-	vec_res[0] = mat[0][0] * vec[0] + mat[0][1] * vec[1] + mat[0][2] * vec[2];
+       mat: matrix with 3 x 3 elements [arbitrary]
+       vec: vector with 3 elements [arbitrary]
+       vec_res: resulting vector with 3 elements [arbitrary]
+    */
+    vec_res[0] = mat[0][0] * vec[0] + mat[0][1] * vec[1] + mat[0][2] * vec[2];
     vec_res[1] = mat[1][0] * vec[0] + mat[1][1] * vec[1] + mat[1][2] * vec[2];
     vec_res[2] = mat[2][0] * vec[0] + mat[2][1] * vec[1] + mat[2][2] * vec[2];
 
@@ -168,79 +168,79 @@ inline void mat_vec_mult(float (&mat)[3][3], float (&vec)[3],
 
 // Triangle surface normal and area
 inline void triangle_normal_area(
-	float &vert_0_x, float &vert_0_y, float &vert_0_z,
-	float &vert_1_x, float &vert_1_y, float &vert_1_z,
-	float &vert_2_x, float &vert_2_y, float &vert_2_z,
-	float &norm_x, float &norm_y, float &norm_z,
-	float &area) {
-	/* Parameters
+    float &vert_0_x, float &vert_0_y, float &vert_0_z,
+    float &vert_1_x, float &vert_1_y, float &vert_1_z,
+    float &vert_2_x, float &vert_2_y, float &vert_2_z,
+    float &norm_x, float &norm_y, float &norm_z,
+    float &area) {
+    /* Parameters
        ----------
-	   vert_0_x: x-component of first triangle vertices [m]
-	   vert_0_y: y-component of first triangle vertices [m]
-	   vert_0_z: z-component of first triangle vertices [m]
-	   vert_1_x: x-component of second triangle vertices [m]
-	   vert_1_y: y-component of second triangle vertices [m]
-	   vert_1_z: z-component of second triangle vertices [m]
-	   vert_2_x: x-component of third triangle vertices [m]
-	   vert_2_y: y-component of third triangle vertices [m]
-	   vert_2_z: z-component of third triangle vertices [m]
-	   norm_x: x-component of triangle surface normal [-]
-	   norm_y: y-component of triangle surface normal [-]
-	   norm_z: z-component of triangle surface normal [-]
-	   area: area of triangle [m2]
-	*/
-	float a_x = vert_2_x - vert_1_x;
-	float a_y = vert_2_y - vert_1_y;
-	float a_z = vert_2_z - vert_1_z;
-	float b_x = vert_0_x - vert_1_x;
-	float b_y = vert_0_y - vert_1_y;
-	float b_z = vert_0_z - vert_1_z;
+       vert_0_x: x-component of first triangle vertices [m]
+       vert_0_y: y-component of first triangle vertices [m]
+       vert_0_z: z-component of first triangle vertices [m]
+       vert_1_x: x-component of second triangle vertices [m]
+       vert_1_y: y-component of second triangle vertices [m]
+       vert_1_z: z-component of second triangle vertices [m]
+       vert_2_x: x-component of third triangle vertices [m]
+       vert_2_y: y-component of third triangle vertices [m]
+       vert_2_z: z-component of third triangle vertices [m]
+       norm_x: x-component of triangle surface normal [-]
+       norm_y: y-component of triangle surface normal [-]
+       norm_z: z-component of triangle surface normal [-]
+       area: area of triangle [m2]
+    */
+    float a_x = vert_2_x - vert_1_x;
+    float a_y = vert_2_y - vert_1_y;
+    float a_z = vert_2_z - vert_1_z;
+    float b_x = vert_0_x - vert_1_x;
+    float b_y = vert_0_y - vert_1_y;
+    float b_z = vert_0_z - vert_1_z;
 
-	norm_x = a_y * b_z - a_z * b_y;
+    norm_x = a_y * b_z - a_z * b_y;
     norm_y = a_z * b_x - a_x * b_z;
     norm_z = a_x * b_y - a_y * b_x;
 
     float mag = sqrt(norm_x * norm_x + norm_y * norm_y + norm_z * norm_z);
-	norm_x = norm_x / mag;
-	norm_y = norm_y / mag;
-	norm_z = norm_z / mag;
+    norm_x = norm_x / mag;
+    norm_y = norm_y / mag;
+    norm_z = norm_z / mag;
 
-	area = mag / 2.0;
+    area = mag / 2.0;
 }
 
 // Triangle centroid
 inline void triangle_centroid(
-	float &vert_0_x, float &vert_0_y, float &vert_0_z,
-	float &vert_1_x, float &vert_1_y, float &vert_1_z,
-	float &vert_2_x, float &vert_2_y, float &vert_2_z,
-	float &cent_x, float &cent_y, float &cent_z) {
-	/* Parameters
+    float &vert_0_x, float &vert_0_y, float &vert_0_z,
+    float &vert_1_x, float &vert_1_y, float &vert_1_z,
+    float &vert_2_x, float &vert_2_y, float &vert_2_z,
+    float &cent_x, float &cent_y, float &cent_z) {
+    /* Parameters
        ----------
-	   vert_0_x: x-component of first triangle vertices [m]
-	   vert_0_y: y-component of first triangle vertices [m]
-	   vert_0_z: z-component of first triangle vertices [m]
-	   vert_1_x: x-component of second triangle vertices [m]
-	   vert_1_y: y-component of second triangle vertices [m]
-	   vert_1_z: z-component of second triangle vertices [m]
-	   vert_2_x: x-component of third triangle vertices [m]
-	   vert_2_y: y-component of third triangle vertices [m]
-	   vert_2_z: z-component of third triangle vertices [m]
-	   cent_x: x-component of triangle centroid [-]
-	   cent_y: y-component of triangle centroid [-]
-	   cent_z: z-component of triangle centroid [-]
-	*/
-	cent_x = (vert_0_x + vert_1_x + vert_2_x) / 3.0;
-	cent_y = (vert_0_y + vert_1_y + vert_2_y) / 3.0;
-	cent_z = (vert_0_z + vert_1_z + vert_2_z) / 3.0;
+       vert_0_x: x-component of first triangle vertices [m]
+       vert_0_y: y-component of first triangle vertices [m]
+       vert_0_z: z-component of first triangle vertices [m]
+       vert_1_x: x-component of second triangle vertices [m]
+       vert_1_y: y-component of second triangle vertices [m]
+       vert_1_z: z-component of second triangle vertices [m]
+       vert_2_x: x-component of third triangle vertices [m]
+       vert_2_y: y-component of third triangle vertices [m]
+       vert_2_z: z-component of third triangle vertices [m]
+       cent_x: x-component of triangle centroid [-]
+       cent_y: y-component of triangle centroid [-]
+       cent_z: z-component of triangle centroid [-]
+    */
+    cent_x = (vert_0_x + vert_1_x + vert_2_x) / 3.0;
+    cent_y = (vert_0_y + vert_1_y + vert_2_y) / 3.0;
+    cent_z = (vert_0_z + vert_1_z + vert_2_z) / 3.0;
 }
 
 // Vertices of lower left triangle (within pixel)
 inline void triangle_vert_ll(size_t dim_1, size_t ind_0, size_t ind_1,
-	size_t &ind_tri_0, size_t &ind_tri_1, size_t &ind_tri_2) {
-	/* Parameters
+    size_t &ind_tri_0, size_t &ind_tri_1, size_t &ind_tri_2) {
+    /* Parameters
        ----------
 
-	*/
+    */
     ind_tri_0 = (ind_0 * dim_1 + ind_1) * 3;
     ind_tri_1 = (ind_0 * dim_1 + ind_1 + 1) * 3;
     ind_tri_2 = ((ind_0 + 1) * dim_1 + ind_1) * 3;
@@ -248,21 +248,20 @@ inline void triangle_vert_ll(size_t dim_1, size_t ind_0, size_t ind_1,
 
 // Vertices of upper right triangle (within pixel)
 inline void triangle_vert_ur(size_t dim_1, size_t ind_0, size_t ind_1,
-	size_t &ind_tri_0, size_t &ind_tri_1, size_t &ind_tri_2) {
-	/* Parameters
+    size_t &ind_tri_0, size_t &ind_tri_1, size_t &ind_tri_2) {
+    /* Parameters
        ----------
 
-	*/
+    */
     ind_tri_0 = (ind_0 * dim_1 + ind_1 + 1) * 3;
     ind_tri_1 = ((ind_0 + 1) * dim_1 + ind_1 + 1) * 3;
     ind_tri_2 = ((ind_0 + 1) * dim_1 + ind_1) * 3;
-
 }
 
 // Store above two functions in array
 void (*func_ptr[2])(size_t dim_1, size_t ind_0, size_t ind_1,
-	size_t &ind_tri_0, size_t &ind_tri_1, size_t &ind_tri_2)
-	= {triangle_vert_ll, triangle_vert_ur};
+    size_t &ind_tri_0, size_t &ind_tri_1, size_t &ind_tri_2)
+    = {triangle_vert_ll, triangle_vert_ur};
 
 //#############################################################################
 // Miscellaneous
@@ -270,22 +269,22 @@ void (*func_ptr[2])(size_t dim_1, size_t ind_0, size_t ind_1,
 
 // Namespace
 #if defined(RTC_NAMESPACE_USE)
-	RTC_NAMESPACE_USE
+    RTC_NAMESPACE_USE
 #endif
 
 // Error function
 void errorFunction(void* userPtr, enum RTCError error, const char* str) {
-	printf("error %d: %s\n", error, str);
+    printf("error %d: %s\n", error, str);
 }
 
 // Initialisation of device and registration of error handler
 RTCDevice initializeDevice() {
-	RTCDevice device = rtcNewDevice(NULL);
-  	if (!device) {
-    	printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));
+    RTCDevice device = rtcNewDevice(NULL);
+    if (!device) {
+        printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));
     }
-  	rtcSetDeviceErrorFunction(device, errorFunction, NULL);
-  	return device;
+    rtcSetDeviceErrorFunction(device, errorFunction, NULL);
+    return device;
 }
 
 //#############################################################################
@@ -302,104 +301,104 @@ struct Quad { int v0, v1, v2, v3; };
 
 // Initialise scene
 RTCScene initializeScene(RTCDevice device, float* vert_grid,
-	int dem_dim_0, int dem_dim_1, char* geom_type) {
+    int dem_dim_0, int dem_dim_1, char* geom_type) {
 
-	RTCScene scene = rtcNewScene(device);
-  	rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
+    RTCScene scene = rtcNewScene(device);
+    rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
 
-  	int num_vert = (dem_dim_0 * dem_dim_1);
-  	printf("DEM dimensions: (%d, %d) \n", dem_dim_0, dem_dim_1);
-  	printf("Number of vertices: %d \n", num_vert);
+    int num_vert = (dem_dim_0 * dem_dim_1);
+    printf("DEM dimensions: (%d, %d) \n", dem_dim_0, dem_dim_1);
+    printf("Number of vertices: %d \n", num_vert);
 
-	RTCGeometryType rtc_geom_type;
-	if (strcmp(geom_type, "triangle") == 0) {
-  		rtc_geom_type = RTC_GEOMETRY_TYPE_TRIANGLE;
-  	} else if (strcmp(geom_type, "quad") == 0) {
-  		rtc_geom_type = RTC_GEOMETRY_TYPE_QUAD;
-  	} else {
-  		rtc_geom_type = RTC_GEOMETRY_TYPE_GRID;
-  	}
+    RTCGeometryType rtc_geom_type;
+    if (strcmp(geom_type, "triangle") == 0) {
+        rtc_geom_type = RTC_GEOMETRY_TYPE_TRIANGLE;
+    } else if (strcmp(geom_type, "quad") == 0) {
+        rtc_geom_type = RTC_GEOMETRY_TYPE_QUAD;
+    } else {
+        rtc_geom_type = RTC_GEOMETRY_TYPE_GRID;
+    }
 
-  	RTCGeometry geom = rtcNewGeometry(device, rtc_geom_type);
-  	rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
-  		RTC_FORMAT_FLOAT3, vert_grid, 0, 3*sizeof(float), num_vert);
+    RTCGeometry geom = rtcNewGeometry(device, rtc_geom_type);
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+        RTC_FORMAT_FLOAT3, vert_grid, 0, 3*sizeof(float), num_vert);
 
-	//-------------------------------------------------------------------------
-	// Triangle
-	//-------------------------------------------------------------------------
-	if (strcmp(geom_type, "triangle") == 0) {
-		cout << "Selected geometry type: triangle" << endl;
-  		int num_tri = ((dem_dim_0 - 1) * (dem_dim_1 - 1)) * 2;
-  		printf("Number of triangles: %d \n", num_tri);
-  		Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,
-  			RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(Triangle),
-  			num_tri);
-  		int n = 0;
-  		for (int i = 0; i < (dem_dim_0 - 1); i++) {
-  			for (int j = 0; j < (dem_dim_1 - 1); j++) {
-  	  			triangles[n].v0 = (i * dem_dim_1) + j;
-  	  			triangles[n].v1 = (i * dem_dim_1) + j + 1;
-  	  			triangles[n].v2 = ((i + 1) * dem_dim_1) + j;
-	  			n++;
-  	  			triangles[n].v0 = (i * dem_dim_1) + j + 1;
-  	  			triangles[n].v1 = ((i + 1) * dem_dim_1) + j + 1;
-  	  			triangles[n].v2 = ((i + 1) * dem_dim_1) + j;
-  	  			n++;
-  			}
-  		}
-	//-------------------------------------------------------------------------
-	// Quad
-	//-------------------------------------------------------------------------
-  	} else if (strcmp(geom_type, "quad") == 0) {
-  		cout << "Selected geometry type: quad" << endl;
-		int num_quad = ((dem_dim_0 - 1) * (dem_dim_1 - 1));
-  		printf("Number of quads: %d \n", num_quad);
-  		Quad* quads = (Quad*) rtcSetNewGeometryBuffer(geom,
-  			RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, sizeof(Quad),
-  			num_quad);
-  		int n = 0;
-  		for (int i = 0; i < (dem_dim_0 - 1); i++) {
-  			for (int j = 0; j < (dem_dim_1 - 1); j++) {
-  			//  identical to grid scene (-> otherwise reverse v0, v1, ...)
-  	  		quads[n].v0 = (i * dem_dim_1) + j;
-  	  		quads[n].v1 = (i * dem_dim_1) + j + 1;
-  	  		quads[n].v2 = ((i + 1) * dem_dim_1) + j + 1;
-  	  		quads[n].v3 = ((i + 1) * dem_dim_1) + j;
-  	  		n++;
-  		}
-  	}
-	//-------------------------------------------------------------------------
-	// Grid
-	//-------------------------------------------------------------------------
-  	} else {
-  		cout << "Selected geometry type: grid" << endl;
-		RTCGrid* grid = (RTCGrid*)rtcSetNewGeometryBuffer(geom,
-			RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_GRID, sizeof(RTCGrid), 1);
-    	grid[0].startVertexID = 0;
-    	grid[0].stride        = dem_dim_1;
-    	grid[0].width         = dem_dim_1;
-    	grid[0].height        = dem_dim_0;
-  	}
-	//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+    // Triangle
+    //-------------------------------------------------------------------------
+    if (strcmp(geom_type, "triangle") == 0) {
+        cout << "Selected geometry type: triangle" << endl;
+        int num_tri = ((dem_dim_0 - 1) * (dem_dim_1 - 1)) * 2;
+        printf("Number of triangles: %d \n", num_tri);
+        Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,
+            RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(Triangle),
+            num_tri);
+        int n = 0;
+        for (int i = 0; i < (dem_dim_0 - 1); i++) {
+            for (int j = 0; j < (dem_dim_1 - 1); j++) {
+                triangles[n].v0 = (i * dem_dim_1) + j;
+                triangles[n].v1 = (i * dem_dim_1) + j + 1;
+                triangles[n].v2 = ((i + 1) * dem_dim_1) + j;
+                n++;
+                triangles[n].v0 = (i * dem_dim_1) + j + 1;
+                triangles[n].v1 = ((i + 1) * dem_dim_1) + j + 1;
+                triangles[n].v2 = ((i + 1) * dem_dim_1) + j;
+                n++;
+            }
+        }
+    //-------------------------------------------------------------------------
+    // Quad
+    //-------------------------------------------------------------------------
+    } else if (strcmp(geom_type, "quad") == 0) {
+        cout << "Selected geometry type: quad" << endl;
+        int num_quad = ((dem_dim_0 - 1) * (dem_dim_1 - 1));
+        printf("Number of quads: %d \n", num_quad);
+        Quad* quads = (Quad*) rtcSetNewGeometryBuffer(geom,
+            RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, sizeof(Quad),
+            num_quad);
+        int n = 0;
+        for (int i = 0; i < (dem_dim_0 - 1); i++) {
+            for (int j = 0; j < (dem_dim_1 - 1); j++) {
+                //  identical to grid scene (-> otherwise reverse v0, v1, ...)
+                quads[n].v0 = (i * dem_dim_1) + j;
+                quads[n].v1 = (i * dem_dim_1) + j + 1;
+                quads[n].v2 = ((i + 1) * dem_dim_1) + j + 1;
+                quads[n].v3 = ((i + 1) * dem_dim_1) + j;
+                n++;
+            }
+        }
+    //-------------------------------------------------------------------------
+    // Grid
+    //-------------------------------------------------------------------------
+    } else {
+        cout << "Selected geometry type: grid" << endl;
+        RTCGrid* grid = (RTCGrid*)rtcSetNewGeometryBuffer(geom,
+            RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_GRID, sizeof(RTCGrid), 1);
+        grid[0].startVertexID = 0;
+        grid[0].stride        = dem_dim_1;
+        grid[0].width         = dem_dim_1;
+        grid[0].height        = dem_dim_0;
+    }
+    //-------------------------------------------------------------------------
 
-	auto start = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
 
-	// Commit geometry
-	rtcCommitGeometry(geom);
+    // Commit geometry
+    rtcCommitGeometry(geom);
 
-	rtcAttachGeometry(scene, geom);
-	rtcReleaseGeometry(geom);
+    rtcAttachGeometry(scene, geom);
+    rtcReleaseGeometry(geom);
 
-	//-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
 
-	// Commit scene
-	rtcCommitScene(scene);
+    // Commit scene
+    rtcCommitScene(scene);
 
-	auto end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> time = end - start;
-	cout << "BVH build time: " << time.count() << " s" << endl;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> time = end - start;
+    cout << "BVH build time: " << time.count() << " s" << endl;
 
-	return scene;
+    return scene;
 
 }
 
@@ -408,30 +407,30 @@ RTCScene initializeScene(RTCDevice device, float* vert_grid,
 //#############################################################################
 
 bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
-	float dy, float dz, float dist_search) {
+    float dy, float dz, float dist_search) {
 
-	// Intersect context
-  	struct RTCIntersectContext context;
-  	rtcInitIntersectContext(&context);
+    // Intersect context
+    struct RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
 
-  	// Ray structure
-  	struct RTCRay ray;
-  	ray.org_x = ox;
-  	ray.org_y = oy;
-  	ray.org_z = oz;
-  	ray.dir_x = dx;
-  	ray.dir_y = dy;
-  	ray.dir_z = dz;
-  	ray.tnear = 0.0;
-  	//ray.tfar = std::numeric_limits<float>::infinity();
-  	ray.tfar = dist_search;
-  	//ray.mask = -1;
-  	//ray.flags = 0;
+    // Ray structure
+    struct RTCRay ray;
+    ray.org_x = ox;
+    ray.org_y = oy;
+    ray.org_z = oz;
+    ray.dir_x = dx;
+    ray.dir_y = dy;
+    ray.dir_z = dz;
+    ray.tnear = 0.0;
+    //ray.tfar = std::numeric_limits<float>::infinity();
+    ray.tfar = dist_search;
+    //ray.mask = -1;
+    //ray.flags = 0;
 
-  	// Intersect ray with scene
-  	rtcOccluded1(scene, &context, &ray);
+    // Intersect ray with scene
+    rtcOccluded1(scene, &context, &ray);
 
-  	return (ray.tfar < 0.0);
+    return (ray.tfar < 0.0);
 
 }
 
@@ -444,35 +443,35 @@ bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
 //-----------------------------------------------------------------------------
 
 void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
-	size_t azim_num, float hori_acc, float dist_search,
-	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
-	RTCScene scene, size_t &num_rays, float* hori_buffer,
-	float* azim_sin, float* azim_cos, float* elev_ang,
-	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
+    size_t azim_num, float hori_acc, float dist_search,
+    float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+    RTCScene scene, size_t &num_rays, float* hori_buffer,
+    float* azim_sin, float* azim_cos, float* elev_ang,
+    float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
 
-  	for (size_t k = 0; k < azim_num; k++) {
+    for (size_t k = 0; k < azim_num; k++) {
 
-		int ind_elev = 0;
-		int ind_elev_prev = 0;
-  		bool hit = true;
-  		while (hit) {
+        int ind_elev = 0;
+        int ind_elev_prev = 0;
+        bool hit = true;
+        while (hit) {
 
-			ind_elev_prev = ind_elev;
-			ind_elev = min(ind_elev + 10, elev_num - 1);
-			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
-							elev_cos[ind_elev] * azim_cos[k],
-							elev_sin[ind_elev]};
-			float ray_rot[3];
-			mat_vec_mult(rot_inv, ray, ray_rot);
-  			hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
-  				dist_search);
-  			num_rays += 1;
+            ind_elev_prev = ind_elev;
+            ind_elev = min(ind_elev + 10, elev_num - 1);
+            float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+                            elev_cos[ind_elev] * azim_cos[k],
+                            elev_sin[ind_elev]};
+            float ray_rot[3];
+            mat_vec_mult(rot_inv, ray, ray_rot);
+            hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+                ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+                dist_search);
+            num_rays += 1;
 
-  		}
-  		hori_buffer[k] = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
+        }
+        hori_buffer[k] = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
 
-  	}
+    }
 
 }
 
@@ -481,46 +480,46 @@ void ray_discrete_sampling(float ray_org_x, float ray_org_y, float ray_org_z,
 //-----------------------------------------------------------------------------
 
 void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
-	size_t azim_num, float hori_acc, float dist_search,
-	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
-	RTCScene scene, size_t &num_rays, float* hori_buffer,
-	float* azim_sin, float* azim_cos, float* elev_ang,
-	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
+    size_t azim_num, float hori_acc, float dist_search,
+    float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+    RTCScene scene, size_t &num_rays, float* hori_buffer,
+    float* azim_sin, float* azim_cos, float* elev_ang,
+    float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
 
-  	for (size_t k = 0; k < azim_num; k++) {
+    for (size_t k = 0; k < azim_num; k++) {
 
-  		float lim_up = elev_ang_up_lim;
-  		float lim_low = elev_ang_low_lim;
-  		float elev_samp = (lim_up + lim_low) / 2.0;
-  		int ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
-  			/ (hori_acc / 5.0)));
+        float lim_up = elev_ang_up_lim;
+        float lim_low = elev_ang_low_lim;
+        float elev_samp = (lim_up + lim_low) / 2.0;
+        int ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+            / (hori_acc / 5.0)));
 
-  		while (max(lim_up - elev_ang[ind_elev],
-  			elev_ang[ind_elev] - lim_low) > hori_acc) {
+        while (max(lim_up - elev_ang[ind_elev],
+            elev_ang[ind_elev] - lim_low) > hori_acc) {
 
-			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
-							elev_cos[ind_elev] * azim_cos[k],
-							elev_sin[ind_elev]};
-			float ray_rot[3];
-			mat_vec_mult(rot_inv, ray, ray_rot);
-  			bool hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
-  				dist_search);
-  			num_rays += 1;
+            float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+                            elev_cos[ind_elev] * azim_cos[k],
+                            elev_sin[ind_elev]};
+            float ray_rot[3];
+            mat_vec_mult(rot_inv, ray, ray_rot);
+            bool hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+                ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+                dist_search);
+            num_rays += 1;
 
-  			if (hit) {
-  				lim_low = elev_ang[ind_elev];
-  			} else {
-  				lim_up = elev_ang[ind_elev];
-  			}
-  			elev_samp = (lim_up + lim_low) / 2.0;
-  			ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
-  				/ (hori_acc / 5.0)));
+            if (hit) {
+                lim_low = elev_ang[ind_elev];
+            } else {
+                lim_up = elev_ang[ind_elev];
+            }
+            elev_samp = (lim_up + lim_low) / 2.0;
+            ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+                / (hori_acc / 5.0)));
 
-  		}
-  		hori_buffer[k] = elev_samp;
+        }
+        hori_buffer[k] = elev_samp;
 
-  	}
+    }
 
 }
 
@@ -529,115 +528,115 @@ void ray_binary_search(float ray_org_x, float ray_org_y, float ray_org_z,
 //-----------------------------------------------------------------------------
 
 void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
-	size_t azim_num, float hori_acc, float dist_search,
-	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
-	RTCScene scene, size_t &num_rays, float* hori_buffer,
-	float* azim_sin, float* azim_cos, float* elev_ang,
-	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
+    size_t azim_num, float hori_acc, float dist_search,
+    float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+    RTCScene scene, size_t &num_rays, float* hori_buffer,
+    float* azim_sin, float* azim_cos, float* elev_ang,
+    float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]) {
 
-	// ------------------------------------------------------------------------
-  	// First azimuth direction (binary search)
-  	// ------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // First azimuth direction (binary search)
+    // ------------------------------------------------------------------------
 
-  	float lim_up = elev_ang_up_lim;
-  	float lim_low = elev_ang_low_lim;
-  	float elev_samp = (lim_up + lim_low) / 2.0;
-  	int ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
-  		/ (hori_acc / 5.0)));
+    float lim_up = elev_ang_up_lim;
+    float lim_low = elev_ang_low_lim;
+    float elev_samp = (lim_up + lim_low) / 2.0;
+    int ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+        / (hori_acc / 5.0)));
 
-  	while (max(lim_up - elev_ang[ind_elev],
-  		elev_ang[ind_elev] - lim_low) > hori_acc) {
+    while (max(lim_up - elev_ang[ind_elev],
+        elev_ang[ind_elev] - lim_low) > hori_acc) {
 
-		float ray[3] = {elev_cos[ind_elev] * azim_sin[0],
-						elev_cos[ind_elev] * azim_cos[0],
-						elev_sin[ind_elev]};
-		float ray_rot[3];
-		mat_vec_mult(rot_inv, ray, ray_rot);
-  		bool hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  			ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
-  			dist_search);
-  		num_rays += 1;
+        float ray[3] = {elev_cos[ind_elev] * azim_sin[0],
+                        elev_cos[ind_elev] * azim_cos[0],
+                        elev_sin[ind_elev]};
+        float ray_rot[3];
+        mat_vec_mult(rot_inv, ray, ray_rot);
+        bool hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+            ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+            dist_search);
+        num_rays += 1;
 
-  		if (hit) {
-  			lim_low = elev_ang[ind_elev];
-  		} else {
-  			lim_up = elev_ang[ind_elev];
-  		}
-  		elev_samp = (lim_up + lim_low) / 2.0;
-  		ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
-  			/ (hori_acc / 5.0)));
+        if (hit) {
+            lim_low = elev_ang[ind_elev];
+        } else {
+            lim_up = elev_ang[ind_elev];
+        }
+        elev_samp = (lim_up + lim_low) / 2.0;
+        ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+            / (hori_acc / 5.0)));
 
-  	}
+    }
 
-  	hori_buffer[0] = elev_samp;
-  	int ind_elev_prev_azim = ind_elev;
+    hori_buffer[0] = elev_samp;
+    int ind_elev_prev_azim = ind_elev;
 
-	// ------------------------------------------------------------------------
-	// Remaining azimuth directions (guess horizon from previous
-	// azimuth direction)
-	// ------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Remaining azimuth directions (guess horizon from previous
+    // azimuth direction)
+    // ------------------------------------------------------------------------
 
-	for (size_t k = 1; k < azim_num; k++) {
+    for (size_t k = 1; k < azim_num; k++) {
 
-		// Move upwards
-		ind_elev = max(ind_elev_prev_azim - 5, 0);
-		int ind_elev_prev = 0;
-		bool hit = true;
-		int count = 0;
-		while (hit) {
+        // Move upwards
+        ind_elev = max(ind_elev_prev_azim - 5, 0);
+        int ind_elev_prev = 0;
+        bool hit = true;
+        int count = 0;
+        while (hit) {
 
-			ind_elev_prev = ind_elev;
-			ind_elev = min(ind_elev + 10, elev_num - 1);
-			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
-							elev_cos[ind_elev] * azim_cos[k],
-							elev_sin[ind_elev]};
-			float ray_rot[3];
-			mat_vec_mult(rot_inv, ray, ray_rot);
-  			hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
-  				dist_search);
-  			num_rays += 1;
-  			count += 1;
+            ind_elev_prev = ind_elev;
+            ind_elev = min(ind_elev + 10, elev_num - 1);
+            float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+                            elev_cos[ind_elev] * azim_cos[k],
+                            elev_sin[ind_elev]};
+            float ray_rot[3];
+            mat_vec_mult(rot_inv, ray, ray_rot);
+            hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+                ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+                dist_search);
+            num_rays += 1;
+            count += 1;
 
-		}
+        }
 
-		if (count > 1) {
+        if (count > 1) {
 
-  			elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
-  			ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
-  				/ (hori_acc / 5.0)));
-  			hori_buffer[k] = elev_ang[ind_elev];
-  			ind_elev_prev_azim = ind_elev;
-  			continue;
+            elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
+            ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+                / (hori_acc / 5.0)));
+            hori_buffer[k] = elev_ang[ind_elev];
+            ind_elev_prev_azim = ind_elev;
+            continue;
 
-		}
+        }
 
-		// Move downwards
-		ind_elev = min(ind_elev_prev_azim + 5, elev_num - 1);
-		hit = false;
-		while (!hit) {
+        // Move downwards
+        ind_elev = min(ind_elev_prev_azim + 5, elev_num - 1);
+        hit = false;
+        while (!hit) {
 
-			ind_elev_prev = ind_elev;
-			ind_elev = max(ind_elev - 10, 0);
-			float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
-							elev_cos[ind_elev] * azim_cos[k],
-							elev_sin[ind_elev]};
-			float ray_rot[3];
-			mat_vec_mult(rot_inv, ray, ray_rot);
-  			hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
-  				ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
-  				dist_search);
-  			num_rays += 1;
+            ind_elev_prev = ind_elev;
+            ind_elev = max(ind_elev - 10, 0);
+            float ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+                            elev_cos[ind_elev] * azim_cos[k],
+                            elev_sin[ind_elev]};
+            float ray_rot[3];
+            mat_vec_mult(rot_inv, ray, ray_rot);
+            hit = castRay_occluded1(scene, ray_org_x, ray_org_y,
+                ray_org_z, ray_rot[0], ray_rot[1], ray_rot[2],
+                dist_search);
+            num_rays += 1;
 
-		}
+        }
 
-  		elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
-  		ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
-  			/ (hori_acc / 5.0)));
-  		hori_buffer[k] = elev_ang[ind_elev];
-  		ind_elev_prev_azim = ind_elev;
+        elev_samp = (elev_ang[ind_elev_prev] + elev_ang[ind_elev]) / 2.0;
+        ind_elev = ((int)roundf((elev_samp - elev_ang_low_lim)
+            / (hori_acc / 5.0)));
+        hori_buffer[k] = elev_ang[ind_elev];
+        ind_elev_prev_azim = ind_elev;
 
-	}
+    }
 
 }
 
@@ -646,19 +645,15 @@ void ray_guess_const(float ray_org_x, float ray_org_y, float ray_org_z,
 //-----------------------------------------------------------------------------
 
 void (*function_pointer)(float ray_org_x, float ray_org_y, float ray_org_z,
-	size_t azim_num, float hori_acc, float dist_search,
-	float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
-	RTCScene scene, size_t &num_rays, float* hori_buffer,
-	float* azim_sin, float* azim_cos, float* elev_ang,
-	float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]);
+    size_t azim_num, float hori_acc, float dist_search,
+    float elev_ang_low_lim, float elev_ang_up_lim, int elev_num,
+    RTCScene scene, size_t &num_rays, float* hori_buffer,
+    float* azim_sin, float* azim_cos, float* elev_ang,
+    float* elev_cos, float* elev_sin, float (&rot_inv)[3][3]);
 
 //#############################################################################
 // Main functions
 //#############################################################################
-
-//-----------------------------------------------------------------------------
-// Default
-//-----------------------------------------------------------------------------
 
 void sw_dir_cor_svf_comp(
 	float* vert_grid,
@@ -914,9 +909,9 @@ void sw_dir_cor_svf_comp(
   				 			
   				 		//}
 
-						//-----------------------------------------------------
-						// Compute sky view factor
-						//-----------------------------------------------------
+                        //-----------------------------------------------------
+                        // Compute sky view factor
+                        //-----------------------------------------------------
 
                         // Rotate tilt vector from global to local ENU
                         // coordinate system
