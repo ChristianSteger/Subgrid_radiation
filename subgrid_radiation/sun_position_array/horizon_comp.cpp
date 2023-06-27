@@ -28,27 +28,27 @@ using namespace std;
 
 // Convert degree to radian
 inline float deg2rad(float ang) {
-	/* Parameters
+    /* Parameters
        ----------
-	   ang: angle [degree]
+       ang: angle [degree]
 
-	   Returns
+       Returns
        ----------
-	   ang: angle [radian]
-	*/
-	return ((ang / 180.0) * M_PI);
+       ang: angle [radian]
+    */
+    return ((ang / 180.0) * M_PI);
 }
 
 // Convert radian to degree
 inline float rad2deg(float ang) {
-	/* Parameters
+    /* Parameters
        ----------
-	   ang: angle [radian]
+       ang: angle [radian]
 
-	   Returns
+       Returns
        ----------
-	   ang: angle [degree]*/
-	return ((ang / M_PI) * 180.0);
+       ang: angle [degree]*/
+    return ((ang / M_PI) * 180.0);
 }
 
 // ----------------------------------------------------------------------------
@@ -917,17 +917,17 @@ void sw_dir_cor_svf_comp(
 						//-----------------------------------------------------
 						// Compute sky view factor
 						//-----------------------------------------------------
-						
-						// Rotate tilt vector from global to local ENU
-						// coordinate system										   
-						float rot[3][3] = {{east_x, east_y, east_z},
-										   {north_x, north_y, north_z},
-										   {norm_hori_x, norm_hori_y,
-										    norm_hori_z}};	   
-						float tilt_global[3] = {norm_tilt_x, norm_tilt_y,
-												norm_tilt_z};
-						float tilt_local[3];
-						mat_vec_mult(rot, tilt_global, tilt_local);
+
+                        // Rotate tilt vector from global to local ENU
+                        // coordinate system
+                        float rot[3][3] = {{east_x, east_y, east_z},
+                                           {north_x, north_y, north_z},
+                                           {norm_hori_x, norm_hori_y,
+                                           norm_hori_z}};
+                        float tilt_global[3] = {norm_tilt_x, norm_tilt_y,
+                                                norm_tilt_z};
+                        float tilt_local[3];
+                        mat_vec_mult(rot, tilt_global, tilt_local);
 
 						// Compute sky view factor
 						float agg = 0.0;
