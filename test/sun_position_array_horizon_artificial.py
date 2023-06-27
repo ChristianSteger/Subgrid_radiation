@@ -59,6 +59,7 @@ lower = 5000.0
 z = np.sqrt(radius ** 2 - x ** 2 - y ** 2) - lower
 z[np.isnan(z)] = 0.0
 z[z < 0.0] = 0.0
+# z[z > 0.0] *= (-1)  # create depression
 print("Elevation (min/max): %.2f" % z.min() + ", %.2f" % z.max())
 
 # # Gaussian mountain
@@ -83,8 +84,8 @@ offset_gc = 10
 num_gc_y = int((x.shape[0] - 1) / pixel_per_gc) - 2 * offset_gc
 num_gc_x = int((x.shape[1] - 1) / pixel_per_gc) - 2 * offset_gc
 mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
-mask[:] = 0
-mask[:20, :20] = 1
+# mask[:] = 0
+# mask[:40, :40] = 1
 
 # Merge vertex coordinates and pad geometry buffer
 dem_dim_0, dem_dim_1 = x.shape
@@ -117,19 +118,31 @@ sun_pos = np.concatenate((x_sun[:, :, np.newaxis],
 # -----------------------------------------------------------------------------
 
 # Compute
-sw_dir_cor, sky_view_factor = sun_position_array.horizon.sw_dir_cor_svf(
-    vert_grid, dem_dim_0, dem_dim_1,
-    vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-    sun_pos, pixel_per_gc, offset_gc,
-    mask=mask, dist_search=dist_search, hori_azim_num=hori_azim_num,
-    hori_acc=hori_acc, ray_algorithm=ray_algorithm,
-    elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type,
-    ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
+sw_dir_cor, sky_view_factor, area_increase_factor, sky_view_area_factor \
+    = sun_position_array.horizon.sw_dir_cor_svf(
+        vert_grid, dem_dim_0, dem_dim_1,
+        vert_grid_in, dem_dim_in_0, dem_dim_in_1,
+        sun_pos, pixel_per_gc, offset_gc,
+        mask=mask, dist_search=dist_search, hori_azim_num=hori_azim_num,
+        hori_acc=hori_acc, ray_algorithm=ray_algorithm,
+        elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type,
+        ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 
 # Test plot
 plt.figure()
 plt.pcolormesh(sky_view_factor)
 plt.colorbar()
+plt.title("Sky view factor [-]")
+plt.figure()
+plt.pcolormesh(area_increase_factor)
+plt.colorbar()
+plt.title("Area increase factor [-]")
+plt.figure()
+plt.pcolormesh(sky_view_area_factor)
+plt.colorbar()
+plt.title("Sky view area factor [-]")
+print("Spatial mean of sky view area factor: %.2f"
+      % np.nanmean(sky_view_area_factor))
 
 # Check output
 print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
@@ -157,3 +170,11 @@ if plot:
 plt.figure()
 plt.pcolormesh(sky_view_factor)
 plt.colorbar()
+
+
+# Test
+horizon = np.arange(hori_azim_num)
+horizon = np.append(horizon, horizon[0])
+num = int(hori_azim_num / 4)
+for i in range(4):
+    print(horizon[(num * i):(num * (i + 1) + 1)])

@@ -669,6 +669,8 @@ void sw_dir_cor_svf_comp(
 	int dim_sun_0, int dim_sun_1,
 	float* sw_dir_cor,
 	float* sky_view_factor,
+	float* area_increase_factor,
+	float* sky_view_area_factor,
 	int pixel_per_gc,
 	int offset_gc,
 	uint8_t* mask,
@@ -771,20 +773,22 @@ void sw_dir_cor_svf_comp(
 	auto start_ray = std::chrono::high_resolution_clock::now();
 	size_t num_rays = 0;
 
-// 	num_rays += tbb::parallel_reduce(
-// 		tbb::blocked_range<size_t>(0, num_gc_y), 0.0,
-// 		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
+	num_rays += tbb::parallel_reduce(
+		tbb::blocked_range<size_t>(0, num_gc_y), 0.0,
+		[&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
 
 	// Loop through 2D-field of grid cells
-	for (size_t i = 0; i < num_gc_y; i++) {  // serial
-	//for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+	//for (size_t i = 0; i < num_gc_y; i++) {  // serial
+	for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
 		for (size_t j = 0; j < num_gc_x; j++) {
 
 			size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
 			if (mask[lin_ind_gc] == 1) {
 
-			float* horizon = new float[hori_azim_num + 2];
+			float* horizon = new float[hori_azim_num + 1];
 			// save horizon in 'periodical' array for interpolation...
+			float* horizon_quad_min = new float[4];
+			float* horizon_quad_max = new float[4];
 
 			// Loop through 2D-field of DEM pixels
 			for (size_t k = (i * pixel_per_gc);
@@ -952,16 +956,30 @@ void sw_dir_cor_svf_comp(
 						sky_view_factor[lin_ind_gc] 
 							= sky_view_factor[lin_ind_gc]
 							+ (azim_spac / (2.0 * M_PI)) * agg;
+							
+						area_increase_factor[lin_ind_gc] 
+							= area_increase_factor[lin_ind_gc]
+							+ surf_enl_fac;
+							
+						sky_view_area_factor[lin_ind_gc] 
+							= sky_view_area_factor[lin_ind_gc]
+							+ ((azim_spac / (2.0 * M_PI)) * agg)
+							* surf_enl_fac;
 
 						//-----------------------------------------------------
 						// Loop through sun positions and compute correction
 						// factors
 						//-----------------------------------------------------
 						
+						// Compute minimal/maximal horizon per quadrant
 						horizon[hori_azim_num] = horizon[0];
-						horizon[hori_azim_num + 1] = horizon[1];
 						// sun azimuth angle is between [0.0, 360.0] degree
 						// (including 360.0 deg!)
+						float horizon_min = 90.0;
+						float horizon_max = 0.0;
+						for (size_t o = 0; o < 4; o++) {
+						
+						}
 						
 						size_t ind_lin_sun, ind_lin_cor;
 						for (size_t o = 0; o < dim_sun_0; o++) {
@@ -989,7 +1007,7 @@ void sw_dir_cor_svf_comp(
 								mat_vec_mult(rot, sun_global, sun_local);
   								
 								// Check for terrain or self-shadowing
-//								float sun_elev = asin(sun_local[2]);
+// 								float sun_elev = asin(sun_local[2]);
 // 								float sun_azim = atan2(sun_local[0],
 // 													   sun_local[1]);
 // 								if (sun_azim < 0.0) {
@@ -1021,7 +1039,8 @@ void sw_dir_cor_svf_comp(
   									sw_dir_cor[ind_lin_cor]
   									+ std::min(((dot_prod_ts
   									/ dot_prod_hs) * surf_enl_fac),
-  									sw_dir_cor_max); // + sun_elev;
+  									sw_dir_cor_max);
+  									//sw_dir_cor_max + sun_elev + sun_azim); ////////////// temporary!
 
 							}
 						}
@@ -1032,6 +1051,8 @@ void sw_dir_cor_svf_comp(
 			}
 
 			delete[] horizon;
+			delete[] horizon_quad_min;
+			delete[] horizon_quad_max;
 
 			} else {
 			
@@ -1041,6 +1062,8 @@ void sw_dir_cor_svf_comp(
 					sw_dir_cor[ind_lin + k] = NAN;
 				}
 				sky_view_factor[lin_ind_gc] = NAN;
+				area_increase_factor[lin_ind_gc] = NAN;
+				sky_view_area_factor[lin_ind_gc] = NAN;
 
 			}
 
@@ -1048,8 +1071,8 @@ void sw_dir_cor_svf_comp(
 	}
 
 
-//   	return num_rays;  // parallel
-//   	}, std::plus<size_t>());  // parallel
+  	return num_rays;  // parallel
+  	}, std::plus<size_t>());  // parallel
 
 	auto end_ray = std::chrono::high_resolution_clock::now();
   	std::chrono::duration<double> time_ray = (end_ray - start_ray);
@@ -1068,6 +1091,8 @@ void sw_dir_cor_svf_comp(
   	num_elem = (num_gc_y * num_gc_x);
   	for (size_t i = 0; i < num_elem; i++) {
   		sky_view_factor[i] /= num_tri_per_gc;
+  		area_increase_factor[i] /= num_tri_per_gc;
+  		sky_view_area_factor[i] /= num_tri_per_gc;
   	}
 
     // Release resources allocated through Embree

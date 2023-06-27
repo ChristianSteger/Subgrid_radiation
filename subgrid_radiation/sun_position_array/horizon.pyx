@@ -19,9 +19,11 @@ cdef extern from "horizon_comp.h":
             int dim_sun_0, int dim_sun_1,
             float* sw_dir_cor,
             float* sky_view_factor,
+            float* area_increase_factor,
+            float* sky_view_area_factor,
             int pixel_per_gc,
             int offset_gc,
-            np.npy_uint8 * mask,
+            np.npy_uint8* mask,
             float dist_search,
             int hori_azim_num,
             float hori_acc,
@@ -107,12 +109,24 @@ def sw_dir_cor_svf(
         (y, x, dim_sun_0, dim_sun_1) [-]
     sky_view_factor : ndarray of float
         Array (two-dimensional) with sky view factor (y, x) [-]
+    area_increase_factor : ndarray of float
+        Array (two-dimensional) with surface area increase factor
+        (due to sloped terrain) [-]
+    sky_view_area_factor : ndarray of float
+        Array (two-dimensional) with 'sky_view_factor' divided by
+        'area_increase_factor' [-]
 
     References
     ----------
-    - Mueller, M. D., & Scherer, D. (2005): A Grid- and Subgrid-Scale
-    Radiation Parameterization of Topographic Effects for Mesoscale
-    Weather Forecast Models, Monthly Weather Review, 133(6), 1431-1442."""
+    - Mueller, M. D. and Scherer, D. (2005): A Grid- and Subgrid-Scale
+      Radiation Parameterization of Topographic Effects for Mesoscale
+      Weather Forecast Models, Monthly Weather Review, 133(6), 1431-1442.
+    - Manners, J., Vosper, S.B. and Roberts, N. (2012): Radiative transfer
+      over resolved topographic features for high-resolution weather
+      prediction, Q.J.R. Meteorol. Soc., 138: 720-733.
+    - Steger, C. R., Steger, B., and Schär, C. (2022): HORAYZON v1.2: an
+      efficient and flexible ray-tracing algorithm to compute horizon and
+      sky view factor, Geosci. Model Dev., 15, 6817–6840."""
 
 	# Check consistency and validity of input arguments
     if ((dem_dim_0 != (2 * offset_gc * pixel_per_gc) + dem_dim_in_0)
@@ -137,6 +151,9 @@ def sw_dir_cor_svf(
         raise TypeError("data type of mask must be 'uint8'")
     if dist_search < 0.1:
         raise ValueError("'dist_search' must be at least 100.0 m")
+    if 360 % hori_azim_num != 0:
+        raise ValueError("'hori_azim_num' must be an (even) factor of "
+                         + "360.0 degree")
     if hori_acc > 10.0:
         raise ValueError("limit of hori_acc (10 degree) is exceeded")
     if ray_algorithm not in ("discrete_sampling", "binary_search",
@@ -176,7 +193,13 @@ def sw_dir_cor_svf(
     # because subgrid correction values are iteratively added) -> probably no longer needed with horizon...
     cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
         sky_view_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
-    sky_view_factor.fill(0.0)  # accumulated over pixels within grid cell
+    sky_view_factor.fill(0.0)  # accumulated over pixels
+    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
+        area_increase_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
+    area_increase_factor.fill(0.0)  # accumulated over pixels
+    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
+        sky_view_area_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
+    sky_view_area_factor.fill(0.0)  # accumulated over pixels
 
     sw_dir_cor_svf_comp(
         &vert_grid[0],
@@ -187,6 +210,8 @@ def sw_dir_cor_svf(
         dim_sun_0, dim_sun_1,
         &sw_dir_cor[0,0,0,0],
         &sky_view_factor[0,0],
+        &area_increase_factor[0, 0],
+        &sky_view_area_factor[0, 0],
         pixel_per_gc,
         offset_gc,
         &mask[0, 0],
@@ -199,4 +224,5 @@ def sw_dir_cor_svf(
         ang_max,
         sw_dir_cor_max)
 
-    return sw_dir_cor, sky_view_factor
+    return sw_dir_cor, sky_view_factor, \
+        area_increase_factor, sky_view_area_factor

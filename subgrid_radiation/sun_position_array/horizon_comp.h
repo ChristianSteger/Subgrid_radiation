@@ -13,6 +13,8 @@ void sw_dir_cor_svf_comp(
 	int dim_sun_0, int dim_sun_1,
 	float* sw_dir_cor,
 	float* sky_view_factor,
+	float* area_increase_factor,
+	float* sky_view_area_factor,
 	int pixel_per_gc,
 	int offset_gc,
 	uint8_t* mask,
