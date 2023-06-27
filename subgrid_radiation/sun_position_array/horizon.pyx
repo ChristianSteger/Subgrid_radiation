@@ -151,11 +151,8 @@ def sw_dir_cor_svf(
         raise TypeError("data type of mask must be 'uint8'")
     if dist_search < 0.1:
         raise ValueError("'dist_search' must be at least 100.0 m")
-    if 360 % hori_azim_num != 0:
-        raise ValueError("'hori_azim_num' must be an (even) factor of "
-                         + "360.0 degree")
     if hori_acc > 10.0:
-        raise ValueError("limit of hori_acc (10 degree) is exceeded")
+        raise ValueError("limit (10 degree) of 'hori_acc' exceeded")
     if ray_algorithm not in ("discrete_sampling", "binary_search",
                              "guess_constant"):
         raise ValueError("invalid input argument for ray_algorithm")

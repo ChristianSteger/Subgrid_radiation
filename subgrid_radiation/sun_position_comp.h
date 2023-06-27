@@ -22,16 +22,16 @@ public:
     CppTerrain();
     ~CppTerrain();
     void initialise(
-    	float* vert_grid,
-    	int dem_dim_0, int dem_dim_1,
-		float* vert_grid_in,
-		int dem_dim_in_0, int dem_dim_in_1,
-		int pixel_per_gc,
-		int offset_gc,
-		float dist_search,
-		char* geom_type,
-		float ang_max,
-		float sw_dir_cor_max);
+        float* vert_grid,
+        int dem_dim_0, int dem_dim_1,
+        float* vert_grid_in,
+        int dem_dim_in_0, int dem_dim_in_1,
+        int pixel_per_gc,
+        int offset_gc,
+        float dist_search,
+        char* geom_type,
+        float ang_max,
+        float sw_dir_cor_max);
     void sw_dir_cor(float* sun_pos, float* sw_dir_cor);
     void sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor);
     void sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor);
