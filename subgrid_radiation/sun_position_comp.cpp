@@ -428,8 +428,8 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
     for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
         for (size_t j = 0; j < num_gc_x_cl; j++) {
 
-			size_t lin_ind_gc = lin_ind_2d(num_gc_x_cl, i, j);
-			if (mask_cl[lin_ind_gc] == 1) {
+            size_t lin_ind_gc = lin_ind_2d(num_gc_x_cl, i, j);
+            if (mask_cl[lin_ind_gc] == 1) {
 
             // Loop through 2D-field of DEM pixels
             for (size_t k = (i * pixel_per_gc_cl);
@@ -569,11 +569,11 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
                 }
             }
 
-			} else {
+            } else {
 
-				sw_dir_cor[lin_ind_gc] = NAN;
+                sw_dir_cor[lin_ind_gc] = NAN;
 
-			}
+            }
 
         }
     }
@@ -618,8 +618,8 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
     for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
         for (size_t j = 0; j < num_gc_x_cl; j++) {
 
-			size_t lin_ind_gc = lin_ind_2d(num_gc_x_cl, i, j);
-			if (mask_cl[lin_ind_gc] == 1) {
+            size_t lin_ind_gc = lin_ind_2d(num_gc_x_cl, i, j);
+            if (mask_cl[lin_ind_gc] == 1) {
 
             RTCRay rays[num_tri_per_gc];
             float* sw_dir_cor_ray = new float[num_tri_per_gc];
@@ -776,11 +776,11 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
 
             sw_dir_cor[lin_ind_gc] = sw_dir_cor_agg / num_tri_per_gc;
 
-			} else {
+            } else {
 
-				sw_dir_cor[lin_ind_gc] = NAN;
+                sw_dir_cor[lin_ind_gc] = NAN;
 
-			}
+            }
 
         }
     }
@@ -824,8 +824,8 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
     for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
         for (size_t j = 0; j < num_gc_x_cl; j++) {
 
-			size_t lin_ind_gc = lin_ind_2d(num_gc_x_cl, i, j);
-			if (mask_cl[lin_ind_gc] == 1) {
+            size_t lin_ind_gc = lin_ind_2d(num_gc_x_cl, i, j);
+            if (mask_cl[lin_ind_gc] == 1) {
 
             RTCRay8 ray8;
             float* sw_dir_cor_ray = new float[8];
@@ -990,11 +990,11 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
 
             sw_dir_cor[lin_ind_gc] = sw_dir_cor_agg / num_tri_per_gc;
 
-			} else {
+            } else {
 
-				sw_dir_cor[lin_ind_gc] = NAN;
+                sw_dir_cor[lin_ind_gc] = NAN;
 
-			}
+            }
 
         }
     }
