@@ -45,6 +45,7 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 plot = True
+radius_earth = 6371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------
 # Load and check data
@@ -78,7 +79,7 @@ ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
-elevation = ds["Elevation"].values
+elevation = ds["Elevation"].values.astype(np.float64)
 pole_lon = ds["rotated_pole"].grid_north_pole_longitude
 pole_lat = ds["rotated_pole"].grid_north_pole_latitude
 rlon = ds["rlon"].values
@@ -120,11 +121,11 @@ if plot:
 # -----------------------------------------------------------------------------
 
 # Transform elevation data (geographic/geodetic -> ENU coordinates)
-x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(lon, lat, elevation,
-                                              ellps="sphere")
 dem_dim_0, dem_dim_1 = elevation.shape
 trans_ecef2enu = transform.TransformerEcef2enu(
-    lon_or=lon.mean(), lat_or=lat.mean(), ellps="sphere")
+    lon_or=lon.mean(), lat_or=lat.mean(), radius_earth=radius_earth)
+x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(lon, lat, elevation,
+                                              trans_ecef2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                          trans_ecef2enu)
 del x_ecef, y_ecef, z_ecef
@@ -136,7 +137,9 @@ if plot:
     plt.colorbar()
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid = auxiliary.rearrange_pad_buffer(
+    x_enu.astype(np.float32), y_enu.astype(np.float32),
+    z_enu.astype(np.float32))
 print("Size of elevation data: %.3f" % (vert_grid.nbytes / (10 ** 9))
       + " GB")
 del x_enu, y_enu, z_enu
@@ -147,7 +150,7 @@ slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
 elevation_zero = np.zeros_like(elevation)
 x_ecef, y_ecef, z_ecef \
     = transform.lonlat2ecef(lon[slice_in], lat[slice_in],
-                            elevation_zero[slice_in], ellps="sphere")
+                            elevation_zero[slice_in], trans_ecef2enu)
 dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                          trans_ecef2enu)
@@ -160,19 +163,21 @@ if plot:
     plt.colorbar()
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid_in = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid_in = auxiliary.rearrange_pad_buffer(
+    x_enu.astype(np.float32), y_enu.astype(np.float32),
+    z_enu.astype(np.float32))
 print("Size of elevation data (0.0 m surface): %.3f"
       % (vert_grid_in.nbytes / (10 ** 9)) + " GB")
 del x_enu, y_enu, z_enu
 
 # Transform locations of subsolar points
 subsol_lon_2d, subsol_lat_2d = np.meshgrid(subsol_lon, subsol_lat)
-subsol_dist_2d = np.empty(subsol_lon_2d.shape, dtype=np.float32)
+subsol_dist_2d = np.empty(subsol_lon_2d.shape, dtype=np.float64)
 subsol_dist_2d[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
 x_ecef, y_ecef, z_ecef \
     = transform.lonlat2ecef(subsol_lon_2d, subsol_lat_2d, subsol_dist_2d,
-                            ellps="sphere")
+                            trans_ecef2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                          trans_ecef2enu)
 
@@ -195,7 +200,7 @@ if plot:
 # Combine sun position in one array
 sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
                           y_enu[:, :, np.newaxis],
-                          z_enu[:, :, np.newaxis]), axis=2)
+                          z_enu[:, :, np.newaxis]), axis=2, dtype=np.float32)
 
 # -----------------------------------------------------------------------------
 # Compute spatially aggregated correction factors
@@ -255,12 +260,12 @@ if plot:
     plt.colorbar()
 
 # Select relevant subsolar longitude range (add -/+ 1)
-mask = (sw_dir_cor.sum(axis=(0, 1, 2)) != 0)
-slic = slice(np.maximum(np.where(mask)[0][0] - 1, 0),
-             np.minimum(np.where(mask)[0][-1] + 2, len(mask)))
-print(mask[slic])
-print("Size of lookup table: %.2f"
-      % (sw_dir_cor[:, :, :, slic].nbytes / (10 ** 6)) + " MB")
+# mask = (sw_dir_cor.sum(axis=(0, 1, 2)) != 0)
+# slic = slice(np.maximum(np.where(mask)[0][0] - 1, 0),
+#              np.minimum(np.where(mask)[0][-1] + 2, len(mask)))
+# print(mask[slic])
+# print("Size of lookup table: %.2f"
+#       % (sw_dir_cor[:, :, :, slic].nbytes / (10 ** 6)) + " MB")
 
 # Save to NetCDF file
 ncfile = Dataset(filename=path_work + "SW_dir_cor_lookup.nc", mode="w")
@@ -270,7 +275,7 @@ ncfile.sw_dir_cor_max = "%.2f" % sw_dir_cor_max
 ncfile.createDimension(dimname="gc_lat", size=sw_dir_cor.shape[0])
 ncfile.createDimension(dimname="gc_lon", size=sw_dir_cor.shape[1])
 ncfile.createDimension(dimname="subsolar_lat", size=sw_dir_cor.shape[2])
-ncfile.createDimension(dimname="subsolar_lon", size=mask[slic].size)
+ncfile.createDimension(dimname="subsolar_lon", size=sw_dir_cor.shape[3])
 # -----------------------------------------------------------------------------
 nc_sslat = ncfile.createVariable(varname="subsolar_lat", datatype="f",
                                 dimensions="subsolar_lat")
@@ -279,14 +284,14 @@ nc_sslat.long_name = "subsolar latitude"
 nc_sslat.units = "degrees"
 nc_sslon = ncfile.createVariable(varname="subsolar_lon", datatype="f",
                                 dimensions="subsolar_lon")
-nc_sslon[:] = subsol_lon[slic]
+nc_sslon[:] = subsol_lon
 nc_sslon.long_name = "subsolar longitude"
 nc_sslon.units = "degrees"
 # -----------------------------------------------------------------------------
 nc_data = ncfile.createVariable(varname="f_cor", datatype="f",
                                 dimensions=("gc_lat", "gc_lon",
                                             "subsolar_lat", "subsolar_lon"))
-nc_data[:] = sw_dir_cor[:, :, :, slic]
+nc_data[:] = sw_dir_cor
 nc_data.units = "-"
 # -----------------------------------------------------------------------------
 ncfile.close()
