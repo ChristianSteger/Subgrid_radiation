@@ -29,7 +29,7 @@ public:
         int dem_dim_in_0, int dem_dim_in_1,
         int pixel_per_gc,
         int offset_gc,
-		unsigned char* mask,
+        unsigned char* mask,
         float dist_search,
         char* geom_type,
         float ang_max,
