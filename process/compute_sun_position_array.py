@@ -35,6 +35,7 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 file_out = "SW_dir_cor_lookup.nc"
+radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------
 # Load data
@@ -63,7 +64,7 @@ ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
-elevation = ds["Elevation"].values
+elevation = ds["Elevation"].values.astype(np.float64)
 pole_lon = ds["rotated_pole"].grid_north_pole_longitude
 pole_lat = ds["rotated_pole"].grid_north_pole_latitude
 rlon = ds["rlon"].values
@@ -76,17 +77,20 @@ ds.close()
 print("Coordinate transformation")
 
 # Transform elevation data (geographic/geodetic -> ENU coordinates)
-x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(lon, lat, elevation,
-                                               ellps="sphere")
 dem_dim_0, dem_dim_1 = elevation.shape
-trans_ecef2enu = transform.TransformerEcef2enu(
-    lon_or=lon.mean(), lat_or=lat.mean(), ellps="sphere")
+trans_lonlat2enu = transform.TransformerLonlat2enu(
+    lon_or=lon.mean(), lat_or=lat.mean(), radius_earth=radius_earth)
+
+x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(lon, lat, elevation,
+                                               trans_lonlat2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         trans_ecef2enu)
+                                         trans_lonlat2enu)
 del x_ecef, y_ecef, z_ecef
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid = auxiliary.rearrange_pad_buffer(
+    x_enu.astype(np.float32), y_enu.astype(np.float32),
+    z_enu.astype(np.float32))
 print("Size of elevation data: %.3f" % (vert_grid.nbytes / (10 ** 9))
       + " GB")
 del x_enu, y_enu, z_enu
@@ -95,35 +99,44 @@ del x_enu, y_enu, z_enu
 slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
             slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc))
 elevation_zero = np.zeros_like(elevation)
+dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
 x_ecef, y_ecef, z_ecef \
     = transform.lonlat2ecef(lon[slice_in], lat[slice_in],
-                            elevation_zero[slice_in], ellps="sphere")
-dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
+                            elevation_zero[slice_in], trans_lonlat2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         trans_ecef2enu)
+                                         trans_lonlat2enu)
 del x_ecef, y_ecef, z_ecef
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid_in = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid_in = auxiliary.rearrange_pad_buffer(
+    x_enu.astype(np.float32), y_enu.astype(np.float32),
+    z_enu.astype(np.float32))
 print("Size of elevation data (0.0 m surface): %.3f"
       % (vert_grid_in.nbytes / (10 ** 9)) + " GB")
 del x_enu, y_enu, z_enu
 
 # Transform locations of subsolar points
 subsol_lon_2d, subsol_lat_2d = np.meshgrid(subsol_lon, subsol_lat)
-subsol_dist_2d = np.empty(subsol_lon_2d.shape, dtype=np.float32)
+subsol_dist_2d = np.empty(subsol_lon_2d.shape, dtype=np.float64)
 subsol_dist_2d[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
 x_ecef, y_ecef, z_ecef \
     = transform.lonlat2ecef(subsol_lon_2d, subsol_lat_2d,
-                                 subsol_dist_2d, ellps="sphere")
+                                 subsol_dist_2d, trans_lonlat2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                              trans_ecef2enu)
+                                              trans_lonlat2enu)
 
 # Combine sun position in one array
 sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
                           y_enu[:, :, np.newaxis],
-                          z_enu[:, :, np.newaxis]), axis=2)
+                          z_enu[:, :, np.newaxis]), axis=2, dtype=np.float32)
+
+# Mask (optional)
+num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
+num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
+mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+# mask[:] = 0
+# mask[:20, :40] = 1
 
 # -----------------------------------------------------------------------------
 # Compute spatially aggregated correction factors
@@ -136,13 +149,13 @@ print("Compute spatially aggregated correction factors")
 sw_dir_cor = sun_position_array.rays.sw_dir_cor_coherent_rp8(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-    sun_pos, pixel_per_gc, offset_gc,
+    sun_pos, pixel_per_gc, offset_gc, mask,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 
 # Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
-      + ", %.2f" % sw_dir_cor.max() + "]")
+print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
+      + ", %.2f" % np.nanmax(sw_dir_cor) + "]")
 print("Size of lookup table: %.2f" % (sw_dir_cor.nbytes / (10 ** 6)) + " MB")
 
 # Save to NetCDF file

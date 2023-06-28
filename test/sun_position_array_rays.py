@@ -45,7 +45,7 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 plot = True
-radius_earth = 6371_229.0  # radius of Earth (according to COSMO/ICON) [m]
+radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------
 # Load and check data
@@ -206,8 +206,8 @@ sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
 num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
 num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
 mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
-mask[:] = 0
-mask[:20, :40] = 1
+# mask[:] = 0
+# mask[:20, :40] = 1
 
 # -----------------------------------------------------------------------------
 # Compute spatially aggregated correction factors

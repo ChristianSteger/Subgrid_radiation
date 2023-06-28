@@ -58,7 +58,7 @@ def coastline_contours(rlon, rlat, mask_bin):
 # -----------------------------------------------------------------------------
 
 def coastline_distance(contours_rlatrlon, mask_water, rlon, rlat,
-                       pixel_per_gc_x, pixel_per_gc_y):
+                       pixel_per_gc_x, pixel_per_gc_y, radius_earth):
     """Compute minimal chord distance between all water grid cells (centre)
     and the coastline. Only grid cells that are classified 'entirely water'
     according to the pixel information are considered - the remaing cells
@@ -79,6 +79,8 @@ def coastline_distance(contours_rlatrlon, mask_water, rlon, rlat,
         Number of pixels per grid cell in x-direction (zonal)
     pixel_per_gc_y: int
         Number of pixels per grid cell in y-direction (meridional)
+    radius_earth : float
+        Radius of Earth [metre]
 
     Returns
     -------
@@ -97,11 +99,13 @@ def coastline_distance(contours_rlatrlon, mask_water, rlon, rlat,
 
     # Build k-d tree
     contours_rlatrlon_arr = np.vstack(([i for i in contours_rlatrlon]))
-    elevation_0 = np.zeros(contours_rlatrlon_arr.shape[0], dtype=np.float32)
+    elevation_0 = np.zeros(contours_rlatrlon_arr.shape[0], dtype=np.float64)
+    trans_lonlat2enu = transform.TransformerLonlat2enu(
+        lon_or=np.nan, lat_or=np.nan, radius_earth=radius_earth)
     x_ecef, y_ecef, z_ecef \
         = transform.lonlat2ecef(contours_rlatrlon_arr[:, 0],
                                 contours_rlatrlon_arr[:, 1],
-                                elevation_0, ellps="sphere")
+                                elevation_0, trans_lonlat2enu)
     pts_ecef = np.vstack((x_ecef, y_ecef, z_ecef)).transpose()
     tree = cKDTree(pts_ecef)
 
@@ -115,7 +119,7 @@ def coastline_distance(contours_rlatrlon, mask_water, rlon, rlat,
     x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(
         rlon_gly[mask_water_gly].astype(np.float64),
         rlat_gly[mask_water_gly].astype(np.float64),
-        np.zeros(mask_water_gly.sum(), dtype=np.float32), ellps="sphere")
+        np.zeros(mask_water_gly.sum(), dtype=np.float64), trans_lonlat2enu)
     pts_ecef_gl = np.vstack((x_ecef, y_ecef, z_ecef)).transpose()
     dist_quer, idx = tree.query(pts_ecef_gl, k=1, workers=-1)
     dist_gly = np.empty_like(rlon_gly)
@@ -131,7 +135,7 @@ def coastline_distance(contours_rlatrlon, mask_water, rlon, rlat,
     x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(
         rlon_glx[mask_water_glx].astype(np.float64),
         rlat_glx[mask_water_glx].astype(np.float64),
-        np.zeros(mask_water_glx.sum(), dtype=np.float32), ellps="sphere")
+        np.zeros(mask_water_glx.sum(), dtype=np.float64), trans_lonlat2enu)
     pts_ecef_gl = np.vstack((x_ecef, y_ecef, z_ecef)).transpose()
     dist_quer, idx = tree.query(pts_ecef_gl, k=1, workers=-1)
     dist_glx = np.empty_like(rlon_glx)

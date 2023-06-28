@@ -43,6 +43,7 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 file_out = "SW_dir_cor_lookup.nc"
+radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------
 # Load data
@@ -87,7 +88,7 @@ print("Run time: %.2f" % (time.perf_counter() - t_beg) + " s")
 # Compute minimal chord distance to coastline for water grid cells
 dist_chord = ocean_masking.coastline_distance(
     contours_rlatrlon, mask_water, rlon, rlat,
-    pixel_per_gc_x, pixel_per_gc_y)
+    pixel_per_gc_x, pixel_per_gc_y, radius_earth)
 
 # Plot preparations
 ccrs_rot_pole = ccrs.RotatedPole(pole_latitude=pole_latitude,
@@ -135,7 +136,7 @@ plt.close(fig)
 
 # Mask for grid cells
 mask = ~(dist_chord[offset_gc_y:-offset_gc_y, offset_gc_x:-offset_gc_x]
-         > (dist_search * 1000.0))
+         > (dist_search * 1000.0)).astype(np.uint8)
 plt.figure()
 plt.pcolormesh(mask)
 
@@ -144,110 +145,4 @@ plt.pcolormesh(mask)
 # -----------------------------------------------------------------------------
 print("Coordinate transformation")
 
-
-######### continue...
-
-
-
-# Transform elevation data (geographic/geodetic -> ENU coordinates)
-x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(lon, lat, elevation,
-                                               ellps="sphere")
-dem_dim_0, dem_dim_1 = elevation.shape
-trans_ecef2enu = transform.TransformerEcef2enu(
-    lon_or=lon.mean(), lat_or=lat.mean(), ellps="sphere")
-x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         trans_ecef2enu)
-del x_ecef, y_ecef, z_ecef
-
-# Merge vertex coordinates and pad geometry buffer
-vert_grid = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
-print("Size of elevation data: %.3f" % (vert_grid.nbytes / (10 ** 9))
-      + " GB")
-del x_enu, y_enu, z_enu
-
-# Transform 0.0 m surface data (geographic/geodetic -> ENU coordinates)
-slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
-            slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc))
-elevation_zero = np.zeros_like(elevation)
-x_ecef, y_ecef, z_ecef \
-    = transform.lonlat2ecef(lon[slice_in], lat[slice_in],
-                            elevation_zero[slice_in], ellps="sphere")
-dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
-x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                              trans_ecef2enu)
-del x_ecef, y_ecef, z_ecef
-
-# Merge vertex coordinates and pad geometry buffer
-vert_grid_in = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
-print("Size of elevation data (0.0 m surface): %.3f"
-      % (vert_grid_in.nbytes / (10 ** 9)) + " GB")
-del x_enu, y_enu, z_enu
-
-# Transform locations of subsolar points
-subsol_lon_2d, subsol_lat_2d = np.meshgrid(subsol_lon, subsol_lat)
-subsol_dist_2d = np.empty(subsol_lon_2d.shape, dtype=np.float32)
-subsol_dist_2d[:] = Distance(au=1).m
-# astronomical unit (~average Sun-Earth distance) [m]
-x_ecef, y_ecef, z_ecef \
-    = transform.lonlat2ecef(subsol_lon_2d, subsol_lat_2d,
-                                 subsol_dist_2d, ellps="sphere")
-x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                              trans_ecef2enu)
-
-# Combine sun position in one array
-sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
-                          y_enu[:, :, np.newaxis],
-                          z_enu[:, :, np.newaxis]), axis=2)
-
-# -----------------------------------------------------------------------------
-# Compute spatially aggregated correction factors
-# -----------------------------------------------------------------------------
-print("Compute spatially aggregated correction factors")
-
-# Compute
-# sw_dir_cor = sun_position_array.rays.sw_dir_cor(
-# sw_dir_cor = sun_position_array.rays.sw_dir_cor_coherent(
-sw_dir_cor = sun_position_array.rays.sw_dir_cor_coherent_rp8(
-    vert_grid, dem_dim_0, dem_dim_1,
-    vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-    sun_pos, pixel_per_gc, offset_gc,
-    dist_search=dist_search, geom_type=geom_type,
-    ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
-
-# Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
-      + ", %.2f" % sw_dir_cor.max() + "]")
-print("Size of lookup table: %.2f" % (sw_dir_cor.nbytes / (10 ** 6)) + " MB")
-
-# Save to NetCDF file
-ncfile = Dataset(filename=path_work + file_out, mode="w")
-ncfile.pixel_per_gc = str(pixel_per_gc)
-ncfile.offset_gc = str(offset_gc)
-ncfile.dist_search = "%.2f" % dist_search + " km"
-ncfile.geom_type = geom_type
-ncfile.ang_max = "%.2f" % ang_max + " degrees"
-ncfile.sw_dir_cor_max = "%.2f" % sw_dir_cor_max
-# -----------------------------------------------------------------------------
-ncfile.createDimension(dimname="gc_lat", size=sw_dir_cor.shape[0])
-ncfile.createDimension(dimname="gc_lon", size=sw_dir_cor.shape[1])
-ncfile.createDimension(dimname="subsolar_lat", size=sw_dir_cor.shape[2])
-ncfile.createDimension(dimname="subsolar_lon", size=sw_dir_cor.shape[3])
-# -----------------------------------------------------------------------------
-nc_sslat = ncfile.createVariable(varname="subsolar_lat", datatype="f",
-                                dimensions="subsolar_lat")
-nc_sslat[:] = subsol_lat
-nc_sslat.long_name = "subsolar latitude"
-nc_sslat.units = "degrees"
-nc_sslon = ncfile.createVariable(varname="subsolar_lon", datatype="f",
-                                dimensions="subsolar_lon")
-nc_sslon[:] = subsol_lon
-nc_sslon.long_name = "subsolar longitude"
-nc_sslon.units = "degrees"
-# -----------------------------------------------------------------------------
-nc_data = ncfile.createVariable(varname="f_cor", datatype="f",
-                                dimensions=("gc_lat", "gc_lon",
-                                            "subsolar_lat", "subsolar_lon"))
-nc_data[:] = sw_dir_cor
-nc_data.units = "-"
-# -----------------------------------------------------------------------------
-ncfile.close()
+# continue...

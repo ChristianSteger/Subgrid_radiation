@@ -61,7 +61,7 @@ file_out = "MERIT_remapped_COSMO_%.2f" % drlon + "deg.nc"
 plot_map = True
 
 # Constants
-radius_earth = 6371_229.0  # radius of Earth (according to COSMO/ICON) [m]
+radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 dem_res = 3.0 / 3600.0  # resolution of MERIT DEM (3 arc second) [degree]
 
 # -----------------------------------------------------------------------------

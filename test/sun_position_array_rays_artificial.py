@@ -104,8 +104,8 @@ sun_pos = np.concatenate((x_sun[:, :, np.newaxis],
 num_gc_y = int((x.shape[0] - 1) / pixel_per_gc) - 2 * offset_gc
 num_gc_x = int((x.shape[1] - 1) / pixel_per_gc) - 2 * offset_gc
 mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
-mask[:] = 0
-mask[20:40, 20:40] = 1
+# mask[:] = 0
+# mask[20:40, 20:40] = 1
 
 # -----------------------------------------------------------------------------
 # Compute spatially aggregated correction factors

@@ -40,7 +40,7 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 plot = True
-radius_earth = 6371_229.0  # radius of Earth (according to COSMO/ICON) [m]
+radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------
 # Load and check data
@@ -166,10 +166,10 @@ print("Size of elevation data (0.0 m surface): %.3f"
       % (vert_grid_in.nbytes / (10 ** 9)) + " GB")
 del x_enu, y_enu, z_enu
 
-# # Mask (optional)
-# num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
-# num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
-# mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+# Mask (optional)
+num_gc_y = int((dem_dim_in_0 - 1) / pixel_per_gc)
+num_gc_x = int((dem_dim_in_1 - 1) / pixel_per_gc)
+mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
 # mask[:] = 0
 # mask[:20, :40] = 1
 
@@ -182,13 +182,11 @@ terrain = sun_position.Terrain()
 terrain.initialise(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-    pixel_per_gc, offset_gc, dist_search,
+    pixel_per_gc, offset_gc, mask, dist_search=dist_search,
     geom_type=geom_type, ang_max=ang_max,
     sw_dir_cor_max=sw_dir_cor_max)
 
 # Allocate output array
-num_gc_y = int((dem_dim_in_0 - 1) / pixel_per_gc)
-num_gc_x = int((dem_dim_in_1 - 1) / pixel_per_gc)
 sw_dir_cor = np.empty((num_gc_y, num_gc_x), dtype=np.float32)
 sw_dir_cor.fill(0.0) # default value
 
@@ -206,19 +204,22 @@ x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
 sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
 print((" Default: ").center(79, "-"))
 terrain.sw_dir_cor(sun_pos, sw_dir_cor)
+print("Number of NaN-values: " + str(np.isnan(sw_dir_cor).sum()))
 sw_dir_cor_def = sw_dir_cor.copy()
 print((" Coherent rays: ").center(79, "-"))
 terrain.sw_dir_cor_coherent(sun_pos, sw_dir_cor)
+print("Number of NaN-values: " + str(np.isnan(sw_dir_cor).sum()))
 print("Maximal absolute deviation: %.6f"
-      % np.abs(sw_dir_cor - sw_dir_cor_def).max())
+      % np.nanmax(np.abs(sw_dir_cor - sw_dir_cor_def)))
 print((" Coherent rays (packages with 8 rays): ").center(79, "-"))
 terrain.sw_dir_cor_coherent_rp8(sun_pos, sw_dir_cor)
+print("Number of NaN-values: " + str(np.isnan(sw_dir_cor).sum()))
 print("Maximal absolute deviation: %.6f"
-      % np.abs(sw_dir_cor - sw_dir_cor_def).max())
+      % np.nanmax(np.abs(sw_dir_cor - sw_dir_cor_def)))
 
 # Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
-      + ", %.2f" % sw_dir_cor.max() + "]")
+print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
+      + ", %.2f" % np.nanmax(sw_dir_cor) + "]")
 
 # Test plot
 levels = np.arange(0.0, 2.0, 0.2)
