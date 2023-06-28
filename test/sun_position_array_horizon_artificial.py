@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from cmcrameri import cm
 from subgrid_radiation import auxiliary
-from subgrid_radiation.sun_position_array import horizon
 from subgrid_radiation import sun_position_array
 
 mpl.style.use("classic")

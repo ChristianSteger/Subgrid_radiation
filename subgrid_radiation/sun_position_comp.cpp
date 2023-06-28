@@ -357,6 +357,7 @@ void CppTerrain::initialise(
     int dem_dim_in_0, int dem_dim_in_1,
     int pixel_per_gc,
     int offset_gc,
+	unsigned char* mask,
     float dist_search,
     char* geom_type,
     float ang_max,
@@ -370,6 +371,7 @@ void CppTerrain::initialise(
     dem_dim_in_1_cl = dem_dim_in_1;
     pixel_per_gc_cl = pixel_per_gc;
     offset_gc_cl = offset_gc;
+    mask_cl = mask;
     ang_max_cl = ang_max;
     sw_dir_cor_max_cl = sw_dir_cor_max;
 
@@ -425,6 +427,9 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
     //for (size_t i = 0; i < num_gc_y_cl; i++) {  // serial
     for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
         for (size_t j = 0; j < num_gc_x_cl; j++) {
+
+			size_t lin_ind_gc = lin_ind_2d(num_gc_x_cl, i, j);
+			if (mask_cl[lin_ind_gc] == 1) {
 
             // Loop through 2D-field of DEM pixels
             for (size_t k = (i * pixel_per_gc_cl);
@@ -506,8 +511,6 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
                         // Compute correction factor
                         //-----------------------------------------------------
 
-                        size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j);
-
                         // Compute sun unit vector
                         float sun_x = (sun_pos[0] - ray_org_x);
                         float sun_y = (sun_pos[1] - ray_org_y);
@@ -554,8 +557,8 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
                             if (dot_prod_hs < dot_prod_min_cl) {
                                 dot_prod_hs = dot_prod_min_cl;
                             }
-                            sw_dir_cor[ind_lin_cor] =
-                                sw_dir_cor[ind_lin_cor]
+                            sw_dir_cor[lin_ind_gc] =
+                                sw_dir_cor[lin_ind_gc]
                                 + std::min(((dot_prod_ts / dot_prod_hs)
                                 * surf_enl_fac), sw_dir_cor_max_cl);
                         }
@@ -565,6 +568,12 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
 
                 }
             }
+
+			} else {
+
+				sw_dir_cor[lin_ind_gc] = NAN;
+
+			}
 
         }
     }
@@ -608,6 +617,9 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
     //for (size_t i = 0; i < num_gc_y_cl; i++) {  // serial
     for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
         for (size_t j = 0; j < num_gc_x_cl; j++) {
+
+			size_t lin_ind_gc = lin_ind_2d(num_gc_x_cl, i, j);
+			if (mask_cl[lin_ind_gc] == 1) {
 
             RTCRay rays[num_tri_per_gc];
             float* sw_dir_cor_ray = new float[num_tri_per_gc];
@@ -762,8 +774,13 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
 
             delete[] sw_dir_cor_ray;
 
-            size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j);
-            sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / num_tri_per_gc;
+            sw_dir_cor[lin_ind_gc] = sw_dir_cor_agg / num_tri_per_gc;
+
+			} else {
+
+				sw_dir_cor[lin_ind_gc] = NAN;
+
+			}
 
         }
     }
@@ -806,6 +823,9 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
     //for (size_t i = 0; i < num_gc_y_cl; i++) {  // serial
     for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
         for (size_t j = 0; j < num_gc_x_cl; j++) {
+
+			size_t lin_ind_gc = lin_ind_2d(num_gc_x_cl, i, j);
+			if (mask_cl[lin_ind_gc] == 1) {
 
             RTCRay8 ray8;
             float* sw_dir_cor_ray = new float[8];
@@ -968,8 +988,13 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
 
             delete[] sw_dir_cor_ray;
 
-            size_t ind_lin_cor = lin_ind_2d(num_gc_x_cl, i, j);
-            sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / num_tri_per_gc;
+            sw_dir_cor[lin_ind_gc] = sw_dir_cor_agg / num_tri_per_gc;
+
+			} else {
+
+				sw_dir_cor[lin_ind_gc] = NAN;
+
+			}
 
         }
     }

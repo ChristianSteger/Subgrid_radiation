@@ -11,6 +11,7 @@ public:
     float* vert_grid_in_cl;
     int pixel_per_gc_cl;
     int offset_gc_cl;
+    unsigned char* mask_cl;
     float dist_search_cl;
     float ang_max_cl;
     float sw_dir_cor_max_cl;
@@ -28,6 +29,7 @@ public:
         int dem_dim_in_0, int dem_dim_in_1,
         int pixel_per_gc,
         int offset_gc,
+		unsigned char* mask,
         float dist_search,
         char* geom_type,
         float ang_max,
