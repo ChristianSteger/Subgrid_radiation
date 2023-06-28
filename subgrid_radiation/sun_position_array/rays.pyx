@@ -20,6 +20,7 @@ cdef extern from "rays_comp.h":
             float* sw_dir_cor,
             int pixel_per_gc,
             int offset_gc,
+            np.npy_uint8 * mask,
             float dist_search,
             char* geom_type,
             float ang_max,
@@ -33,6 +34,7 @@ def sw_dir_cor(
         np.ndarray[np.float32_t, ndim = 3] sun_pos,
         int pixel_per_gc,
         int offset_gc,
+        np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
         str geom_type="grid",
         float ang_max=89.0,
@@ -62,6 +64,10 @@ def sw_dir_cor(
         Number of subgrid pixels within one grid cell (along one dimension)
     offset_gc : int
         Offset number of grid cells
+    mask : ndarray of uint8
+        Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
+        'sky_view_factor' are computed. Masked (0) grid cells are filled with
+        NaN.
     dist_search : float
         Search distance for topographic shadowing [kilometre]
     geom_type : str
@@ -100,6 +106,14 @@ def sw_dir_cor(
         raise ValueError("value for 'pixel_per_gc' must be larger than 1")
     if offset_gc < 0:
         raise ValueError("value for 'offset_gc' must be larger than 0")
+    num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
+    num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
+    if mask is None:
+        mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+    if (mask.shape[0] != num_gc_y) or (mask.shape[1] != num_gc_x):
+        raise ValueError("shape of mask is inconsistent with other input")
+    if mask.dtype != "uint8":
+        raise TypeError("data type of mask must be 'uint8'")
     if dist_search < 0.1:
         raise ValueError("'dist_search' must be at least 100.0 m")
     if geom_type not in ("triangle", "quad", "grid"):
@@ -144,6 +158,7 @@ def sw_dir_cor(
         &sw_dir_cor[0,0,0,0],
         pixel_per_gc,
         offset_gc,
+        &mask[0, 0],
         dist_search,
         geom_type_c,
         ang_max,
@@ -166,6 +181,7 @@ cdef extern from "rays_comp.h":
             float* sw_dir_cor,
             int pixel_per_gc,
             int offset_gc,
+            np.npy_uint8 * mask,
             float dist_search,
             char* geom_type,
             float ang_max,
@@ -179,6 +195,7 @@ def sw_dir_cor_coherent(
         np.ndarray[np.float32_t, ndim = 3] sun_pos,
         int pixel_per_gc,
         int offset_gc,
+        np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
         str geom_type="grid",
         float ang_max=89.0,
@@ -208,6 +225,10 @@ def sw_dir_cor_coherent(
         Number of subgrid pixels within one grid cell (along one dimension)
     offset_gc : int
         Offset number of grid cells
+    mask : ndarray of uint8
+        Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
+        'sky_view_factor' are computed. Masked (0) grid cells are filled with
+        NaN.
     dist_search : float
         Search distance for topographic shadowing [kilometre]
     geom_type : str
@@ -246,6 +267,14 @@ def sw_dir_cor_coherent(
         raise ValueError("value for 'pixel_per_gc' must be larger than 1")
     if offset_gc < 0:
         raise ValueError("value for 'offset_gc' must be larger than 0")
+    num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
+    num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
+    if mask is None:
+        mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+    if (mask.shape[0] != num_gc_y) or (mask.shape[1] != num_gc_x):
+        raise ValueError("shape of mask is inconsistent with other input")
+    if mask.dtype != "uint8":
+        raise TypeError("data type of mask must be 'uint8'")
     if dist_search < 0.1:
         raise ValueError("'dist_search' must be at least 100.0 m")
     if geom_type not in ("triangle", "quad", "grid"):
@@ -288,6 +317,7 @@ def sw_dir_cor_coherent(
         &sw_dir_cor[0,0,0,0],
         pixel_per_gc,
         offset_gc,
+        &mask[0, 0],
         dist_search,
         geom_type_c,
         ang_max,
@@ -310,6 +340,7 @@ cdef extern from "rays_comp.h":
             float* sw_dir_cor,
             int pixel_per_gc,
             int offset_gc,
+            np.npy_uint8 * mask,
             float dist_search,
             char* geom_type,
             float ang_max,
@@ -323,6 +354,7 @@ def sw_dir_cor_coherent_rp8(
         np.ndarray[np.float32_t, ndim = 3] sun_pos,
         int pixel_per_gc,
         int offset_gc,
+        np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
         str geom_type="grid",
         float ang_max=89.0,
@@ -353,6 +385,10 @@ def sw_dir_cor_coherent_rp8(
         Number of subgrid pixels within one grid cell (along one dimension)
     offset_gc : int
         Offset number of grid cells
+    mask : ndarray of uint8
+        Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
+        'sky_view_factor' are computed. Masked (0) grid cells are filled with
+        NaN.
     dist_search : float
         Search distance for topographic shadowing [kilometre]
     geom_type : str
@@ -391,6 +427,14 @@ def sw_dir_cor_coherent_rp8(
         raise ValueError("value for 'pixel_per_gc' must be larger than 1")
     if offset_gc < 0:
         raise ValueError("value for 'offset_gc' must be larger than 0")
+    num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
+    num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
+    if mask is None:
+        mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+    if (mask.shape[0] != num_gc_y) or (mask.shape[1] != num_gc_x):
+        raise ValueError("shape of mask is inconsistent with other input")
+    if mask.dtype != "uint8":
+        raise TypeError("data type of mask must be 'uint8'")
     if dist_search < 0.1:
         raise ValueError("'dist_search' must be at least 100.0 m")
     if geom_type not in ("triangle", "quad", "grid"):
@@ -438,6 +482,7 @@ def sw_dir_cor_coherent_rp8(
         &sw_dir_cor[0,0,0,0],
         pixel_per_gc,
         offset_gc,
+        &mask[0, 0],
         dist_search,
         geom_type_c,
         ang_max,

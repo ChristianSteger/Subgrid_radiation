@@ -100,6 +100,13 @@ sun_pos = np.concatenate((x_sun[:, :, np.newaxis],
                           y_sun[:, :, np.newaxis],
                           z_sun[:, :, np.newaxis]), axis=2).astype(np.float32)
 
+# Mask (optional)
+num_gc_y = int((x.shape[0] - 1) / pixel_per_gc) - 2 * offset_gc
+num_gc_x = int((x.shape[1] - 1) / pixel_per_gc) - 2 * offset_gc
+mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+mask[:] = 0
+mask[20:40, 20:40] = 1
+
 # -----------------------------------------------------------------------------
 # Compute spatially aggregated correction factors
 # -----------------------------------------------------------------------------
@@ -109,12 +116,12 @@ sw_dir_cor = sun_position_array.rays.sw_dir_cor_coherent_rp8(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
     sun_pos, pixel_per_gc, offset_gc,
-    dist_search=dist_search, geom_type=geom_type,
+    mask=mask, dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 
 # Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
-      + ", %.2f" % sw_dir_cor.max() + "]")
+print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
+      + ", %.2f" % np.nanmax(sw_dir_cor) + "]")
 
 # Test plot
 if plot:
@@ -123,7 +130,7 @@ if plot:
     norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=False,
                                    extend="max")
     plt.figure()
-    ind_2, ind_3 = 3, 0  # 3, 0
+    ind_2, ind_3 = 5, 0  # 3, 0
     plt.pcolormesh(sw_dir_cor[:, :, ind_2, ind_3], cmap=cmap, norm=norm)
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")
@@ -132,4 +139,4 @@ if plot:
               + ", %.2f" % lu_lon[ind_3] + " [degree]",
               fontsize=12, fontweight="bold", y=1.01)
     print("Spatially averaged 'sw_dir_cor': %.5f"
-          % sw_dir_cor[:, :, ind_2, ind_3].mean())
+          % np.nanmean(sw_dir_cor[:, :, ind_2, ind_3]))

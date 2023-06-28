@@ -122,12 +122,12 @@ if plot:
 
 # Transform elevation data (geographic/geodetic -> ENU coordinates)
 dem_dim_0, dem_dim_1 = elevation.shape
-trans_ecef2enu = transform.TransformerEcef2enu(
+trans_lonlat2enu = transform.TransformerLonlat2enu(
     lon_or=lon.mean(), lat_or=lat.mean(), radius_earth=radius_earth)
 x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(lon, lat, elevation,
-                                              trans_ecef2enu)
+                                              trans_lonlat2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         trans_ecef2enu)
+                                         trans_lonlat2enu)
 del x_ecef, y_ecef, z_ecef
 
 # Test plot
@@ -150,10 +150,10 @@ slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
 elevation_zero = np.zeros_like(elevation)
 x_ecef, y_ecef, z_ecef \
     = transform.lonlat2ecef(lon[slice_in], lat[slice_in],
-                            elevation_zero[slice_in], trans_ecef2enu)
+                            elevation_zero[slice_in], trans_lonlat2enu)
 dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         trans_ecef2enu)
+                                         trans_lonlat2enu)
 del x_ecef, y_ecef, z_ecef
 
 # Test plot
@@ -177,9 +177,9 @@ subsol_dist_2d[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
 x_ecef, y_ecef, z_ecef \
     = transform.lonlat2ecef(subsol_lon_2d, subsol_lat_2d, subsol_dist_2d,
-                            trans_ecef2enu)
+                            trans_lonlat2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         trans_ecef2enu)
+                                         trans_lonlat2enu)
 
 # Test plot
 if plot:
@@ -202,6 +202,13 @@ sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
                           y_enu[:, :, np.newaxis],
                           z_enu[:, :, np.newaxis]), axis=2, dtype=np.float32)
 
+# Mask (optional)
+num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
+num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
+mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+mask[:] = 0
+mask[:20, :40] = 1
+
 # -----------------------------------------------------------------------------
 # Compute spatially aggregated correction factors
 # -----------------------------------------------------------------------------
@@ -210,30 +217,30 @@ sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
 sw_dir_cor_def = sun_position_array.rays.sw_dir_cor(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-    sun_pos, pixel_per_gc, offset_gc,
+    sun_pos, pixel_per_gc, offset_gc, mask,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 sw_dir_cor_coh = sun_position_array.rays.sw_dir_cor_coherent(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-    sun_pos, pixel_per_gc, offset_gc,
+    sun_pos, pixel_per_gc, offset_gc, mask,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 print("Maximal absolute deviation: %.6f"
-      % np.abs(sw_dir_cor_coh - sw_dir_cor_def).max())
+      % np.nanmax(np.abs(sw_dir_cor_coh - sw_dir_cor_def)))
 sw_dir_cor_coh_rp8 = sun_position_array.rays.sw_dir_cor_coherent_rp8(
     vert_grid, dem_dim_0, dem_dim_1,
     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-    sun_pos, pixel_per_gc, offset_gc,
+    sun_pos, pixel_per_gc, offset_gc, mask,
     dist_search=dist_search, geom_type=geom_type,
     ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 print("Maximal absolute deviation: %.6f"
-      % np.abs(sw_dir_cor_coh_rp8 - sw_dir_cor_def).max())
+      % np.nanmax(np.abs(sw_dir_cor_coh_rp8 - sw_dir_cor_def)))
 sw_dir_cor = sw_dir_cor_coh_rp8  # select output that is further considered
 
 # Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % sw_dir_cor.min()
-      + ", %.2f" % sw_dir_cor.max() + "]")
+print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
+      + ", %.2f" % np.nanmax(sw_dir_cor) + "]")
 
 # Test plot
 levels = np.arange(0.0, 2.0, 0.2)

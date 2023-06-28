@@ -12,7 +12,7 @@ from cython.parallel import prange
 
 # -----------------------------------------------------------------------------
 
-def lonlat2ecef(lon, lat, h, trans_ecef2enu, in_place=False):
+def lonlat2ecef(lon, lat, h, trans_lonlat2enu, in_place=False):
     """Transformation of spherical longitude/latitude to earth-centered,
     earth-fixed (ECEF) coordinates.
 
@@ -24,8 +24,8 @@ def lonlat2ecef(lon, lat, h, trans_ecef2enu, in_place=False):
         Array (with arbitrary dimensions) with geographic latitude [degree]
     h : ndarray of double
         Array (with arbitrary dimensions) with elevation above sphere [metre]
-    trans_ecef2enu : class
-        Instance of class `TransformerEcef2enu`
+    trans_lonlat2enu : class
+        Instance of class `TransformerLonlat2enu`
     in_place : bool
         Option to perform transformation in-place
         (x_ecef -> lon, y_ecef -> lat, z_ecef -> h)
@@ -47,22 +47,23 @@ def lonlat2ecef(lon, lat, h, trans_ecef2enu, in_place=False):
     if ((lon.dtype != "float64") or (lat.dtype != "float64")
             or (h.dtype != "float64")):
         raise ValueError("Input array(s) has/have incorrect data type(s)")
-    if not isinstance(trans_ecef2enu, TransformerEcef2enu):
+    if not isinstance(trans_lonlat2enu, TransformerLonlat2enu):
         raise ValueError("Last input argument must be instance of class "
-                         + "'TransformerEcef2enu'")
+                         + "'TransformerLonlat2enu'")
 
     # Wrapper for 1-dimensional function
     shp = lon.shape
     if not in_place:
         x_ecef, y_ecef, z_ecef = _lonlat2ecef_1d(lon.ravel(), lat.ravel(),
-                                                  h.ravel(), trans_ecef2enu)
+                                                  h.ravel(), trans_lonlat2enu)
         return x_ecef.reshape(shp), y_ecef.reshape(shp), z_ecef.reshape(shp)
     else:
         _lonlat2ecef_1d_in_place(lon.ravel(), lat.ravel(), h.ravel(),
-                                 trans_ecef2enu)
+                                 trans_lonlat2enu)
 
 
-def _lonlat2ecef_1d(double[:] lon, double[:] lat, double[:] h, trans_ecef2enu):
+def _lonlat2ecef_1d(double[:] lon, double[:] lat, double[:] h,
+                    trans_lonlat2enu):
     """Coordinate transformation from lon/lat to ECEF (for 1-dimensional data).
 
     Sources
@@ -72,7 +73,7 @@ def _lonlat2ecef_1d(double[:] lon, double[:] lat, double[:] h, trans_ecef2enu):
     cdef int len_0 = lon.shape[0]
     cdef int i
     cdef double r, f, a, b, e_2, n
-    cdef double radius_earth = trans_ecef2enu.radius_earth
+    cdef double radius_earth = trans_lonlat2enu.radius_earth
     cdef double[:] x_ecef = np.empty(len_0, dtype=np.float64)
     cdef double[:] y_ecef = np.empty(len_0, dtype=np.float64)
     cdef double[:] z_ecef = np.empty(len_0, dtype=np.float64)
@@ -88,7 +89,7 @@ def _lonlat2ecef_1d(double[:] lon, double[:] lat, double[:] h, trans_ecef2enu):
 
 
 def _lonlat2ecef_1d_in_place(double[:] lon, double[:] lat, double[:] h,
-                             trans_ecef2enu):
+                             trans_lonlat2enu):
     """Coordinate transformation from lon/lat to ECEF (for 1-dimensional data).
 
     Sources
@@ -99,7 +100,7 @@ def _lonlat2ecef_1d_in_place(double[:] lon, double[:] lat, double[:] h,
     cdef int i
     cdef double r, f, a, b, e_2, n
     cdef double lon_temp, lat_temp, h_temp
-    cdef double radius_earth = trans_ecef2enu.radius_earth
+    cdef double radius_earth = trans_lonlat2enu.radius_earth
 
     for i in prange(len_0, nogil=True, schedule="static"):
         lon_temp = deg2rad(lon[i])
@@ -112,7 +113,7 @@ def _lonlat2ecef_1d_in_place(double[:] lon, double[:] lat, double[:] h,
 
 # -----------------------------------------------------------------------------
 
-def ecef2enu(x_ecef, y_ecef, z_ecef, trans_ecef2enu, in_place=False):
+def ecef2enu(x_ecef, y_ecef, z_ecef, trans_lonlat2enu, in_place=False):
     """Coordinate transformation from ECEF to ENU.
 
     Transformation of earth-centered, earth-fixed (ECEF) to local tangent
@@ -126,8 +127,8 @@ def ecef2enu(x_ecef, y_ecef, z_ecef, trans_ecef2enu, in_place=False):
         Array (with arbitrary dimensions) with ECEF y-coordinates [metre]
     z_ecef : ndarray of double
         Array (with arbitrary dimensions) with ECEF z-coordinates [metre]
-    trans_ecef2enu : class
-        Instance of class `TransformerEcef2enu`
+    trans_lonlat2enu : class
+        Instance of class `TransformerLonlat2enu`
     in_place : bool
         Option to perform transformation in-place
         (x_enu -> x_ecef, y_enu -> y_ecef, z_enu -> z_ecef)
@@ -148,24 +149,24 @@ def ecef2enu(x_ecef, y_ecef, z_ecef, trans_ecef2enu, in_place=False):
     if ((x_ecef.dtype != "float64") or (y_ecef.dtype != "float64")
             or (z_ecef.dtype != "float64")):
         raise ValueError("Input array(s) has/have incorrect data type(s)")
-    if not isinstance(trans_ecef2enu, TransformerEcef2enu):
+    if not isinstance(trans_lonlat2enu, TransformerLonlat2enu):
         raise ValueError("Last input argument must be instance of class "
-                         + "'TransformerEcef2enu'")
+                         + "'TransformerLonlat2enu'")
 
     # Wrapper for 1-dimensional function
     shp = x_ecef.shape
     if not in_place:
         x_enu, y_enu, z_enu = _ecef2enu_1d(x_ecef.ravel(), y_ecef.ravel(),
                                            z_ecef.ravel(),
-                                           trans_ecef2enu)
+                                           trans_lonlat2enu)
         return x_enu.reshape(shp), y_enu.reshape(shp), z_enu.reshape(shp)
     else:
         _ecef2enu_1d_in_place(x_ecef.ravel(), y_ecef.ravel(), z_ecef.ravel(),
-                              trans_ecef2enu)
+                              trans_lonlat2enu)
 
 
 def _ecef2enu_1d(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
-                trans_ecef2enu):
+                trans_lonlat2enu):
     """Coordinate transformation from ECEF to ENU (for 1-dimensional data).
 
     Sources
@@ -175,11 +176,11 @@ def _ecef2enu_1d(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
     cdef int len_0 = x_ecef.shape[0]
     cdef int i
     cdef double sin_lon, cos_lon, sin_lat, cos_lat
-    cdef double x_ecef_or = trans_ecef2enu.x_ecef_or
-    cdef double y_ecef_or = trans_ecef2enu.y_ecef_or
-    cdef double z_ecef_or = trans_ecef2enu.z_ecef_or
-    cdef double lon_or = trans_ecef2enu.lon_or
-    cdef double lat_or = trans_ecef2enu.lat_or
+    cdef double x_ecef_or = trans_lonlat2enu.x_ecef_or
+    cdef double y_ecef_or = trans_lonlat2enu.y_ecef_or
+    cdef double z_ecef_or = trans_lonlat2enu.z_ecef_or
+    cdef double lon_or = trans_lonlat2enu.lon_or
+    cdef double lat_or = trans_lonlat2enu.lat_or
     cdef double[:] x_enu = np.empty(len_0, dtype=np.float64)
     cdef double[:] y_enu = np.empty(len_0, dtype=np.float64)
     cdef double[:] z_enu = np.empty(len_0, dtype=np.float64)
@@ -205,7 +206,7 @@ def _ecef2enu_1d(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
 
 
 def _ecef2enu_1d_in_place(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
-                          trans_ecef2enu):
+                          trans_lonlat2enu):
     """Coordinate transformation from ECEF to ENU (for 1-dimensional data).
 
     Sources
@@ -216,11 +217,11 @@ def _ecef2enu_1d_in_place(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
     cdef int i
     cdef double sin_lon, cos_lon, sin_lat, cos_lat
     cdef double x_ecef_temp, y_ecef_temp, z_ecef_temp
-    cdef double x_ecef_or = trans_ecef2enu.x_ecef_or
-    cdef double y_ecef_or = trans_ecef2enu.y_ecef_or
-    cdef double z_ecef_or = trans_ecef2enu.z_ecef_or
-    cdef double lon_or = trans_ecef2enu.lon_or
-    cdef double lat_or = trans_ecef2enu.lat_or
+    cdef double x_ecef_or = trans_lonlat2enu.x_ecef_or
+    cdef double y_ecef_or = trans_lonlat2enu.y_ecef_or
+    cdef double z_ecef_or = trans_lonlat2enu.z_ecef_or
+    cdef double lon_or = trans_lonlat2enu.lon_or
+    cdef double lat_or = trans_lonlat2enu.lat_or
 
     # Trigonometric functions
     sin_lon = sin(deg2rad(lon_or))
@@ -245,7 +246,7 @@ def _ecef2enu_1d_in_place(double[:] x_ecef, double[:] y_ecef, double[:] z_ecef,
 
 # -----------------------------------------------------------------------------
 
-class TransformerEcef2enu:
+class TransformerLonlat2enu:
     """Class that stores attributes to transform from ECEF to ENU coordinates.
 
     Transformer class that stores attributes to convert between ECEF and ENU

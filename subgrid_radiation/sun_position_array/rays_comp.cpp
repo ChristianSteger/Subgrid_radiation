@@ -56,6 +56,21 @@ inline float rad2deg(float ang) {
 // Compute linear array index from multidimensional subscripts
 // ----------------------------------------------------------------------------
 
+// Linear index from subscripts (2D-array)
+inline size_t lin_ind_2d(size_t dim_1, size_t ind_0, size_t ind_1) {
+    /* Parameters
+       ----------
+       dim_1: second dimension length of two-dimensional array [-]
+       ind_0: first array indices [-]
+       ind_1: second array indices [-]
+
+       Returns
+       ----------
+       ind_lin: linear index of array [-]
+    */
+    return (ind_0 * dim_1 + ind_1);
+}
+
 // Linear index from subscripts (3D-array)
 inline size_t lin_ind_3d(size_t dim_1, size_t dim_2,
     size_t ind_0, size_t ind_1, size_t ind_2) {
@@ -372,6 +387,7 @@ void sw_dir_cor_comp(
     float* sw_dir_cor,
     int pixel_per_gc,
     int offset_gc,
+    uint8_t* mask,
     float dist_search,
     char* geom_type,
     float ang_max,
@@ -430,6 +446,9 @@ void sw_dir_cor_comp(
     //for (size_t i = 0; i < num_gc_y; i++) {  // serial
     for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
         for (size_t j = 0; j < num_gc_x; j++) {
+
+            size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
+            if (mask[lin_ind_gc] == 1) {
 
             // Loop through 2D-field of DEM pixels
             for (size_t k = (i * pixel_per_gc);
@@ -586,6 +605,16 @@ void sw_dir_cor_comp(
                 }
             }
 
+            } else {
+
+                size_t ind_lin = lin_ind_4d(num_gc_x, dim_sun_0, dim_sun_1,
+                    i, j, 0, 0);
+                for (size_t k = 0; k < (dim_sun_0 * dim_sun_1) ; k++) {
+                    sw_dir_cor[ind_lin + k] = NAN;
+                }
+
+            }
+
         }
     }
 
@@ -635,6 +664,7 @@ void sw_dir_cor_comp_coherent(
     float* sw_dir_cor,
     int pixel_per_gc,
     int offset_gc,
+    uint8_t* mask,
     float dist_search,
     char* geom_type,
     float ang_max,
@@ -694,6 +724,9 @@ void sw_dir_cor_comp_coherent(
     //for (size_t i = 0; i < num_gc_y; i++) {  // serial
     for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
         for (size_t j = 0; j < num_gc_x; j++) {
+
+            size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
+            if (mask[lin_ind_gc] == 1) {
 
             float* norm_tilt = new float[num_tri_per_gc * 3];
             float* ray_org = new float[num_tri_per_gc * 3];
@@ -919,6 +952,16 @@ void sw_dir_cor_comp_coherent(
             delete[] surf_enl_fac;
             delete[] sw_dir_cor_ray;
 
+            } else {
+
+                size_t ind_lin = lin_ind_4d(num_gc_x, dim_sun_0, dim_sun_1,
+                    i, j, 0, 0);
+                for (size_t k = 0; k < (dim_sun_0 * dim_sun_1) ; k++) {
+                    sw_dir_cor[ind_lin + k] = NAN;
+                }
+
+            }
+
         }
     }
 
@@ -961,6 +1004,7 @@ void sw_dir_cor_comp_coherent_rp8(
     float* sw_dir_cor,
     int pixel_per_gc,
     int offset_gc,
+    uint8_t* mask,
     float dist_search,
     char* geom_type,
     float ang_max,
@@ -1020,6 +1064,9 @@ void sw_dir_cor_comp_coherent_rp8(
     //for (size_t i = 0; i < num_gc_y; i++) {  // serial
     for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
         for (size_t j = 0; j < num_gc_x; j++) {
+
+            size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
+            if (mask[lin_ind_gc] == 1) {
 
             float* norm_tilt = new float[8 * 3];
             float* ray_org = new float[8 * 3];
@@ -1246,6 +1293,16 @@ void sw_dir_cor_comp_coherent_rp8(
             delete[] norm_hori;
             delete[] surf_enl_fac;
             delete[] sw_dir_cor_ray;
+            
+            } else {
+
+                size_t ind_lin = lin_ind_4d(num_gc_x, dim_sun_0, dim_sun_1,
+                    i, j, 0, 0);
+                for (size_t k = 0; k < (dim_sun_0 * dim_sun_1) ; k++) {
+                    sw_dir_cor[ind_lin + k] = NAN;
+                }
+
+            }
 
         }
     }

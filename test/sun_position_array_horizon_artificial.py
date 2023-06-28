@@ -81,13 +81,6 @@ if plot:
 pixel_per_gc = 10
 offset_gc = 10
 
-# Mask
-num_gc_y = int((x.shape[0] - 1) / pixel_per_gc) - 2 * offset_gc
-num_gc_x = int((x.shape[1] - 1) / pixel_per_gc) - 2 * offset_gc
-mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
-#mask[:] = 0
-#mask[20:40, 20:40] = 1
-
 # Merge vertex coordinates and pad geometry buffer
 dem_dim_0, dem_dim_1 = x.shape
 vert_grid = auxiliary.rearrange_pad_buffer(x, y, z)
@@ -114,6 +107,13 @@ sun_pos = np.concatenate((x_sun[:, :, np.newaxis],
                           y_sun[:, :, np.newaxis],
                           z_sun[:, :, np.newaxis]), axis=2).astype(np.float32)
 
+# Mask (optional)
+num_gc_y = int((x.shape[0] - 1) / pixel_per_gc) - 2 * offset_gc
+num_gc_x = int((x.shape[1] - 1) / pixel_per_gc) - 2 * offset_gc
+mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+# mask[:] = 0
+# mask[20:40, 20:40] = 1
+
 # -----------------------------------------------------------------------------
 # Compute spatially aggregated correction factors
 # -----------------------------------------------------------------------------
@@ -137,8 +137,10 @@ for i in data_2d.keys():
     plt.figure()
     plt.pcolormesh(data_2d[i])
     plt.colorbar()
-    plt.title(i.replace("_", " ") + " [-]", fontweight="bold", loc="left", y=1.01, fontsize=13)
-    txt = "(min/max: %.3f" % np.nanmin(data_2d[i]) + ", %.3f" % np.nanmax(data_2d[i]) + ")"
+    plt.title(i.replace("_", " ") + " [-]", fontweight="bold",
+              loc="left", y=1.01, fontsize=13)
+    txt = "(min/max: %.3f" % np.nanmin(data_2d[i]) \
+          + ", %.3f" % np.nanmax(data_2d[i]) + ")"
     plt.title(txt, loc="right", y=1.01, fontsize=12)
 print("Spatial mean of sky view area factor: %.2f"
       % np.nanmean(data_2d["sky_view_area_factor"]))

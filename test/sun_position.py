@@ -40,6 +40,7 @@ sw_dir_cor_max = 20.0
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 plot = True
+radius_earth = 6371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------
 # Load and check data
@@ -73,7 +74,7 @@ ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
-elevation = ds["Elevation"].values
+elevation = ds["Elevation"].values.astype(np.float64)
 pole_lon = ds["rotated_pole"].grid_north_pole_longitude
 pole_lat = ds["rotated_pole"].grid_north_pole_latitude
 rlon = ds["rlon"].values
@@ -115,13 +116,13 @@ if plot:
 # -----------------------------------------------------------------------------
 
 # Transform elevation data (geographic/geodetic -> ENU coordinates)
-x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(lon, lat, elevation,
-                                               ellps="sphere")
 dem_dim_0, dem_dim_1 = elevation.shape
-trans_ecef2enu = transform.TransformerEcef2enu(
-    lon_or=lon.mean(), lat_or=lat.mean(), ellps="sphere")
+trans_lonlat2enu = transform.TransformerLonlat2enu(
+    lon_or=lon.mean(), lat_or=lat.mean(), radius_earth=radius_earth)
+x_ecef, y_ecef, z_ecef = transform.lonlat2ecef(lon, lat, elevation,
+                                              trans_lonlat2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         trans_ecef2enu)
+                                         trans_lonlat2enu)
 del x_ecef, y_ecef, z_ecef
 
 # Test plot
@@ -131,7 +132,9 @@ if plot:
     plt.colorbar()
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid = auxiliary.rearrange_pad_buffer(
+    x_enu.astype(np.float32), y_enu.astype(np.float32),
+    z_enu.astype(np.float32))
 print("Size of elevation data: %.3f" % (vert_grid.nbytes / (10 ** 9))
       + " GB")
 del x_enu, y_enu, z_enu
@@ -142,10 +145,10 @@ slice_in = (slice(pixel_per_gc * offset_gc, -pixel_per_gc * offset_gc),
 elevation_zero = np.zeros_like(elevation)
 x_ecef, y_ecef, z_ecef \
     = transform.lonlat2ecef(lon[slice_in], lat[slice_in],
-                            elevation_zero[slice_in], ellps="sphere")
+                            elevation_zero[slice_in], trans_lonlat2enu)
 dem_dim_in_0, dem_dim_in_1 = elevation_zero[slice_in].shape
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         trans_ecef2enu)
+                                         trans_lonlat2enu)
 del x_ecef, y_ecef, z_ecef
 del lon, lat, elevation
 
@@ -156,10 +159,19 @@ if plot:
     plt.colorbar()
 
 # Merge vertex coordinates and pad geometry buffer
-vert_grid_in = auxiliary.rearrange_pad_buffer(x_enu, y_enu, z_enu)
+vert_grid_in = auxiliary.rearrange_pad_buffer(
+    x_enu.astype(np.float32), y_enu.astype(np.float32),
+    z_enu.astype(np.float32))
 print("Size of elevation data (0.0 m surface): %.3f"
       % (vert_grid_in.nbytes / (10 ** 9)) + " GB")
 del x_enu, y_enu, z_enu
+
+# # Mask (optional)
+# num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
+# num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
+# mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+# mask[:] = 0
+# mask[:20, :40] = 1
 
 # -----------------------------------------------------------------------------
 # Compute correction factors for single sun position
@@ -183,14 +195,14 @@ sw_dir_cor.fill(0.0) # default value
 # Compute f_cor for specific sun position
 subsol_lon = np.array([12.0], dtype=np.float64)  # (12.0, 20.0, ...) [degree]
 subsol_lat = np.array([-23.5], dtype=np.float64) # (-23.5, 0.0, 23.5) [degree]
-subsol_dist = np.empty(subsol_lon.shape, dtype=np.float32)
+subsol_dist = np.empty(subsol_lon.shape, dtype=np.float64)
 subsol_dist[:] = Distance(au=1).m
 # astronomical unit (~average Sun-Earth distance) [m]
 x_ecef, y_ecef, z_ecef \
     = transform.lonlat2ecef(subsol_lon, subsol_lat, subsol_dist,
-                            ellps="sphere")
+                            trans_lonlat2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                         trans_ecef2enu)
+                                         trans_lonlat2enu)
 sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
 print((" Default: ").center(79, "-"))
 terrain.sw_dir_cor(sun_pos, sw_dir_cor)
@@ -229,16 +241,16 @@ subsol_lat_1d = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
 sw_dir_cor_arr = np.empty(sw_dir_cor.shape
                           + (subsol_lat_1d.size, subsol_lon_1d.size),
                           dtype=np.float32)
-subsol_dist = np.array([Distance(au=1).m], dtype=np.float32)
+subsol_dist = np.array([Distance(au=1).m], dtype=np.float64)
 t_beg = time.time()
 for ind_i, i in enumerate(subsol_lat_1d):
     for ind_j, j in enumerate(subsol_lon_1d):
         x_ecef, y_ecef, z_ecef \
             = transform.lonlat2ecef(np.array([j], dtype=np.float64),
                                     np.array([i], dtype=np.float64),
-                                    subsol_dist, ellps="sphere")
+                                    subsol_dist, trans_lonlat2enu)
         x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                                 trans_ecef2enu)
+                                                 trans_lonlat2enu)
         sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
         # terrain.sw_dir_cor(sun_pos, sw_dir_cor)
         # terrain.sw_dir_cor_coherent(sun_pos, sw_dir_cor)
@@ -253,5 +265,5 @@ ind_end = ind_beg + ds["subsolar_lon"].size
 sw_dir_cor_lut = ds["f_cor"].values
 ds.close()
 dev_abs = np.abs(sw_dir_cor_arr[:, :, :, ind_beg:ind_end] - sw_dir_cor_lut)
-print("Maximal absolute deviation: %.8f" % dev_abs.max())
-print("Mean absolute deviation: %.8f" % dev_abs.mean())
+print("Maximal absolute deviation: %.8f" % np.nanmax(dev_abs))
+print("Mean absolute deviation: %.8f" % np.nanmean(dev_abs))
