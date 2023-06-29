@@ -20,7 +20,7 @@ def coastline_contours(rlon, rlat, mask_bin):
         Array (1-dimensional) with rotated longitude [degree]
     rlat: ndarray of double
         Array (1-dimensional) with rotated latitude [degree]
-    mask_bin: str
+    mask_bin: ndarray of 8-bit unsigned integer
         Array (2-dimensional) with binary land-sea mask (0: water, 1: land)
 
     Returns
