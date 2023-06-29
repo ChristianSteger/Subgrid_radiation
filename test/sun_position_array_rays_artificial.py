@@ -32,11 +32,11 @@ lu_lat = np.linspace(0.0, 90.0, 19, dtype=np.float64)  # 5 degree
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
-ang_max = 89.5
-sw_dir_cor_max = 20.0
+sw_dir_cor_max = 25.0
+ang_max = 89.9
 
 # Miscellaneous settings
-dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
+path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 plot = True
 
 # -----------------------------------------------------------------------------
@@ -140,3 +140,6 @@ if plot:
               fontsize=12, fontweight="bold", y=1.01)
     print("Spatially averaged 'sw_dir_cor': %.5f"
           % np.nanmean(sw_dir_cor[:, :, ind_2, ind_3]))
+
+# Save correction factors
+np.save(path_work + "SW_dir_cor_artifical_rays.npy", sw_dir_cor)

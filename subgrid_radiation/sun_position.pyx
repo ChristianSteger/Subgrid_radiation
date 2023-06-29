@@ -34,8 +34,8 @@ cdef class Terrain:
                    np.ndarray[np.uint8_t, ndim = 2] mask,
                    float dist_search=100.0,
                    str geom_type="grid",
-                   float ang_max=89.0,
-                   sw_dir_cor_max=25.0):
+                   float sw_dir_cor_max=25.0,
+                   float ang_max=89.9):
         """Initialise Terrain class with Digital Elevation Model (DEM) data.
 
         Parameters
@@ -60,20 +60,19 @@ cdef class Terrain:
             Offset number of grid cells
         mask : ndarray of uint8
             Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
-            'sky_view_factor' are computed. Masked (0) grid cells are filled with
-            NaN.
+            'sky_view_factor' are computed. Masked (0) grid cells are filled
+            with NaN.
         dist_search : float
             Search distance for topographic shadowing [kilometre]
         geom_type : str
             Embree geometry type (triangle, quad, grid)
-        ang_max : float
-            Maximal angle between sun vector and tilted surface normal for
-            which correction is computed. For larger angles, 'sw_dir_cor' is
-            set to 0.0. 'ang_max' is also applied to restrict the maximal angle
-            between the sun vector and the horizontal surface normal [degree]
-        sw_dir_cor_max : float
-            Maximal allowed correction factor for direct downward shortwave
-            radiation [-]"""
+    sw_dir_cor_max : float
+        Maximal allowed correction factor for direct downward shortwave
+        radiation [-]
+    ang_max : float
+        Maximal angle between (I) sun vector and horizontal surface normal
+        and (II) sun vector and tilted surface normal for which correction is
+        computed. For larger angles, 'sw_dir_cor' is set to 0.0 [degree]"""
 
         # Check consistency and validity of input arguments
         if ((dem_dim_0 != (2 * offset_gc * pixel_per_gc) + dem_dim_in_0)
@@ -102,11 +101,11 @@ cdef class Terrain:
             raise ValueError("'dist_search' must be at least 100.0 m")
         if geom_type not in ("triangle", "quad", "grid"):
             raise ValueError("invalid input argument for geom_type")
-        if (ang_max < 85.0) or (ang_max > 89.99):
-            raise ValueError("'ang_max' must be in the range [85.0, 89.99]")
         if (sw_dir_cor_max < 2.0) or (sw_dir_cor_max > 100.0):
-            raise ValueError("'sw_dir_cor_max' must be in the range "
-                             + "[2.0, 100.0]")
+            raise ValueError(
+                "'sw_dir_cor_max' must be in the range [2.0, 100.0]")
+        if (ang_max < 88.0) or (ang_max > 89.99):
+            raise ValueError("'ang_max' must be in the range [88.0, 89.99]")
 
         # Check size of input geometries
         if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
@@ -122,8 +121,8 @@ cdef class Terrain:
                                 &mask[0, 0],
                                 dist_search,
                                 geom_type.encode("utf-8"),
-                                ang_max,
-                                sw_dir_cor_max)
+                                sw_dir_cor_max,
+                                ang_max)
 
 # -----------------------------------------------------------------------------
 

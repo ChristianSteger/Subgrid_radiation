@@ -29,8 +29,8 @@ subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
-ang_max = 89.5
-sw_dir_cor_max = 20.0
+sw_dir_cor_max = 25.0
+ang_max = 89.9
 
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory

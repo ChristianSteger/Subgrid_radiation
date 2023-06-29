@@ -13,8 +13,8 @@ public:
     int offset_gc_cl;
     unsigned char* mask_cl;
     float dist_search_cl;
-    float ang_max_cl;
     float sw_dir_cor_max_cl;
+    float ang_max_cl;
     float ray_org_elev_cl;
     float dot_prod_rem_cl;
     int num_gc_y_cl, num_gc_x_cl;
@@ -32,8 +32,8 @@ public:
         unsigned char* mask,
         float dist_search,
         char* geom_type,
-        float ang_max,
-        float sw_dir_cor_max);
+        float sw_dir_cor_max,
+        float ang_max);
     void sw_dir_cor(float* sun_pos, float* sw_dir_cor);
     void sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor);
     void sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor);

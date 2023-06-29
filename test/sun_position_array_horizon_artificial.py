@@ -32,16 +32,20 @@ lu_lat = np.linspace(0.0, 90.0, 19, dtype=np.float64)  # 5 degree
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
-ang_max = 89.5
-sw_dir_cor_max = 20.0
+sw_dir_cor_max = 25.0
+ang_max = 89.9
+hori_azim_num, hori_acc = 30, 3.0
 # hori_azim_num, hori_acc = 45, 2.0
-hori_azim_num, hori_acc = 60, 1.5
+# hori_azim_num, hori_acc = 60, 1.5
 # hori_azim_num, hori_acc = 72, 1.25
+# hori_azim_num, hori_acc = 180, 0.5
+# hori_azim_num, hori_acc = 360, 0.25
+# hori_azim_num, hori_acc = 720, 0.125
 ray_algorithm = "guess_constant"
 elev_ang_low_lim = -85.0  # -15.0
 
 # Miscellaneous settings
-dir_work = "/Users/csteger/Desktop/dir_work/"  # working directory
+path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 plot = True
 
 # -----------------------------------------------------------------------------
@@ -117,9 +121,19 @@ mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
 # Compute spatially aggregated correction factors
 # -----------------------------------------------------------------------------
 
-# Compute
+# Compute sky view factor
+sky_view_factor, area_increase_factor, sky_view_area_factor \
+    = sun_position_array.horizon.sky_view_factor(
+        vert_grid, dem_dim_0, dem_dim_1,
+        vert_grid_in, dem_dim_in_0, dem_dim_in_1,
+        pixel_per_gc, offset_gc,
+        mask=mask, dist_search=dist_search, hori_azim_num=hori_azim_num,
+        hori_acc=hori_acc, ray_algorithm=ray_algorithm,
+        elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type)
+
+# Compute sky view factor and SW_dir correction factor
 sw_dir_cor, sky_view_factor, area_increase_factor, sky_view_area_factor \
-    = sun_position_array.horizon.sw_dir_cor_svf(
+    = sun_position_array.horizon.sky_view_factor_sw_dir_cor(
         vert_grid, dem_dim_0, dem_dim_1,
         vert_grid_in, dem_dim_in_0, dem_dim_in_1,
         sun_pos, pixel_per_gc, offset_gc,
@@ -163,3 +177,17 @@ if plot:
           % np.nanmean(sw_dir_cor[:, :, ind_2, ind_3]))
 print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
       + ", %.2f" % np.nanmax(sw_dir_cor) + "]")
+
+# Compare with results from 'rays'-method
+sw_dir_cor_rays = np.load(path_work + "SW_dir_cor_artifical_rays.npy")
+
+ind_2, ind_3 = 5, 0  # 3, 0
+plt.figure()
+plt.pcolormesh(sw_dir_cor[:, :, ind_2, ind_3]
+               - sw_dir_cor_rays[:, :, ind_2, ind_3])
+plt.colorbar()
+
+# Deviation statistics
+print(np.abs(sw_dir_cor - sw_dir_cor_rays).max())
+print(np.percentile(np.abs(sw_dir_cor - sw_dir_cor_rays), 99.5))
+print(np.abs(sw_dir_cor - sw_dir_cor_rays).mean())

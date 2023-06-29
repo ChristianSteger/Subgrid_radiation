@@ -17,8 +17,8 @@ void sw_dir_cor_comp(
     uint8_t* mask,
     float dist_search,
     char* geom_type,
-    float ang_max,
-    float sw_dir_cor_max);
+    float sw_dir_cor_max,
+    float ang_max);
 
 void sw_dir_cor_comp_coherent(
     float* vert_grid,
@@ -33,8 +33,8 @@ void sw_dir_cor_comp_coherent(
     uint8_t* mask,
     float dist_search,
     char* geom_type,
-    float ang_max,
-    float sw_dir_cor_max);
+    float sw_dir_cor_max,
+    float ang_max);
 
 void sw_dir_cor_comp_coherent_rp8(
     float* vert_grid,
@@ -49,7 +49,7 @@ void sw_dir_cor_comp_coherent_rp8(
     uint8_t* mask,
     float dist_search,
     char* geom_type,
-    float ang_max,
-    float sw_dir_cor_max);
+    float sw_dir_cor_max,
+    float ang_max);
 
 #endif

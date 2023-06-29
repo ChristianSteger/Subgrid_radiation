@@ -34,8 +34,8 @@ mpl.style.use("classic")
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
-ang_max = 89.5
-sw_dir_cor_max = 20.0
+sw_dir_cor_max = 25.0
+ang_max = 89.9
 
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory

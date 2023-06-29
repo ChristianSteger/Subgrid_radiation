@@ -360,8 +360,8 @@ void CppTerrain::initialise(
 	unsigned char* mask,
     float dist_search,
     char* geom_type,
-    float ang_max,
-    float sw_dir_cor_max) {
+    float sw_dir_cor_max,
+    float ang_max) {
 
     vert_grid_cl = vert_grid;
     dem_dim_0_cl = dem_dim_0;
@@ -372,16 +372,13 @@ void CppTerrain::initialise(
     pixel_per_gc_cl = pixel_per_gc;
     offset_gc_cl = offset_gc;
     mask_cl = mask;
-    ang_max_cl = ang_max;
     sw_dir_cor_max_cl = sw_dir_cor_max;
+    ang_max_cl = ang_max;
 
     // Hard-coded settings
     ray_org_elev_cl = 0.05;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
-    dot_prod_rem_cl = cos(deg2rad(94.0));
-    // threshold depends on radius (r) of Earth and mountain elevation
-    // maximum (em)
 
     // Number of grid cells
     num_gc_y_cl = (dem_dim_in_0 - 1) / pixel_per_gc;
@@ -521,7 +518,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
                         float dot_prod_hs = (norm_hori_x * sun_x
                             + norm_hori_y * sun_y
                             + norm_hori_z * sun_z);
-                        if (dot_prod_hs < dot_prod_rem_cl) {
+                        if (dot_prod_hs <= dot_prod_min_cl) {
                             continue;
                         }
 
@@ -529,7 +526,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
                         float dot_prod_ts = norm_tilt_x * sun_x
                             + norm_tilt_y * sun_y
                             + norm_tilt_z * sun_z;
-                        if (dot_prod_ts < dot_prod_min_cl) {
+                        if (dot_prod_ts <= dot_prod_min_cl) {
                             continue;
                         }
 
@@ -554,9 +551,6 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
                         if (ray.tfar > 0.0) {
                             // no intersection -> 'tfar' is not updated;
                             // otherwise 'tfar' = -inf
-                            if (dot_prod_hs < dot_prod_min_cl) {
-                                dot_prod_hs = dot_prod_min_cl;
-                            }
                             sw_dir_cor[lin_ind_gc] =
                                 sw_dir_cor[lin_ind_gc]
                                 + std::min(((dot_prod_ts / dot_prod_hs)
@@ -715,7 +709,7 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                         float dot_prod_hs = (norm_hori_x * sun_x
                             + norm_hori_y * sun_y
                             + norm_hori_z * sun_z);
-                        if (dot_prod_hs < dot_prod_rem_cl) {
+                        if (dot_prod_hs <= dot_prod_min_cl) {
                             continue;
                         }
 
@@ -723,7 +717,7 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                         float dot_prod_ts = norm_tilt_x * sun_x
                             + norm_tilt_y * sun_y
                             + norm_tilt_z * sun_z;
-                        if (dot_prod_ts < dot_prod_min_cl) {
+                        if (dot_prod_ts <= dot_prod_min_cl) {
                             continue;
                         }
 
@@ -739,9 +733,6 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                         // std::numeric_limits<float>::infinity();
                         rays[num_rays_gc].id = num_rays_gc;
 
-                        if (dot_prod_hs < dot_prod_min_cl) {
-                            dot_prod_hs = dot_prod_min_cl;
-                        }
                         sw_dir_cor_ray[num_rays_gc] =
                             std::min(((dot_prod_ts / dot_prod_hs)
                             * surf_enl_fac),
@@ -927,7 +918,7 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                         float dot_prod_hs = (norm_hori_x * sun_x
                             + norm_hori_y * sun_y
                             + norm_hori_z * sun_z);
-                        if (dot_prod_hs < dot_prod_rem_cl) {
+                        if (dot_prod_hs <= dot_prod_min_cl) {
                             continue;
                         }
 
@@ -935,7 +926,7 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                         float dot_prod_ts = norm_tilt_x * sun_x
                             + norm_tilt_y * sun_y
                             + norm_tilt_z * sun_z;
-                        if (dot_prod_ts < dot_prod_min_cl) {
+                        if (dot_prod_ts <= dot_prod_min_cl) {
                             continue;
                         }
 
@@ -952,9 +943,6 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                         ray8.id[num_rays_gc] = num_rays_gc;
                         valid8[num_rays_gc] = -1; // -1: valid
 
-                        if (dot_prod_hs < dot_prod_min_cl) {
-                            dot_prod_hs = dot_prod_min_cl;
-                        }
                         sw_dir_cor_ray[num_rays_gc] =
                             std::min(((dot_prod_ts / dot_prod_hs)
                             * surf_enl_fac),

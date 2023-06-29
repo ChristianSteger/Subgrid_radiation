@@ -390,8 +390,8 @@ void sw_dir_cor_comp(
     uint8_t* mask,
     float dist_search,
     char* geom_type,
-    float ang_max,
-    float sw_dir_cor_max) {
+    float sw_dir_cor_max,
+    float ang_max) {
 
     cout << "--------------------------------------------------------" << endl;
     cout << "Compute lookup table with default method" << endl;
@@ -401,9 +401,6 @@ void sw_dir_cor_comp(
     float ray_org_elev = 0.05;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
-    float dot_prod_rem = cos(deg2rad(94.0));
-    // threshold depends on radius (r) of Earth and mountain elevation
-    // maximum (em)
 
     // Number of grid cells
     int num_gc_y = (dem_dim_in_0 - 1) / pixel_per_gc;
@@ -553,7 +550,7 @@ void sw_dir_cor_comp(
                                 float dot_prod_hs = (norm_hori_x * sun_x
                                     + norm_hori_y * sun_y
                                     + norm_hori_z * sun_z);
-                                if (dot_prod_hs < dot_prod_rem) {
+                                if (dot_prod_hs <= dot_prod_min) {
                                     continue;
                                 }
 
@@ -561,7 +558,7 @@ void sw_dir_cor_comp(
                                 float dot_prod_ts = norm_tilt_x * sun_x
                                     + norm_tilt_y * sun_y
                                     + norm_tilt_z * sun_z;
-                                if (dot_prod_ts < dot_prod_min) {
+                                if (dot_prod_ts <= dot_prod_min) {
                                     continue;
                                 }
 
@@ -586,9 +583,6 @@ void sw_dir_cor_comp(
                                 if (ray.tfar > 0.0) {
                                     // no intersection -> 'tfar' is not
                                     // updated; otherwise 'tfar' = -inf
-                                    if (dot_prod_hs < dot_prod_min) {
-                                        dot_prod_hs = dot_prod_min;
-                                    }
                                     sw_dir_cor[ind_lin_cor] =
                                         sw_dir_cor[ind_lin_cor]
                                         + std::min(((dot_prod_ts
@@ -667,8 +661,8 @@ void sw_dir_cor_comp_coherent(
     uint8_t* mask,
     float dist_search,
     char* geom_type,
-    float ang_max,
-    float sw_dir_cor_max) {
+    float sw_dir_cor_max,
+    float ang_max) {
 
     cout << "--------------------------------------------------------" << endl;
     cout << "Compute lookup table with coherent rays" << endl;
@@ -678,9 +672,6 @@ void sw_dir_cor_comp_coherent(
     float ray_org_elev = 0.05;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
-    float dot_prod_rem = cos(deg2rad(94.0));
-    // threshold depends on radius (r) of Earth and mountain elevation
-    // maximum (em)
 
     // Number of grid cells
     int num_gc_y = (dem_dim_in_0 - 1) / pixel_per_gc;
@@ -867,7 +858,7 @@ void sw_dir_cor_comp_coherent(
                                     = (norm_hori[ind_incr_3] * sun_x
                                     + norm_hori[ind_incr_3 + 1] * sun_y
                                     + norm_hori[ind_incr_3 + 2] * sun_z);
-                                if (dot_prod_hs < dot_prod_rem) {
+                                if (dot_prod_hs <= dot_prod_min) {
                                     ind_incr_3 = ind_incr_3 + 3;
                                     ind_incr_1 = ind_incr_1 + 1;
                                     continue;
@@ -878,7 +869,7 @@ void sw_dir_cor_comp_coherent(
                                     = norm_tilt[ind_incr_3] * sun_x
                                     + norm_tilt[ind_incr_3 + 1] * sun_y
                                     + norm_tilt[ind_incr_3 + 2] * sun_z;
-                                if (dot_prod_ts < dot_prod_min) {
+                                if (dot_prod_ts <= dot_prod_min) {
                                     ind_incr_3 = ind_incr_3 + 3;
                                     ind_incr_1 = ind_incr_1 + 1;
                                     continue;
@@ -899,9 +890,6 @@ void sw_dir_cor_comp_coherent(
                                 // std::numeric_limits<float>::infinity();
                                 rays[num_rays_gc].id = num_rays_gc;
 
-                                if (dot_prod_hs < dot_prod_min) {
-                                    dot_prod_hs = dot_prod_min;
-                                }
                                 sw_dir_cor_ray[num_rays_gc] =
                                     std::min(((dot_prod_ts / dot_prod_hs)
                                     * surf_enl_fac[ind_incr_1]),
@@ -1007,8 +995,8 @@ void sw_dir_cor_comp_coherent_rp8(
     uint8_t* mask,
     float dist_search,
     char* geom_type,
-    float ang_max,
-    float sw_dir_cor_max) {
+    float sw_dir_cor_max,
+    float ang_max) {
 
     cout << "--------------------------------------------------------" << endl;
     cout << "Compute lookup table with coherent rays" << endl;
@@ -1019,9 +1007,6 @@ void sw_dir_cor_comp_coherent_rp8(
     float ray_org_elev = 0.05;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
-    float dot_prod_rem = cos(deg2rad(94.0));
-    // threshold depends on radius (r) of Earth and mountain elevation
-    // maximum (em)
 
     // Number of grid cells
     int num_gc_y = (dem_dim_in_0 - 1) / pixel_per_gc;
@@ -1207,7 +1192,7 @@ void sw_dir_cor_comp_coherent_rp8(
                                     = (norm_hori[ind_incr_3] * sun_x
                                     + norm_hori[ind_incr_3 + 1] * sun_y
                                     + norm_hori[ind_incr_3 + 2] * sun_z);
-                                if (dot_prod_hs < dot_prod_rem) {
+                                if (dot_prod_hs <= dot_prod_min) {
                                     ind_incr_3 = ind_incr_3 + 3;
                                     ind_incr_1 = ind_incr_1 + 1;
                                     continue;
@@ -1218,7 +1203,7 @@ void sw_dir_cor_comp_coherent_rp8(
                                     = norm_tilt[ind_incr_3] * sun_x
                                     + norm_tilt[ind_incr_3 + 1] * sun_y
                                     + norm_tilt[ind_incr_3 + 2] * sun_z;
-                                if (dot_prod_ts < dot_prod_min) {
+                                if (dot_prod_ts <= dot_prod_min) {
                                     ind_incr_3 = ind_incr_3 + 3;
                                     ind_incr_1 = ind_incr_1 + 1;
                                     continue;
@@ -1240,9 +1225,6 @@ void sw_dir_cor_comp_coherent_rp8(
                                 ray8.id[num_rays_gc] = num_rays_gc;
                                 valid8[num_rays_gc] = -1; // -1: valid
 
-                                if (dot_prod_hs < dot_prod_min) {
-                                    dot_prod_hs = dot_prod_min;
-                                }
                                 sw_dir_cor_ray[num_rays_gc] =
                                     std::min(((dot_prod_ts / dot_prod_hs)
                                     * surf_enl_fac[ind_incr_1]),

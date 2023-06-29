@@ -23,8 +23,8 @@ cdef extern from "rays_comp.h":
             np.npy_uint8 * mask,
             float dist_search,
             char* geom_type,
-            float ang_max,
-            float sw_dir_cor_max)
+            float sw_dir_cor_max,
+            float ang_max)
 
 def sw_dir_cor(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
@@ -37,8 +37,8 @@ def sw_dir_cor(
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
         str geom_type="grid",
-        float ang_max=89.0,
-        float sw_dir_cor_max=25.0):
+        float sw_dir_cor_max=25.0,
+        float ang_max=89.9):
     """Compute subsolar lookup table of subgrid-scale correction factors
     for direct downward shortwave radiation.
 
@@ -72,14 +72,13 @@ def sw_dir_cor(
         Search distance for topographic shadowing [kilometre]
     geom_type : str
         Embree geometry type (triangle, quad, grid)
-    ang_max : float
-        Maximal angle between sun vector and tilted surface normal for which
-        correction is computed. For larger angles, 'sw_dir_cor' is set to 0.0.
-        'ang_max' is also applied to restrict the maximal angle between the sun
-        vector and the horizontal surface normal [degree]
     sw_dir_cor_max : float
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
+    ang_max : float
+        Maximal angle between (I) sun vector and horizontal surface normal
+        and (II) sun vector and tilted surface normal for which correction is
+        computed. For larger angles, 'sw_dir_cor' is set to 0.0 [degree]
 
     Returns
     -------
@@ -118,10 +117,10 @@ def sw_dir_cor(
         raise ValueError("'dist_search' must be at least 100.0 m")
     if geom_type not in ("triangle", "quad", "grid"):
         raise ValueError("invalid input argument for geom_type")
-    if (ang_max < 85.0) or (ang_max > 89.99):
-        raise ValueError("'ang_max' must be in the range [85.0, 89.99]")
     if (sw_dir_cor_max < 2.0) or (sw_dir_cor_max > 100.0):
         raise ValueError("'sw_dir_cor_max' must be in the range [2.0, 100.0]")
+    if (ang_max < 88.0) or (ang_max > 89.99):
+        raise ValueError("'ang_max' must be in the range [88.0, 89.99]")
 
     # Check size of input geometries
     if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
@@ -161,8 +160,8 @@ def sw_dir_cor(
         &mask[0, 0],
         dist_search,
         geom_type_c,
-        ang_max,
-        sw_dir_cor_max)
+        sw_dir_cor_max,
+        ang_max)
 
     return sw_dir_cor
 
@@ -184,8 +183,8 @@ cdef extern from "rays_comp.h":
             np.npy_uint8 * mask,
             float dist_search,
             char* geom_type,
-            float ang_max,
-            float sw_dir_cor_max)
+            float sw_dir_cor_max,
+            float ang_max)
 
 def sw_dir_cor_coherent(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
@@ -198,8 +197,8 @@ def sw_dir_cor_coherent(
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
         str geom_type="grid",
-        float ang_max=89.0,
-        float sw_dir_cor_max=25.0):
+        float sw_dir_cor_max=25.0,
+        float ang_max=89.9):
     """Compute subsolar lookup table of subgrid-scale correction factors
     for direct downward shortwave radiation (use coherent rays).
 
@@ -233,14 +232,13 @@ def sw_dir_cor_coherent(
         Search distance for topographic shadowing [kilometre]
     geom_type : str
         Embree geometry type (triangle, quad, grid)
-    ang_max : float
-        Maximal angle between sun vector and tilted surface normal for which
-        correction is computed. For larger angles, 'sw_dir_cor' is set to 0.0.
-        'ang_max' is also applied to restrict the maximal angle between the sun
-        vector and the horizontal surface normal [degree]
     sw_dir_cor_max : float
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
+    ang_max : float
+        Maximal angle between (I) sun vector and horizontal surface normal
+        and (II) sun vector and tilted surface normal for which correction is
+        computed. For larger angles, 'sw_dir_cor' is set to 0.0 [degree]
 
     Returns
     -------
@@ -279,10 +277,10 @@ def sw_dir_cor_coherent(
         raise ValueError("'dist_search' must be at least 100.0 m")
     if geom_type not in ("triangle", "quad", "grid"):
         raise ValueError("invalid input argument for geom_type")
-    if (ang_max < 85.0) or (ang_max > 89.99):
-        raise ValueError("'ang_max' must be in the range [85.0, 89.99]")
     if (sw_dir_cor_max < 2.0) or (sw_dir_cor_max > 100.0):
         raise ValueError("'sw_dir_cor_max' must be in the range [2.0, 100.0]")
+    if (ang_max < 88.0) or (ang_max > 89.99):
+        raise ValueError("'ang_max' must be in the range [88.0, 89.99]")
 
     # Check size of input geometries
     if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
@@ -320,8 +318,8 @@ def sw_dir_cor_coherent(
         &mask[0, 0],
         dist_search,
         geom_type_c,
-        ang_max,
-        sw_dir_cor_max)
+        sw_dir_cor_max,
+        ang_max)
 
     return sw_dir_cor
 
@@ -343,8 +341,8 @@ cdef extern from "rays_comp.h":
             np.npy_uint8 * mask,
             float dist_search,
             char* geom_type,
-            float ang_max,
-            float sw_dir_cor_max)
+            float sw_dir_cor_max,
+            float ang_max)
 
 def sw_dir_cor_coherent_rp8(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
@@ -357,8 +355,8 @@ def sw_dir_cor_coherent_rp8(
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
         str geom_type="grid",
-        float ang_max=89.0,
-        float sw_dir_cor_max=25.0):
+        float sw_dir_cor_max=25.0,
+        float ang_max=89.9):
     """Compute subsolar lookup table of subgrid-scale correction factors
     for direct downward shortwave radiation (use coherent rays with packages
     of 8 rays).
@@ -393,14 +391,13 @@ def sw_dir_cor_coherent_rp8(
         Search distance for topographic shadowing [kilometre]
     geom_type : str
         Embree geometry type (triangle, quad, grid)
-    ang_max : float
-        Maximal angle between sun vector and tilted surface normal for which
-        correction is computed. For larger angles, 'sw_dir_cor' is set to 0.0.
-        'ang_max' is also applied to restrict the maximal angle between the sun
-        vector and the horizontal surface normal [degree]
     sw_dir_cor_max : float
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
+    ang_max : float
+        Maximal angle between (I) sun vector and horizontal surface normal
+        and (II) sun vector and tilted surface normal for which correction is
+        computed. For larger angles, 'sw_dir_cor' is set to 0.0 [degree]
 
     Returns
     -------
@@ -425,6 +422,9 @@ def sw_dir_cor_coherent_rp8(
         raise ValueError("array 'vert_grid_in' has insufficient length")
     if pixel_per_gc < 1:
         raise ValueError("value for 'pixel_per_gc' must be larger than 1")
+    if pixel_per_gc % 2 != 0:
+        raise ValueError("algorithm is only implemented for even "
+                         + "'pixel_per_gc' values")
     if offset_gc < 0:
         raise ValueError("value for 'offset_gc' must be larger than 0")
     num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
@@ -439,13 +439,10 @@ def sw_dir_cor_coherent_rp8(
         raise ValueError("'dist_search' must be at least 100.0 m")
     if geom_type not in ("triangle", "quad", "grid"):
         raise ValueError("invalid input argument for geom_type")
-    if (ang_max < 85.0) or (ang_max > 89.99):
-        raise ValueError("'ang_max' must be in the range [85.0, 89.99]")
     if (sw_dir_cor_max < 2.0) or (sw_dir_cor_max > 100.0):
         raise ValueError("'sw_dir_cor_max' must be in the range [2.0, 100.0]")
-    if pixel_per_gc % 2 != 0:
-        raise ValueError("algorithm is only implemented for even "
-                         + "'pixel_per_gc' values")
+    if (ang_max < 88.0) or (ang_max > 89.99):
+        raise ValueError("'ang_max' must be in the range [88.0, 89.99]")
 
     # Check size of input geometries
     if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
@@ -485,7 +482,7 @@ def sw_dir_cor_coherent_rp8(
         &mask[0, 0],
         dist_search,
         geom_type_c,
-        ang_max,
-        sw_dir_cor_max)
+        sw_dir_cor_max,
+        ang_max)
 
     return sw_dir_cor

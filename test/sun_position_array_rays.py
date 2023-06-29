@@ -39,8 +39,8 @@ subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
-ang_max = 89.5
-sw_dir_cor_max = 20.0
+sw_dir_cor_max = 25.0
+ang_max = 89.9
 
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
@@ -241,6 +241,7 @@ sw_dir_cor = sw_dir_cor_coh_rp8  # select output that is further considered
 # Check output
 print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
       + ", %.2f" % np.nanmax(sw_dir_cor) + "]")
+print("Percentile (99.99): %.2f" % np.nanpercentile(sw_dir_cor, 99.99))
 
 # Test plot
 levels = np.arange(0.0, 2.0, 0.2)
