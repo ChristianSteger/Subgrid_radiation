@@ -54,6 +54,18 @@ inline float rad2deg(float ang) {
     return ((ang / M_PI) * 180.0);
 }
 
+// Convert from Kelvin to degree Celsius
+inline float K2degC(float temp) {
+    /* Parameters
+       ----------
+       temp: temperature [Kelvin]
+
+       Returns
+       ----------
+       temp: temperature [degree Celsius]*/
+    return (temp - 273.15);
+}
+
 // ----------------------------------------------------------------------------
 // Compute linear array index from multidimensional subscripts
 // ----------------------------------------------------------------------------
@@ -89,6 +101,53 @@ inline void vec_unit(float &v_x, float &v_y, float &v_z) {
     v_x = v_x / mag;
     v_y = v_y / mag;
     v_z = v_z / mag;
+}
+
+// Cross product
+inline void cross_prod(float a_x, float a_y, float a_z, float b_x, float b_y,
+    float b_z, float &c_x, float &c_y, float &c_z) {
+    /* Parameters
+       ----------
+       a_x: x-component of vector a [arbitrary]
+       a_y: y-component of vector a [arbitrary]
+       a_z: z-component of vector a [arbitrary]
+       b_x: x-component of vector b [arbitrary]
+       b_y: y-component of vector b [arbitrary]
+       b_z: z-component of vector b [arbitrary]
+       c_x: x-component of vector c [arbitrary]
+       c_y: y-component of vector c [arbitrary]
+       c_z: z-component of vector c [arbitrary]
+    */
+    c_x = a_y * b_z - a_z * b_y;
+    c_y = a_z * b_x - a_x * b_z;
+    c_z = a_x * b_y - a_y * b_x;
+}
+
+// Vector rotation (according to Rodrigues' rotation formula)
+inline void vec_rot(float k_x, float k_y, float k_z, float theta,
+    float &v_x, float &v_y, float &v_z) {
+    /* Parameters
+       ----------
+       k_x: x-component of unit vector perpendicular to rotation plane [-]
+       k_y: y-component of unit vector perpendicular to rotation plane [-]
+       k_z: z-component of unit vector perpendicular to rotation plane [-]
+       theta: rotation angle [radian]
+       v_x: x-component of rotated vector [-]
+       v_y: y-component of rotated vector [-]
+       v_z: z-component of rotated vector [-]
+    */
+    float cos_theta = cos(theta);
+    float sin_theta = sin(theta);
+    float part = (k_x * v_x + k_y * v_y + k_z * v_z) * (1.0 - cos_theta);
+    float v_x_rot = v_x * cos_theta + (k_y * v_z - k_z * v_y) * sin_theta
+        + k_x * part;
+    float v_y_rot = v_y * cos_theta + (k_z * v_x - k_x * v_z) * sin_theta
+        + k_y * part;
+    float v_z_rot = v_z * cos_theta + (k_x * v_y - k_y * v_x) * sin_theta
+        + k_z * part;
+    v_x = v_x_rot;
+    v_y = v_y_rot;
+    v_z = v_z_rot;
 }
 
 // ----------------------------------------------------------------------------
@@ -192,6 +251,37 @@ inline void triangle_vert_ur(size_t dim_1, size_t ind_0, size_t ind_1,
 void (*func_ptr[2])(size_t dim_1, size_t ind_0, size_t ind_1,
     size_t &ind_tri_0, size_t &ind_tri_1, size_t &ind_tri_2)
     = {triangle_vert_ll, triangle_vert_ur};
+
+// ----------------------------------------------------------------------------
+// Atmospheric refraction
+// ----------------------------------------------------------------------------
+
+// Estimate atmospheric refraction
+inline float atmos_refrac(float elev_ang_true, float temp, float pressure) {
+    /* Parameters
+       ----------
+       elev_ang_true: true solar elevation angle [degree]
+       temp: temperature [degree Celsius]
+       pressure: atmospheric pressure [kPa]
+
+       Returns
+       ----------
+       refrac_cor: refraction correction [degree]
+
+       Reference
+       ----------
+       - Saemundsson, P. (1986). "Astronomical Refraction". Sky and Telescope.
+         72: 70
+       - Meeus, J. (1998): Astronomical Algorithm - Second edition, p. 106*/
+    float lower = -1.0;
+    float upper = 90.0;
+    elev_ang_true = std::max(lower, std::min(elev_ang_true, upper));
+    float refrac_cor = (1.02 / tan(deg2rad(elev_ang_true + 10.3
+        / (elev_ang_true + 5.11))));
+    refrac_cor += 0.0019279;  // set R = 0.0 for h = 90.0 degree
+    refrac_cor *= (pressure / 101.0) * (283.0 / (273.0 + temp));
+    return refrac_cor * (1.0 / 60.0);
+}
 
 //#############################################################################
 // Miscellaneous
@@ -411,10 +501,20 @@ void CppTerrain::initialise(
 // Compute correction factors
 //#############################################################################
 
-void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
+void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
+    int refrac_cor) {
  
     auto start_ray = std::chrono::high_resolution_clock::now();
     size_t num_rays = 0;
+
+	// Parameters for reference atmosphere
+	float temperature_ref = 283.15;  // reference temperature at sea level [K]
+	float pressure_ref = 101.0;  // reference pressure at sea level [kPa]
+	float lapse_rate = 0.0065;  // temperature lapse rate [K m-1]
+	float g = 9.81;  // acceleration due to gravity at sea level [m s-2]
+	float R_d = 287.0;  // gas constant for dry air [J K-1 kg-1]
+	float exp_baro = (g / (R_d * lapse_rate));
+	// exponent for barometric formula
 
     num_rays += tbb::parallel_reduce(
         tbb::blocked_range<size_t>(0, num_gc_y_cl), 0.0,
@@ -514,10 +614,46 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor) {
                         float sun_z = (sun_pos[2] - ray_org_z);
                         vec_unit(sun_x, sun_y, sun_z);
 
-                        // Check for shadowing by Earth's sphere
+                        // Consider atmospheric refraction (optional)
                         float dot_prod_hs = (norm_hori_x * sun_x
                             + norm_hori_y * sun_y
                             + norm_hori_z * sun_z);
+                        if (refrac_cor == 1) {
+
+                            // Compute elevation (distance between centroid
+                            // of DEM triangle and 'base triangle')
+                            float cent_base_x, cent_base_y, cent_base_z;
+                            triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
+                                vert_1_x, vert_1_y, vert_1_z,
+                                vert_2_x, vert_2_y, vert_2_z,
+                                cent_base_x, cent_base_y, cent_base_z);
+                            float elevation
+                                = sqrt(pow(cent_x - cent_base_x, 2)
+                                + pow(cent_y - cent_base_y, 2)
+                                + pow(cent_z - cent_base_z, 2));
+
+                            // Update sun position
+                            float elev_ang_true = 90.0
+                                - rad2deg(acos(dot_prod_hs));
+                            float temperature = temperature_ref
+                                - (lapse_rate * elevation);
+                            float pressure = pressure_ref
+                                * pow((temperature / temperature_ref),
+                                exp_baro);
+                            float refrac_cor = atmos_refrac(elev_ang_true,
+                                K2degC(temperature), pressure);
+                            float k_x, k_y, k_z;
+                            cross_prod(sun_x, sun_y, sun_z,
+                                norm_hori_x, norm_hori_y, norm_hori_z,
+                                k_x, k_y, k_z);
+                            vec_unit(k_x, k_y, k_z);
+                            vec_rot(k_x, k_y, k_z, deg2rad(refrac_cor),
+                                sun_x, sun_y, sun_z);
+                            dot_prod_hs = (norm_hori_x * sun_x
+                                + norm_hori_y * sun_y   + norm_hori_z * sun_z);
+                        }
+
+                        // Check for shadowing by Earth's sphere
                         if (dot_prod_hs <= dot_prod_min_cl) {
                             continue;
                         }

@@ -10,7 +10,7 @@ cdef extern from "sun_position_comp.h" namespace "shapes":
         CppTerrain()
         void initialise(float*, int, int, float*, int, int,
                         int, int, unsigned char*, float, char*, float, float)
-        void sw_dir_cor(float*, float*)
+        void sw_dir_cor(float*, float*, int)
         void sw_dir_cor_coherent(float*, float*)
         void sw_dir_cor_coherent_rp8(float *, float *)
 
@@ -127,7 +127,8 @@ cdef class Terrain:
 # -----------------------------------------------------------------------------
 
     def sw_dir_cor(self, np.ndarray[np.float32_t, ndim = 1] sun_pos,
-                   np.ndarray[np.float32_t, ndim = 2] sw_dir_cor):
+                   np.ndarray[np.float32_t, ndim = 2] sw_dir_cor,
+                   bint refrac_cor=False):
         """Compute subgrid-scale correction factors for direct downward
         shortwave radiation for a specific sun position.
 
@@ -139,6 +140,8 @@ cdef class Terrain:
         sw_dir_cor : ndarray of float
             Array (two-dimensional) with shortwave correction factor (y, x)
             [-]
+        refrac_cor: bool
+            Account for atmospheric refraction
 
         References
         ----------
@@ -156,7 +159,7 @@ cdef class Terrain:
         # -> ensure that all elements of array 'sw_dir_cor' are 0.0 (crucial
         # because subgrid correction values are iteratively added)
 
-        self.thisptr.sw_dir_cor(&sun_pos[0], &sw_dir_cor[0,0])
+        self.thisptr.sw_dir_cor(&sun_pos[0], &sw_dir_cor[0,0], int(refrac_cor))
 
 # -----------------------------------------------------------------------------
 
