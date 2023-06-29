@@ -651,6 +651,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
                                 sun_x, sun_y, sun_z);
                             dot_prod_hs = (norm_hori_x * sun_x
                                 + norm_hori_y * sun_y   + norm_hori_z * sun_z);
+
                         }
 
                         // Check for shadowing by Earth's sphere
