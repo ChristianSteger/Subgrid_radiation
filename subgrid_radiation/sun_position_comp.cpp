@@ -654,17 +654,17 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
 
                         }
 
-                        // Check for shadowing by Earth's sphere
+                        // Check for self-shadowing (Earth)
                         if (dot_prod_hs <= dot_prod_min_cl) {
-                            continue;
+                            continue;   // sw_dir_cor += 0.0
                         }
 
-                        // Check for self-shadowing
+                        // Check for self-shadowing (triangle)
                         float dot_prod_ts = norm_tilt_x * sun_x
                             + norm_tilt_y * sun_y
                             + norm_tilt_z * sun_z;
-                        if (dot_prod_ts <= dot_prod_min_cl) {
-                            continue;
+                        if (dot_prod_ts <= 0.0) {
+                            continue;  // sw_dir_cor += 0.0
                         }
 
                         // Intersect context
@@ -692,7 +692,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
                                 sw_dir_cor[lin_ind_gc]
                                 + std::min(((dot_prod_ts / dot_prod_hs)
                                 * surf_enl_fac), sw_dir_cor_max_cl);
-                        }
+                        }  // else: sw_dir_cor += 0.0
                         num_rays += 1;
 
                     }
@@ -842,20 +842,20 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                         float sun_z = (sun_pos[2] - ray_org_z);
                         vec_unit(sun_x, sun_y, sun_z);
 
-                        // Check for shadowing by Earth's sphere
+                        // Check for self-shadowing (Earth)
                         float dot_prod_hs = (norm_hori_x * sun_x
                             + norm_hori_y * sun_y
                             + norm_hori_z * sun_z);
                         if (dot_prod_hs <= dot_prod_min_cl) {
-                            continue;
+                            continue;  // sw_dir_cor += 0.0
                         }
 
-                        // Check for self-shadowing
+                        // Check for self-shadowing (triangle)
                         float dot_prod_ts = norm_tilt_x * sun_x
                             + norm_tilt_y * sun_y
                             + norm_tilt_z * sun_z;
-                        if (dot_prod_ts <= dot_prod_min_cl) {
-                            continue;
+                        if (dot_prod_ts <= 0.0) {
+                            continue;  // sw_dir_cor += 0.0
                         }
 
                         // Add ray
@@ -897,7 +897,7 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                     // otherwise 'tfar' = -inf
                     sw_dir_cor_agg = sw_dir_cor_agg
                         + sw_dir_cor_ray[rays[k].id];
-                }
+                }  // else: sw_dir_cor += 0.0
             }
 
             delete[] sw_dir_cor_ray;
@@ -1051,20 +1051,20 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                         float sun_z = (sun_pos[2] - ray_org_z);
                         vec_unit(sun_x, sun_y, sun_z);
 
-                        // Check for shadowing by Earth's sphere
+                        // Check for self-shadowing (Earth)
                         float dot_prod_hs = (norm_hori_x * sun_x
                             + norm_hori_y * sun_y
                             + norm_hori_z * sun_z);
                         if (dot_prod_hs <= dot_prod_min_cl) {
-                            continue;
+                            continue;  // sw_dir_cor += 0.0
                         }
 
-                        // Check for self-shadowing
+                        // Check for self-shadowing (triangle)
                         float dot_prod_ts = norm_tilt_x * sun_x
                             + norm_tilt_y * sun_y
                             + norm_tilt_z * sun_z;
-                        if (dot_prod_ts <= dot_prod_min_cl) {
-                            continue;
+                        if (dot_prod_ts <= 0.0) {
+                            continue;  // sw_dir_cor += 0.0
                         }
 
                         // Add ray
@@ -1105,7 +1105,7 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                             // otherwise 'tfar' = -inf
                             sw_dir_cor_agg = sw_dir_cor_agg
                                 + sw_dir_cor_ray[n];
-                        }
+                        }  // else: sw_dir_cor += 0.0
                     }
 
                 }

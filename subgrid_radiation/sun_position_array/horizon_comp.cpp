@@ -1318,20 +1318,20 @@ void sky_view_factor_sw_dir_cor_comp(
                                     - ray_org_z);
                                 vec_unit(sun_x, sun_y, sun_z);
 
-                                // Check for shadowing by Earth's sphere
+                                // Check for self-shadowing (Earth)
                                 float dot_prod_hs = (norm_hori_x * sun_x
                                     + norm_hori_y * sun_y
                                     + norm_hori_z * sun_z);
                                 if (dot_prod_hs <= dot_prod_min) {
-                                    continue;
+                                    continue;  // sw_dir_cor += 0.0
                                 }
 
-                                // Check for self-shadowing
+                                // Check for self-shadowing (triangle)
                                 float dot_prod_ts = norm_tilt_x * sun_x
                                     + norm_tilt_y * sun_y
                                     + norm_tilt_z * sun_z;
-                                if (dot_prod_ts <= dot_prod_min) {
-                                    continue;
+                                if (dot_prod_ts <= 0.0) {
+                                    continue;  // sw_dir_cor += 0.0
                                 }
 
                                 // Rotate sun vector from global to local ENU
@@ -1344,7 +1344,7 @@ void sky_view_factor_sw_dir_cor_comp(
                                 // minimal/maximal horizon -> separate cases
                                 // that require less expensive operations
                                 if (sun_local[2] <= horizon_sin_min) {
-                                    continue;  // shadow (+= 0.0)
+                                    continue;  // shadow (sw_dir_cor += 0.0)
                                 } else if (sun_local[2] <= horizon_sin_max) {
                                     float sun_azim = atan2(sun_local[0],
                                                            sun_local[1]);
@@ -1359,7 +1359,8 @@ void sky_view_factor_sw_dir_cor_comp(
                                         * (1.0 - weight)
                                         + horizon_sin[ind_0 + 1] * weight;
                                     if (sun_local[2] <= horizon_sin_sun) {
-                                        continue;  // shadow (+= 0.0)
+                                        continue;
+                                        // shadow (sw_dir_cor += 0.0)
                                     }
                                 }
 

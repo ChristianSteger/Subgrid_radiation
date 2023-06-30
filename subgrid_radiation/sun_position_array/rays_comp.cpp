@@ -546,20 +546,20 @@ void sw_dir_cor_comp(
                                     - ray_org_z);
                                 vec_unit(sun_x, sun_y, sun_z);
 
-                                // Check for shadowing by Earth's sphere
+                                // Check for self-shadowing (Earth)
                                 float dot_prod_hs = (norm_hori_x * sun_x
                                     + norm_hori_y * sun_y
                                     + norm_hori_z * sun_z);
                                 if (dot_prod_hs <= dot_prod_min) {
-                                    continue;
+                                    continue;  // sw_dir_cor += 0.0
                                 }
 
-                                // Check for self-shadowing
+                                // Check for self-shadowing (triangle)
                                 float dot_prod_ts = norm_tilt_x * sun_x
                                     + norm_tilt_y * sun_y
                                     + norm_tilt_z * sun_z;
-                                if (dot_prod_ts <= dot_prod_min) {
-                                    continue;
+                                if (dot_prod_ts <= 0.0) {
+                                    continue;  // sw_dir_cor += 0.0
                                 }
 
                                 // Intersect context
@@ -588,7 +588,7 @@ void sw_dir_cor_comp(
                                         + std::min(((dot_prod_ts
                                         / dot_prod_hs) * surf_enl_fac),
                                         sw_dir_cor_max);
-                                }
+                                }  // else: sw_dir_cor += 0.0
                                 num_rays += 1;
 
                             }
@@ -853,7 +853,7 @@ void sw_dir_cor_comp_coherent(
                                     - ray_org[ind_incr_3 + 2]);
                                 vec_unit(sun_x, sun_y, sun_z);
 
-                                // Check for shadowing by Earth's sphere
+                                // Check for self-shadowing (Earth)
                                 float dot_prod_hs
                                     = (norm_hori[ind_incr_3] * sun_x
                                     + norm_hori[ind_incr_3 + 1] * sun_y
@@ -861,18 +861,18 @@ void sw_dir_cor_comp_coherent(
                                 if (dot_prod_hs <= dot_prod_min) {
                                     ind_incr_3 = ind_incr_3 + 3;
                                     ind_incr_1 = ind_incr_1 + 1;
-                                    continue;
+                                    continue;  // sw_dir_cor += 0.0
                                 }
 
-                                // Check for self-shadowing
+                                // Check for self-shadowing (triangle)
                                 float dot_prod_ts
                                     = norm_tilt[ind_incr_3] * sun_x
                                     + norm_tilt[ind_incr_3 + 1] * sun_y
                                     + norm_tilt[ind_incr_3 + 2] * sun_z;
-                                if (dot_prod_ts <= dot_prod_min) {
+                                if (dot_prod_ts <= 0.0) {
                                     ind_incr_3 = ind_incr_3 + 3;
                                     ind_incr_1 = ind_incr_1 + 1;
-                                    continue;
+                                    continue;  // sw_dir_cor += 0.0
                                 }
 
                                 // Add ray
@@ -924,7 +924,7 @@ void sw_dir_cor_comp_coherent(
                             // otherwise 'tfar' = -inf
                             sw_dir_cor_agg = sw_dir_cor_agg
                                 + sw_dir_cor_ray[rays[k].id];
-                        }
+                        }  // else: sw_dir_cor += 0.0
                     }
 
                     size_t ind_lin_cor = lin_ind_4d(num_gc_x,
@@ -1187,7 +1187,7 @@ void sw_dir_cor_comp_coherent_rp8(
                                     - ray_org[ind_incr_3 + 2]);
                                 vec_unit(sun_x, sun_y, sun_z);
 
-                                // Check for shadowing by Earth's sphere
+                                // Check for self-shadowing (Earth)
                                 float dot_prod_hs
                                     = (norm_hori[ind_incr_3] * sun_x
                                     + norm_hori[ind_incr_3 + 1] * sun_y
@@ -1195,18 +1195,18 @@ void sw_dir_cor_comp_coherent_rp8(
                                 if (dot_prod_hs <= dot_prod_min) {
                                     ind_incr_3 = ind_incr_3 + 3;
                                     ind_incr_1 = ind_incr_1 + 1;
-                                    continue;
+                                    continue;  // sw_dir_cor += 0.0
                                 }
 
-                                // Check for self-shadowing
+                                // Check for self-shadowing (triangle)
                                 float dot_prod_ts
                                     = norm_tilt[ind_incr_3] * sun_x
                                     + norm_tilt[ind_incr_3 + 1] * sun_y
                                     + norm_tilt[ind_incr_3 + 2] * sun_z;
-                                if (dot_prod_ts <= dot_prod_min) {
+                                if (dot_prod_ts <= 0.0) {
                                     ind_incr_3 = ind_incr_3 + 3;
                                     ind_incr_1 = ind_incr_1 + 1;
-                                    continue;
+                                    continue;  // sw_dir_cor += 0.0
                                 }
 
                                 // Add ray
@@ -1256,7 +1256,7 @@ void sw_dir_cor_comp_coherent_rp8(
                                 // otherwise 'tfar' = -inf
                                 sw_dir_cor_agg = sw_dir_cor_agg
                                     + sw_dir_cor_ray[n];
-                                }
+                                }  // else: sw_dir_cor += 0.0
                             }
 
                             size_t ind_lin_cor = lin_ind_4d(num_gc_x,

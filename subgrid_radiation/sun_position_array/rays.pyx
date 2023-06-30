@@ -76,9 +76,9 @@ def sw_dir_cor(
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
     ang_max : float
-        Maximal angle between (I) sun vector and horizontal surface normal
-        and (II) sun vector and tilted surface normal for which correction is
-        computed. For larger angles, 'sw_dir_cor' is set to 0.0 [degree]
+        Maximal angle between sun vector and horizontal surface normal for
+        which correction is computed. For larger angles, 'sw_dir_cor' is set
+        to 0.0 [degree]
 
     Returns
     -------
@@ -236,9 +236,9 @@ def sw_dir_cor_coherent(
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
     ang_max : float
-        Maximal angle between (I) sun vector and horizontal surface normal
-        and (II) sun vector and tilted surface normal for which correction is
-        computed. For larger angles, 'sw_dir_cor' is set to 0.0 [degree]
+        Maximal angle between sun vector and horizontal surface normal for
+        which correction is computed. For larger angles, 'sw_dir_cor' is set
+        to 0.0 [degree]
 
     Returns
     -------
@@ -395,9 +395,9 @@ def sw_dir_cor_coherent_rp8(
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
     ang_max : float
-        Maximal angle between (I) sun vector and horizontal surface normal
-        and (II) sun vector and tilted surface normal for which correction is
-        computed. For larger angles, 'sw_dir_cor' is set to 0.0 [degree]
+        Maximal angle between sun vector and horizontal surface normal for
+        which correction is computed. For larger angles, 'sw_dir_cor' is set
+        to 0.0 [degree]
 
     Returns
     -------

@@ -66,13 +66,13 @@ cdef class Terrain:
             Search distance for topographic shadowing [kilometre]
         geom_type : str
             Embree geometry type (triangle, quad, grid)
-    sw_dir_cor_max : float
-        Maximal allowed correction factor for direct downward shortwave
-        radiation [-]
-    ang_max : float
-        Maximal angle between (I) sun vector and horizontal surface normal
-        and (II) sun vector and tilted surface normal for which correction is
-        computed. For larger angles, 'sw_dir_cor' is set to 0.0 [degree]"""
+        sw_dir_cor_max : float
+            Maximal allowed correction factor for direct downward shortwave
+            radiation [-]
+        ang_max : float
+            Maximal angle between sun vector and horizontal surface normal for
+            which correction is computed. For larger angles, 'sw_dir_cor' is
+            set to 0.0 [degree]"""
 
         # Check consistency and validity of input arguments
         if ((dem_dim_0 != (2 * offset_gc * pixel_per_gc) + dem_dim_in_0)
