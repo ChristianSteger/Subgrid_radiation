@@ -35,13 +35,12 @@ dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
 sw_dir_cor_max = 25.0
 ang_max = 89.9
-hori_azim_num, hori_acc = 30, 3.0
+# hori_azim_num, hori_acc = 30, 3.0
 # hori_azim_num, hori_acc = 45, 2.0
 # hori_azim_num, hori_acc = 60, 1.5
-# hori_azim_num, hori_acc = 72, 1.25
+hori_azim_num, hori_acc = 72, 1.25
 # hori_azim_num, hori_acc = 180, 0.5
 # hori_azim_num, hori_acc = 360, 0.25
-# hori_azim_num, hori_acc = 720, 0.125
 ray_algorithm = "guess_constant"
 elev_ang_low_lim = -85.0  # -15.0
 
@@ -187,6 +186,7 @@ plt.figure()
 plt.pcolormesh(sw_dir_cor[:, :, ind_2, ind_3]
                - sw_dir_cor_rays[:, :, ind_2, ind_3])
 plt.colorbar()
+plt.title("hori_azim_num: " + str(hori_azim_num), fontsize=12, y=1.01)
 
 # Deviation statistics
 print(np.abs(sw_dir_cor - sw_dir_cor_rays).max())

@@ -253,6 +253,7 @@ if plot:
     plt.figure(figsize=(13, 7))
     plt.pcolormesh(sw_dir_cor[:, :, ind_2, ind_3], cmap=cmap, norm=norm)
     plt.colorbar()
+    print(sw_dir_cor[:, :, ind_2, ind_3].max())
 
 # Test Plot
 if plot:

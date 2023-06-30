@@ -23,7 +23,7 @@ from subgrid_radiation import sun_position_array
 # subsol_lat = np.linspace(-23.5, 23.5, 5, dtype=np.float64)  # 11.75 degree
 # subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
 # subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
-subsol_lon = np.linspace(-180.0, 175.0, 72, dtype=np.float64)  # 5 degree
+subsol_lon = np.linspace(-180.0, 174.0, 60, dtype=np.float64)  # 6 degree
 subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
 
 # Ray-tracing and 'SW_dir_cor' calculation
@@ -34,7 +34,7 @@ ang_max = 89.9
 
 # Miscellaneous settings
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
-file_out = "SW_dir_cor_lookup.nc"
+file_out = "SW_dir_cor_lookup_21x60.nc"
 radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------

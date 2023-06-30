@@ -32,15 +32,15 @@ mpl.style.use("classic")
 # Settings
 # -----------------------------------------------------------------------------
 
-# Rotated latitude/longitude COSMO grid (fine resolution)
-pollat = 43.0 			# Latitude of the rotated North Pole
-pollon = -170.0 		# Longitude of the rotated North Pole
-ie_tot = 800			# Number of grid cells (zonal)
-je_tot = 600			# Number of grid cells (meridional)
-drlon = 0.02			# Grid spacing (zonal)
-drlat = 0.02			# Grid spacing (meridional)
-startrlon_tot = -6.2    # Centre longitude of lower left grid cell
-startrlat_tot = -6.6    # Centre latitude of lower left grid cell
+# # Rotated latitude/longitude COSMO grid (fine resolution)
+# pollat = 43.0 			# Latitude of the rotated North Pole
+# pollon = -170.0 		# Longitude of the rotated North Pole
+# ie_tot = 800			# Number of grid cells (zonal)
+# je_tot = 600			# Number of grid cells (meridional)
+# drlon = 0.02			# Grid spacing (zonal)
+# drlat = 0.02			# Grid spacing (meridional)
+# startrlon_tot = -6.2    # Centre longitude of lower left grid cell
+# startrlat_tot = -6.6    # Centre latitude of lower left grid cell
 
 # # Rotated latitude/longitude COSMO grid (coarse resolution)
 # pollat = 43.0 			# Latitude of the rotated North Pole
@@ -51,6 +51,16 @@ startrlat_tot = -6.6    # Centre latitude of lower left grid cell
 # drlat = 0.11			# Grid spacing (meridional)
 # startrlon_tot = -23.33  # Centre longitude of lower left grid cell
 # startrlat_tot = -19.36  # Centre latitude of lower left grid cell
+
+# Rotated latitude/longitude COSMO grid (~550 m test domain)
+pollat = 43.0 			# Latitude of the rotated North Pole
+pollon = -170.0 		# Longitude of the rotated North Pole
+ie_tot = 1600			# Number of grid cells (zonal)
+je_tot = 1000			# Number of grid cells (meridional)
+drlon = 0.005			# Grid spacing (zonal)
+drlat = 0.005			# Grid spacing (meridional)
+startrlon_tot = -3.6    # Centre longitude of lower left grid cell
+startrlat_tot = -3.5    # Centre latitude of lower left grid cell
 
 # Miscellaneous settings
 bound_width = 100.0  # width for additional terrain at the boundary [km]
@@ -210,7 +220,7 @@ for i in tiles_dem:
 
 # -----------------------------------------------------------------------------
 # Regrid DEM bilinearly to model sub-grid
-# (-> split a large domain due to Embree's grid size limitation of
+# (-> split large domains due to Embree's grid size limitation of
 #  32_767 x 32_767)
 # -----------------------------------------------------------------------------
 
