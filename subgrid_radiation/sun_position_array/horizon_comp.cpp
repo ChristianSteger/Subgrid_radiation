@@ -682,7 +682,7 @@ void sky_view_factor_comp(
     cout << "--------------------------------------------------------" << endl;
 
     // Hard-coded settings
-    float ray_org_elev = 0.05;
+    float ray_org_elev = 0.2;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
     float elev_ang_up_lim = 89.98;  // upper limit for elevation angle [degree]
@@ -1021,7 +1021,7 @@ void sky_view_factor_sw_dir_cor_comp(
     cout << "--------------------------------------------------------" << endl;
 
     // Hard-coded settings
-    float ray_org_elev = 0.05;
+    float ray_org_elev = 0.2;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
     float elev_ang_up_lim = 89.98;  // upper limit for elevation angle [degree]

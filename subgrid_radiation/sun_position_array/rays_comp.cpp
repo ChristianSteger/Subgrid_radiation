@@ -398,7 +398,7 @@ void sw_dir_cor_comp(
     cout << "--------------------------------------------------------" << endl;
 
     // Hard-coded settings
-    float ray_org_elev = 0.05;
+    float ray_org_elev = 0.2;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
 
@@ -669,7 +669,7 @@ void sw_dir_cor_comp_coherent(
     cout << "--------------------------------------------------------" << endl;
 
     // Hard-coded settings
-    float ray_org_elev = 0.05;
+    float ray_org_elev = 0.2;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
 
@@ -1004,7 +1004,7 @@ void sw_dir_cor_comp_coherent_rp8(
     cout << "--------------------------------------------------------" << endl;
 
     // Hard-coded settings
-    float ray_org_elev = 0.05;
+    float ray_org_elev = 0.2;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
 

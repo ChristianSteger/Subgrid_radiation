@@ -466,7 +466,7 @@ void CppTerrain::initialise(
     ang_max_cl = ang_max;
 
     // Hard-coded settings
-    ray_org_elev_cl = 0.05;
+    ray_org_elev_cl = 0.2;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
 
