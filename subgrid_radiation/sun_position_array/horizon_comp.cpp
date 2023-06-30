@@ -853,9 +853,9 @@ void sky_view_factor_comp(
                         // Compute horizon in local ENU coordinate system
                         //-----------------------------------------------------
 
-                        // Approximate north vector (orthogonal to x-axis of 
-                        // global ENU coordinate system; orientation of 
-                        // coordinate system in which horizon is computed can 
+                        // Approximate north vector (orthogonal to x-axis of
+                        // global ENU coordinate system; orientation of
+                        // coordinate system in which horizon is computed can
                         // be arbitrary as long as the z-axis aligns with the
                         // local horizontal surface normal)
                         float north_x = 0.0;
@@ -870,18 +870,6 @@ void sky_view_factor_comp(
                         float rot_inv[3][3] = {{east_x, north_x, norm_hori_x},
                                                {east_y, north_y, norm_hori_y},
                                                {east_z, north_z, norm_hori_z}};
-											   
-                        //if ((i == 0) && (j == 0) && (k == 0) && (m == 0)) {
-						
-//                      cout << "norm_hori_x: " << norm_hori_x << endl;
-//                      cout << "norm_hori_y: " << norm_hori_y << endl;
-//                      cout << "norm_hori_z: " << norm_hori_z << endl;
-//                      cout << "north_x: " << north_x << endl;
-//                      cout << "north_y: " << north_y << endl;
-//                      cout << "north_z: " << north_z << endl;
-//                      cout << "east_x: " << east_x << endl;
-//                      cout << "east_y: " << east_y << endl;
-//                      cout << "east_z: " << east_z << endl;
 
                         function_pointer(ray_org_x, ray_org_y, ray_org_z,
                             hori_azim_num, hori_acc, dist_search,
@@ -889,14 +877,6 @@ void sky_view_factor_comp(
                             scene, num_rays, &horizon[0],
                             azim_sin, azim_cos, elev_ang,
                             elev_cos, elev_sin, rot_inv);
-
-//                          cout << "horizon: " << endl;
-//                          for (size_t o = 0; o < hori_azim_num; o++) {
-//                              cout << rad2deg(horizon[o]) << endl;
-  				 		
-                        //}
-
-                        //}
 
                         //-----------------------------------------------------
                         // Compute sky view factor
@@ -932,19 +912,19 @@ void sky_view_factor_comp(
                             agg = agg + ((tilt_local[0] * azim_sin[o]
                                 + tilt_local[1] * azim_cos[o]) * ((M_PI / 2.0)
                                 - hori_elev - (sin(2.0 * hori_elev) / 2.0))
-                                + tilt_local[2] * pow(cos(hori_elev), 2));						
+                                + tilt_local[2] * pow(cos(hori_elev), 2));
 
                         }
 
-                        sky_view_factor[lin_ind_gc] 
+                        sky_view_factor[lin_ind_gc]
                             = sky_view_factor[lin_ind_gc]
                             + (azim_spac / (2.0 * M_PI)) * agg;
 
-                        area_increase_factor[lin_ind_gc] 
+                        area_increase_factor[lin_ind_gc]
                             = area_increase_factor[lin_ind_gc]
                             + surf_enl_fac;
 
-                        sky_view_area_factor[lin_ind_gc] 
+                        sky_view_area_factor[lin_ind_gc]
                             = sky_view_area_factor[lin_ind_gc]
                             + ((azim_spac / (2.0 * M_PI)) * agg)
                             * surf_enl_fac;
@@ -1049,8 +1029,7 @@ void sky_view_factor_sw_dir_cor_comp(
     // Number of grid cells
     int num_gc_y = (dem_dim_in_0 - 1) / pixel_per_gc;
     int num_gc_x = (dem_dim_in_1 - 1) / pixel_per_gc;
-    cout << "Number of grid cells in y-direction: " << num_gc_y
-        << endl;
+    cout << "Number of grid cells in y-direction: " << num_gc_y << endl;
     cout << "Number of grid cells in x-direction: " << num_gc_x << endl;
 
     // Number of triangles
@@ -1059,7 +1038,6 @@ void sky_view_factor_sw_dir_cor_comp(
 
     // Unit conversion(s)
     float dot_prod_min = cos(deg2rad(ang_max));
-    float ang_min_sin = sin(M_PI / 2.0 - deg2rad(ang_max));
     dist_search *= 1000.0;  // [kilometre] to [metre]
     cout << "Search distance: " << dist_search << " m" << endl;
     hori_acc = deg2rad(hori_acc);
@@ -1220,9 +1198,9 @@ void sky_view_factor_sw_dir_cor_comp(
                         // Compute horizon in local ENU coordinate system
                         //-----------------------------------------------------
 
-                        // Approximate north vector (orthogonal to x-axis of 
-                        // global ENU coordinate system; orientation of 
-                        // coordinate system in which horizon is computed can 
+                        // Approximate north vector (orthogonal to x-axis of
+                        // global ENU coordinate system; orientation of
+                        // coordinate system in which horizon is computed can
                         // be arbitrary as long as the z-axis aligns with the
                         // local horizontal surface normal)
                         float north_x = 0.0;
@@ -1237,18 +1215,6 @@ void sky_view_factor_sw_dir_cor_comp(
                         float rot_inv[3][3] = {{east_x, north_x, norm_hori_x},
                                                {east_y, north_y, norm_hori_y},
                                                {east_z, north_z, norm_hori_z}};
-											   
-                        //if ((i == 0) && (j == 0) && (k == 0) && (m == 0)) {
-						
-//                      cout << "norm_hori_x: " << norm_hori_x << endl;
-//                      cout << "norm_hori_y: " << norm_hori_y << endl;
-//                      cout << "norm_hori_z: " << norm_hori_z << endl;
-//                      cout << "north_x: " << north_x << endl;
-//                      cout << "north_y: " << north_y << endl;
-//                      cout << "north_z: " << north_z << endl;
-//                      cout << "east_x: " << east_x << endl;
-//                      cout << "east_y: " << east_y << endl;
-//                      cout << "east_z: " << east_z << endl;
 
                         function_pointer(ray_org_x, ray_org_y, ray_org_z,
                             hori_azim_num, hori_acc, dist_search,
@@ -1256,14 +1222,6 @@ void sky_view_factor_sw_dir_cor_comp(
                             scene, num_rays, &horizon[0],
                             azim_sin, azim_cos, elev_ang,
                             elev_cos, elev_sin, rot_inv);
-
-//                          cout << "horizon: " << endl;
-//                          for (size_t o = 0; o < hori_azim_num; o++) {
-//                              cout << rad2deg(horizon[o]) << endl;
-  				 		
-                        //}
-
-                        //}
 
                         //-----------------------------------------------------
                         // Compute sky view factor
@@ -1299,19 +1257,19 @@ void sky_view_factor_sw_dir_cor_comp(
                             agg = agg + ((tilt_local[0] * azim_sin[o]
                                 + tilt_local[1] * azim_cos[o]) * ((M_PI / 2.0)
                                 - hori_elev - (sin(2.0 * hori_elev) / 2.0))
-                                + tilt_local[2] * pow(cos(hori_elev), 2));						
+                                + tilt_local[2] * pow(cos(hori_elev), 2));
 
                         }
 
-                        sky_view_factor[lin_ind_gc] 
+                        sky_view_factor[lin_ind_gc]
                             = sky_view_factor[lin_ind_gc]
                             + (azim_spac / (2.0 * M_PI)) * agg;
 
-                        area_increase_factor[lin_ind_gc] 
+                        area_increase_factor[lin_ind_gc]
                             = area_increase_factor[lin_ind_gc]
                             + surf_enl_fac;
 
-                        sky_view_area_factor[lin_ind_gc] 
+                        sky_view_area_factor[lin_ind_gc]
                             = sky_view_area_factor[lin_ind_gc]
                             + ((azim_spac / (2.0 * M_PI)) * agg)
                             * surf_enl_fac;
@@ -1341,9 +1299,7 @@ void sky_view_factor_sw_dir_cor_comp(
                                 horizon_sin_max = horizon_sin[o];
                             }
                         }
-                        horizon_sin_min = std::max(horizon_sin_min,
-                            ang_min_sin);
-  
+
                         size_t ind_lin_sun, ind_lin_cor;
                         for (size_t o = 0; o < dim_sun_0; o++) {
                             for (size_t p = 0; p < dim_sun_1; p++) {
@@ -1362,27 +1318,40 @@ void sky_view_factor_sw_dir_cor_comp(
                                     - ray_org_z);
                                 vec_unit(sun_x, sun_y, sun_z);
 
+                                // Check for shadowing by Earth's sphere
+                                float dot_prod_hs = (norm_hori_x * sun_x
+                                    + norm_hori_y * sun_y
+                                    + norm_hori_z * sun_z);
+                                if (dot_prod_hs <= dot_prod_min) {
+                                    continue;
+                                }
+
+                                // Check for self-shadowing
+                                float dot_prod_ts = norm_tilt_x * sun_x
+                                    + norm_tilt_y * sun_y
+                                    + norm_tilt_z * sun_z;
+                                if (dot_prod_ts <= dot_prod_min) {
+                                    continue;
+                                }
+
                                 // Rotate sun vector from global to local ENU
                                 // coordinate system
                                 float sun_global[3] = {sun_x, sun_y, sun_z};
                                 float sun_local[3];
                                 mat_vec_mult(rot, sun_global, sun_local);
 
-                                // Check for terrain or self-shadowing
-                                bool check_horizon_sun = true;
+                                // Compare sun position to location's overall
+                                // minimal/maximal horizon -> separate cases
+                                // that require less expensive operations
                                 if (sun_local[2] <= horizon_sin_min) {
                                     continue;  // shadow (+= 0.0)
-                                } else if (sun_local[2] > horizon_sin_max) {
-                                    check_horizon_sun = false;  // illuminated
-                                }
-                                if (check_horizon_sun) {
-
+                                } else if (sun_local[2] <= horizon_sin_max) {
                                     float sun_azim = atan2(sun_local[0],
                                                            sun_local[1]);
                                     if (sun_azim < 0.0) {
                                         sun_azim += (2.0 * M_PI);
                                     }
-                                    // sun azimuth angle [0.0, 2.0 * pi]
+                                    // range: [0.0 <= 'sun_azim < 2.0 * pi]
                                     int ind_0 = int(sun_azim / azim_spac);
                                     float weight = (sun_azim
                                         - (ind_0 * azim_spac)) / azim_spac;
@@ -1396,43 +1365,11 @@ void sky_view_factor_sw_dir_cor_comp(
 
                                 // Compute correction factor for illuminated
                                 // case
-                                float dot_prod_hs = (norm_hori_x * sun_x
-                                    + norm_hori_y * sun_y
-                                    + norm_hori_z * sun_z);
-                                dot_prod_hs = std::max(dot_prod_hs,
-                                    dot_prod_min);
-                                float dot_prod_ts = norm_tilt_x * sun_x
-                                    + norm_tilt_y * sun_y
-                                    + norm_tilt_z * sun_z;
-                                dot_prod_ts = std::max(dot_prod_ts,
-                                    dot_prod_min);
                                 sw_dir_cor[ind_lin_cor] =
                                     sw_dir_cor[ind_lin_cor]
                                     + std::min(((dot_prod_ts
                                     / dot_prod_hs) * surf_enl_fac),
                                     sw_dir_cor_max);
-
-//                                  float temp = std::min(((dot_prod_ts / dot_prod_hs) * surf_enl_fac), sw_dir_cor_max);
-//                                  if (temp < -0.1) {
-//                                      cout << "sw_dir_cor_subgrid " << temp << endl;
-//                                      cout << "------------------------------------" << endl;
-//                                      cout << "dot_prod_ts " << dot_prod_ts << endl;
-//                                      cout << "dot_prod_hs " << dot_prod_hs << endl;
-//                                      cout << "surf_enl_fac " << surf_enl_fac << endl;
-//                                      cout << "------------------------------------" << endl;
-//                                      cout << "sun: " << sun_x << ", " << sun_y << ", " << sun_z << endl;
-//                                      cout << "norm_tilt: " << norm_tilt_x << ", " << norm_tilt_y << ", " << norm_tilt_z << endl;
-//                                      cout << "------------------------------------" << endl;
-//                                      cout << "horizon_sin_min " << horizon_sin_min << endl;
-//                                      cout << "horizon_sin_max " << horizon_sin_max << endl;
-//                                      cout << "sun_local[2]" << sun_local[2] << endl;
-//                                      cout << "------------------------------------" << endl;
-//                                      for (size_t q = 0; q < hori_azim_num; q++) {
-//                                          cout << rad2deg(horizon[q]) << endl;
-//                                      }
-//                                      cout << "------------------------------------" << endl;
-//                                      return;
-//                                  }
 
                             }
                         }
@@ -1482,15 +1419,15 @@ void sky_view_factor_sw_dir_cor_comp(
 
     // Divide accumulated values by number of triangles within grid cell
     float num_tri_per_gc = pixel_per_gc * pixel_per_gc * 2.0;
-    size_t num_elem = (num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1);
-    for (size_t i = 0; i < num_elem; i++) {
-        sw_dir_cor[i] /= num_tri_per_gc;
-    }
-    num_elem = (num_gc_y * num_gc_x);
+    size_t num_elem = (num_gc_y * num_gc_x);
     for (size_t i = 0; i < num_elem; i++) {
         sky_view_factor[i] /= num_tri_per_gc;
         area_increase_factor[i] /= num_tri_per_gc;
         sky_view_area_factor[i] /= num_tri_per_gc;
+    }  
+    num_elem = (num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1);
+    for (size_t i = 0; i < num_elem; i++) {
+        sw_dir_cor[i] /= num_tri_per_gc;
     }
 
     // Release resources allocated through Embree

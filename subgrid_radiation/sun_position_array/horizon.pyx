@@ -332,8 +332,8 @@ def sky_view_factor_sw_dir_cor(
         raise ValueError("invalid input argument for geom_type")
     if (sw_dir_cor_max < 2.0) or (sw_dir_cor_max > 100.0):
         raise ValueError("'sw_dir_cor_max' must be in the range [2.0, 100.0]")
-    if (ang_max < 88.0) or (ang_max > 89.99):
-        raise ValueError("'ang_max' must be in the range [88.0, 89.99]")
+    if (ang_max < 89.0) or (ang_max >= 90.0):
+        raise ValueError("'ang_max' must be in the range [89.0, <90.0]")
 
     # Check size of input geometries
     if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
