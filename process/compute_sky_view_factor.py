@@ -1,6 +1,5 @@
-# Description: Computation of subgrid correction factors for direct downward
-#              shortwave radiation (aggregated to the model grid cell
-#              resolution) for an array of sun positions
+# Description: Computation of sky view factor and related quantities with slope
+#              (aggregated to the model grid cell resolution)
 #
 # Copyright (c) 2023 ETH Zurich, Christian R. Steger
 # MIT License
@@ -19,24 +18,22 @@ from subgrid_radiation import sun_position_array
 # Settings
 # -----------------------------------------------------------------------------
 
-# Grid for subsolar points
-# subsol_lon = np.linspace(-180.0, 162.0, 10, dtype=np.float64)  # 38 degree
-# subsol_lat = np.linspace(-23.5, 23.5, 5, dtype=np.float64)  # 11.75 degree
-# subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
-# subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
-subsol_lon = np.linspace(-180.0, 174.0, 60, dtype=np.float64)  # 6 degree
-subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
-
-# Ray-tracing and 'SW_dir_cor' calculation
+# Ray-tracing and sky view factor calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
-sw_dir_cor_max = 25.0
-ang_max = 89.9
+hori_azim_num, hori_acc = 30, 3.0
+# hori_azim_num, hori_acc = 45, 2.0
+# hori_azim_num, hori_acc = 60, 1.5
+# hori_azim_num, hori_acc = 90, 1.0
+# hori_azim_num, hori_acc = 180, 0.5
+# hori_azim_num, hori_acc = 360, 0.25
+ray_algorithm = "guess_constant"
+elev_ang_low_lim = -85.0  # -15.0
 
 # Miscellaneous settings
 file_in = "MERIT_remapped_COSMO_0.02deg.nc"
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
-file_out = "SW_dir_cor_lookup_21x60.nc"
+file_out = "Sky_view_factor.nc"
 radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------
@@ -109,20 +106,6 @@ del x_enu, y_enu, z_enu
 print("'0.0 m surface' vertices data prepared (%.1f"
       % (time.perf_counter() - t_beg) + " s)")
 
-# Compute sun position array in global ENU coordinates
-subsol_lon_2d, subsol_lat_2d = np.meshgrid(subsol_lon, subsol_lat)
-subsol_dist_2d = np.empty(subsol_lon_2d.shape, dtype=np.float64)
-subsol_dist_2d[:] = Distance(au=1).m
-# astronomical unit (~average Sun-Earth distance) [m]
-x_ecef, y_ecef, z_ecef \
-    = transform.lonlat2ecef(subsol_lon_2d, subsol_lat_2d,
-                                 subsol_dist_2d, trans_lonlat2enu)
-x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
-                                              trans_lonlat2enu)
-sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
-                          y_enu[:, :, np.newaxis],
-                          z_enu[:, :, np.newaxis]), axis=2)
-
 # Mask (optional)
 num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
 num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
@@ -132,24 +115,30 @@ mask = np.zeros((num_gc_y, num_gc_x), dtype=np.uint8)
 mask[-60:, -60:] = 1
 
 # -----------------------------------------------------------------------------
-# Compute spatially aggregated correction factors
+# Compute spatially aggregated sky view factor
 # -----------------------------------------------------------------------------
-print("Compute spatially aggregated correction factors")
+print("Compute spatially aggregated sky view factor")
 
 # Compute
-# sw_dir_cor = sun_position_array.rays.sw_dir_cor(
-# sw_dir_cor = sun_position_array.rays.sw_dir_cor_coherent(
-sw_dir_cor = sun_position_array.rays.sw_dir_cor_coherent_rp8(
-    vert_grid, dem_dim_0, dem_dim_1,
-    vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-    sun_pos, pixel_per_gc, offset_gc, mask,
-    dist_search=dist_search, geom_type=geom_type,
-    ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
+sky_view_factor, area_increase_factor, sky_view_area_factor \
+    = sun_position_array.horizon.sky_view_factor(
+        vert_grid, dem_dim_0, dem_dim_1,
+        vert_grid_in, dem_dim_in_0, dem_dim_in_1,
+        pixel_per_gc, offset_gc,
+        mask=mask, dist_search=dist_search, hori_azim_num=hori_azim_num,
+        hori_acc=hori_acc, ray_algorithm=ray_algorithm,
+        elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type)
 
 # Check output
-print("Range of 'sw_dir_cor'-values: [%.2f" % np.nanmin(sw_dir_cor)
-      + ", %.2f" % np.nanmax(sw_dir_cor) + "]")
-print("Size of lookup table: %.2f" % (sw_dir_cor.nbytes / (10 ** 6)) + " MB")
+print("Range of values [min, max]:")
+print("Sky view factor: %.4f" % np.nanmin(sky_view_factor)
+      + ", %.4f" % np.nanmax(sky_view_factor))
+print("Area increase factor: %.4f" % np.nanmin(area_increase_factor)
+      + ", %.4f" % np.nanmax(area_increase_factor))
+print("Sky view area factor: %.4f" % np.nanmin(sky_view_area_factor)
+      + ", %.4f" % np.nanmax(sky_view_area_factor))
+print("Spatial mean of sky view area factor: %.4f"
+      % np.nanmean(sky_view_area_factor))
 
 # -----------------------------------------------------------------------------
 # Save output to NetCDF file
@@ -163,8 +152,8 @@ ncfile.pixel_per_gc = str(pixel_per_gc)
 ncfile.offset_gc = str(offset_gc)
 ncfile.dist_search = "%.2f" % dist_search + " km"
 ncfile.geom_type = geom_type
-ncfile.ang_max = "%.2f" % ang_max + " degrees"
-ncfile.sw_dir_cor_max = "%.2f" % sw_dir_cor_max
+ncfile.hori_azim_num = str(hori_azim_num)
+ncfile.hori_acc = "%.2f" % hori_acc
 # -----------------------------------------------------------------------------
 nc_meta = ncfile.createVariable("rotated_pole", "S1", )
 nc_meta.grid_mapping_name = "rotated_latitude_longitude"
@@ -172,10 +161,8 @@ nc_meta.grid_north_pole_longitude = pole_lon
 nc_meta.grid_north_pole_latitude = pole_lat
 nc_meta.north_pole_grid_longitude = 0.0
 # -----------------------------------------------------------------------------
-ncfile.createDimension(dimname="rlat_gc", size=sw_dir_cor.shape[0])
-ncfile.createDimension(dimname="rlon_gc", size=sw_dir_cor.shape[1])
-ncfile.createDimension(dimname="subsolar_lat", size=sw_dir_cor.shape[2])
-ncfile.createDimension(dimname="subsolar_lon", size=sw_dir_cor.shape[3])
+ncfile.createDimension(dimname="rlat_gc", size=sky_view_factor.shape[0])
+ncfile.createDimension(dimname="rlon_gc", size=sky_view_factor.shape[1])
 # -----------------------------------------------------------------------------
 nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f",
                                 dimensions="rlat_gc")
@@ -188,21 +175,17 @@ nc_rlon[:] = rlon_gc[offset_gc:-offset_gc]
 nc_rlon.long_name = "longitude of grid cells in rotated pole grid"
 nc_rlon.units = "degrees"
 # -----------------------------------------------------------------------------
-nc_sslat = ncfile.createVariable(varname="subsolar_lat", datatype="f",
-                                dimensions="subsolar_lat")
-nc_sslat[:] = subsol_lat
-nc_sslat.long_name = "subsolar latitude"
-nc_sslat.units = "degrees"
-nc_sslon = ncfile.createVariable(varname="subsolar_lon", datatype="f",
-                                dimensions="subsolar_lon")
-nc_sslon[:] = subsol_lon
-nc_sslon.long_name = "subsolar longitude"
-nc_sslon.units = "degrees"
-# -----------------------------------------------------------------------------
-nc_data = ncfile.createVariable(varname="f_cor", datatype="f",
-                                dimensions=("rlat_gc", "rlon_gc",
-                                            "subsolar_lat", "subsolar_lon"))
-nc_data[:] = sw_dir_cor
+nc_data = ncfile.createVariable(varname="sky_view_factor", datatype="f",
+                                dimensions=("rlat_gc", "rlon_gc"))
+nc_data[:] = sky_view_factor.astype(np.float32)
+nc_data.units = "-"
+nc_data = ncfile.createVariable(varname="area_increase_factor", datatype="f",
+                                dimensions=("rlat_gc", "rlon_gc"))
+nc_data[:] = area_increase_factor.astype(np.float32)
+nc_data.units = "-"
+nc_data = ncfile.createVariable(varname="sky_view_area_factor", datatype="f",
+                                dimensions=("rlat_gc", "rlon_gc"))
+nc_data[:] = sky_view_area_factor.astype(np.float32)
 nc_data.units = "-"
 # -----------------------------------------------------------------------------
 ncfile.close()

@@ -15,17 +15,17 @@ cdef extern from "horizon_comp.h":
             int dem_dim_0, int dem_dim_1,
             float* vert_grid_in,
             int dem_dim_in_0, int dem_dim_in_1,
-            float* sky_view_factor,
-            float* area_increase_factor,
-            float* sky_view_area_factor,
+            double* sky_view_factor,
+            double* area_increase_factor,
+            double* sky_view_area_factor,
             int pixel_per_gc,
             int offset_gc,
             np.npy_uint8* mask,
             float dist_search,
             int hori_azim_num,
-            float hori_acc,
+            double hori_acc,
             char* ray_algorithm,
-            float elev_ang_low_lim,
+            double elev_ang_low_lim,
             char* geom_type)
 
 def sky_view_factor(
@@ -38,9 +38,9 @@ def sky_view_factor(
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
         int hori_azim_num=90,
-        float hori_acc=1.0,
+        double hori_acc=1.0,
         str ray_algorithm="guess_constant",
-        float elev_ang_low_lim = -15.0,
+        double elev_ang_low_lim = -15.0,
         str geom_type="grid"):
     """Compute the sky view factor.
 
@@ -71,24 +71,24 @@ def sky_view_factor(
         Search distance for topographic shadowing [kilometre]
     hori_azim_num : int
         Number of azimuth sectors for horizon computation
-    hori_acc : float
+    hori_acc : double
         Accuracy of horizon computation [degree]
     ray_algorithm : str
         Algorithm for horizon detection (discrete_sampling, binary_search,
         guess_constant)
-    elev_ang_low_lim : float
+    elev_ang_low_lim : double
         Lower limit for elevation angle search [degree]
     geom_type : str
         Embree geometry type (triangle, quad, grid)
 
     Returns
     -------
-    sky_view_factor : ndarray of float
+    sky_view_factor : ndarray of double
         Array (two-dimensional) with sky view factor (y, x) [-]
-    area_increase_factor : ndarray of float
+    area_increase_factor : ndarray of double
         Array (two-dimensional) with surface area increase factor
         (due to sloped terrain) [-]
-    sky_view_area_factor : ndarray of float
+    sky_view_area_factor : ndarray of double
         Array (two-dimensional) with 'sky_view_factor' divided by
         'area_increase_factor' [-]
 
@@ -148,14 +148,14 @@ def sky_view_factor(
     # Allocate array for shortwave correction factors
     cdef int len_in_0 = int((dem_dim_in_0 - 1) / pixel_per_gc)
     cdef int len_in_1 = int((dem_dim_in_1 - 1) / pixel_per_gc)
-    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
-        sky_view_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        sky_view_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
     sky_view_factor.fill(0.0)  # accumulated over pixels
-    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
-        area_increase_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        area_increase_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
     area_increase_factor.fill(0.0)  # accumulated over pixels
-    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
-        sky_view_area_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        sky_view_area_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
     sky_view_area_factor.fill(0.0)  # accumulated over pixels
 
     sky_view_factor_comp(
@@ -188,41 +188,41 @@ cdef extern from "horizon_comp.h":
             int dem_dim_0, int dem_dim_1,
             float* vert_grid_in,
             int dem_dim_in_0, int dem_dim_in_1,
-            float* sun_pos,
+            double* sun_pos,
             int dim_sun_0, int dim_sun_1,
             float* sw_dir_cor,
-            float* sky_view_factor,
-            float* area_increase_factor,
-            float* sky_view_area_factor,
+            double* sky_view_factor,
+            double* area_increase_factor,
+            double* sky_view_area_factor,
             int pixel_per_gc,
             int offset_gc,
             np.npy_uint8* mask,
             float dist_search,
             int hori_azim_num,
-            float hori_acc,
+            double hori_acc,
             char* ray_algorithm,
-            float elev_ang_low_lim,
+            double elev_ang_low_lim,
             char* geom_type,
-            float sw_dir_cor_max,
-            float ang_max)
+            double sw_dir_cor_max,
+            double ang_max)
 
 def sky_view_factor_sw_dir_cor(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
         int dem_dim_0, int dem_dim_1,
         np.ndarray[np.float32_t, ndim = 1] vert_grid_in,
         int dem_dim_in_0, int dem_dim_in_1,
-        np.ndarray[np.float32_t, ndim = 3] sun_pos,
+        np.ndarray[np.float64_t, ndim = 3] sun_pos,
         int pixel_per_gc,
         int offset_gc,
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
         float dist_search=100.0,
         int hori_azim_num=90,
-        float hori_acc=1.0,
+        double hori_acc=1.0,
         str ray_algorithm="guess_constant",
-        float elev_ang_low_lim = -15.0,
+        double elev_ang_low_lim = -15.0,
         str geom_type="grid",
-        float sw_dir_cor_max=25.0,
-        float ang_max=89.9):
+        double sw_dir_cor_max=25.0,
+        double ang_max=89.9):
     """Compute subsolar lookup table of subgrid-scale correction factors
     for direct downward shortwave radiation. Additionally, the sky view factor
     is computed.
@@ -242,7 +242,7 @@ def sky_view_factor_sw_dir_cor(
         Dimension length of inner DEM in y-direction
     dem_dim_in_1 : int
         Dimension length of inner DEM in x-direction
-    sun_pos : ndarray of float
+    sun_pos : ndarray of double
         Array (three-dimensional) with sun positions in ENU coordinates
         (dim_sun_0, dim_sun_1, 3) [metre]
     pixel_per_gc : int
@@ -257,19 +257,19 @@ def sky_view_factor_sw_dir_cor(
         Search distance for topographic shadowing [kilometre]
     hori_azim_num : int
         Number of azimuth sectors for horizon computation
-    hori_acc : float
+    hori_acc : double
         Accuracy of horizon computation [degree]
     ray_algorithm : str
         Algorithm for horizon detection (discrete_sampling, binary_search,
         guess_constant)
-    elev_ang_low_lim : float
+    elev_ang_low_lim : double
         Lower limit for elevation angle search [degree]
     geom_type : str
         Embree geometry type (triangle, quad, grid)
-    sw_dir_cor_max : float
+    sw_dir_cor_max : double
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
-    ang_max : float
+    ang_max : double
         Maximal angle between sun vector and horizontal surface normal for
         which correction is computed. For larger angles, 'sw_dir_cor' is set
         to 0.0 [degree]
@@ -279,12 +279,12 @@ def sky_view_factor_sw_dir_cor(
     sw_dir_cor : ndarray of float
         Array (four-dimensional) with shortwave correction factor
         (y, x, dim_sun_0, dim_sun_1) [-]
-    sky_view_factor : ndarray of float
+    sky_view_factor : ndarray of double
         Array (two-dimensional) with sky view factor (y, x) [-]
-    area_increase_factor : ndarray of float
+    area_increase_factor : ndarray of double
         Array (two-dimensional) with surface area increase factor
         (due to sloped terrain) [-]
-    sky_view_area_factor : ndarray of float
+    sky_view_area_factor : ndarray of double
         Array (two-dimensional) with 'sky_view_factor' divided by
         'area_increase_factor' [-]
 
@@ -360,14 +360,14 @@ def sky_view_factor_sw_dir_cor(
     sw_dir_cor.fill(0.0)
     # -> ensure that all elements of array 'sw_dir_cor' are 0.0 (crucial
     # because subgrid correction values are iteratively added) -> probably no longer needed with horizon...
-    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
-        sky_view_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        sky_view_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
     sky_view_factor.fill(0.0)  # accumulated over pixels
-    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
-        area_increase_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        area_increase_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
     area_increase_factor.fill(0.0)  # accumulated over pixels
-    cdef np.ndarray[np.float32_t, ndim = 2, mode = "c"] \
-        sky_view_area_factor = np.empty((len_in_0, len_in_1), dtype=np.float32)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        sky_view_area_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
     sky_view_area_factor.fill(0.0)  # accumulated over pixels
 
     sky_view_factor_sw_dir_cor_comp(

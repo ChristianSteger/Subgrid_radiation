@@ -12,14 +12,13 @@ public:
     int pixel_per_gc_cl;
     int offset_gc_cl;
     unsigned char* mask_cl;
-    float dist_search_cl;
-    float sw_dir_cor_max_cl;
-    float ang_max_cl;
-    float ray_org_elev_cl;
-    float dot_prod_rem_cl;
+    double dist_search_cl;
+    double sw_dir_cor_max_cl;
+    double ang_max_cl;
+    double ray_org_elev_cl;
     int num_gc_y_cl, num_gc_x_cl;
     int num_tri_cl;
-    float dot_prod_min_cl;
+    double dot_prod_min_cl;
     CppTerrain();
     ~CppTerrain();
     void initialise(
@@ -30,12 +29,12 @@ public:
         int pixel_per_gc,
         int offset_gc,
         unsigned char* mask,
-        float dist_search,
+        double dist_search,
         char* geom_type,
-        float sw_dir_cor_max,
-        float ang_max);
-    void sw_dir_cor(float* sun_pos, float* sw_dir_cor, int refrac_cor);
-    void sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor);
-    void sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor);
+        double sw_dir_cor_max,
+        double ang_max);
+    void sw_dir_cor(double* sun_pos, float* sw_dir_cor, int refrac_cor);
+    void sw_dir_cor_coherent(double* sun_pos, float* sw_dir_cor);
+    void sw_dir_cor_coherent_rp8(double* sun_pos, float* sw_dir_cor);
 };
 }

@@ -27,7 +27,7 @@ using namespace std;
 // ----------------------------------------------------------------------------
 
 // Convert degree to radian
-inline float deg2rad(float ang) {
+inline double deg2rad(double ang) {
     /* Parameters
        ----------
        ang: angle [degree]
@@ -40,7 +40,7 @@ inline float deg2rad(float ang) {
 }
 
 // Convert radian to degree
-inline float rad2deg(float ang) {
+inline double rad2deg(double ang) {
     /* Parameters
        ----------
        ang: angle [radian]
@@ -115,14 +115,14 @@ inline size_t lin_ind_4d(size_t dim_1, size_t dim_2, size_t dim_3,
 // ----------------------------------------------------------------------------
 
 // Unit vector
-inline void vec_unit(float &v_x, float &v_y, float &v_z) {
+inline void vec_unit(double &v_x, double &v_y, double &v_z) {
     /* Parameters
        ----------
        v_x: x-component of vector [arbitrary]
        v_y: y-component of vector [arbitrary]
        v_z: z-component of vector [arbitrary]
     */
-    float mag = sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
+    double mag = sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
     v_x = v_x / mag;
     v_y = v_y / mag;
     v_z = v_z / mag;
@@ -134,11 +134,11 @@ inline void vec_unit(float &v_x, float &v_y, float &v_z) {
 
 // Triangle surface normal and area
 inline void triangle_normal_area(
-    float &vert_0_x, float &vert_0_y, float &vert_0_z,
-    float &vert_1_x, float &vert_1_y, float &vert_1_z,
-    float &vert_2_x, float &vert_2_y, float &vert_2_z,
-    float &norm_x, float &norm_y, float &norm_z,
-    float &area) {
+    double &vert_0_x, double &vert_0_y, double &vert_0_z,
+    double &vert_1_x, double &vert_1_y, double &vert_1_z,
+    double &vert_2_x, double &vert_2_y, double &vert_2_z,
+    double &norm_x, double &norm_y, double &norm_z,
+    double &area) {
     /* Parameters
        ----------
        vert_0_x: x-component of first triangle vertices [m]
@@ -155,18 +155,18 @@ inline void triangle_normal_area(
        norm_z: z-component of triangle surface normal [-]
        area: area of triangle [m2]
     */
-    float a_x = vert_2_x - vert_1_x;
-    float a_y = vert_2_y - vert_1_y;
-    float a_z = vert_2_z - vert_1_z;
-    float b_x = vert_0_x - vert_1_x;
-    float b_y = vert_0_y - vert_1_y;
-    float b_z = vert_0_z - vert_1_z;
+    double a_x = vert_2_x - vert_1_x;
+    double a_y = vert_2_y - vert_1_y;
+    double a_z = vert_2_z - vert_1_z;
+    double b_x = vert_0_x - vert_1_x;
+    double b_y = vert_0_y - vert_1_y;
+    double b_z = vert_0_z - vert_1_z;
 
     norm_x = a_y * b_z - a_z * b_y;
     norm_y = a_z * b_x - a_x * b_z;
     norm_z = a_x * b_y - a_y * b_x;
 
-    float mag = sqrt(norm_x * norm_x + norm_y * norm_y + norm_z * norm_z);
+    double mag = sqrt(norm_x * norm_x + norm_y * norm_y + norm_z * norm_z);
     norm_x = norm_x / mag;
     norm_y = norm_y / mag;
     norm_z = norm_z / mag;
@@ -176,10 +176,10 @@ inline void triangle_normal_area(
 
 // Triangle centroid
 inline void triangle_centroid(
-    float &vert_0_x, float &vert_0_y, float &vert_0_z,
-    float &vert_1_x, float &vert_1_y, float &vert_1_z,
-    float &vert_2_x, float &vert_2_y, float &vert_2_z,
-    float &cent_x, float &cent_y, float &cent_z) {
+    double &vert_0_x, double &vert_0_y, double &vert_0_z,
+    double &vert_1_x, double &vert_1_y, double &vert_1_z,
+    double &vert_2_x, double &vert_2_y, double &vert_2_z,
+    double &cent_x, double &cent_y, double &cent_z) {
     /* Parameters
        ----------
        vert_0_x: x-component of first triangle vertices [m]
@@ -382,23 +382,23 @@ void sw_dir_cor_comp(
     int dem_dim_0, int dem_dim_1,
     float* vert_grid_in,
     int dem_dim_in_0, int dem_dim_in_1,
-    float* sun_pos,
+    double* sun_pos,
     int dim_sun_0, int dim_sun_1,
     float* sw_dir_cor,
     int pixel_per_gc,
     int offset_gc,
     uint8_t* mask,
-    float dist_search,
+    double dist_search,
     char* geom_type,
-    float sw_dir_cor_max,
-    float ang_max) {
+    double sw_dir_cor_max,
+    double ang_max) {
 
     cout << "--------------------------------------------------------" << endl;
     cout << "Compute lookup table with default method" << endl;
     cout << "--------------------------------------------------------" << endl;
 
     // Hard-coded settings
-    float ray_org_elev = 0.2;
+    double ray_org_elev = 0.1;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
 
@@ -414,7 +414,7 @@ void sw_dir_cor_comp(
     cout << "Number of triangles: " << num_tri << endl;
 
     // Unit conversion(s)
-    float dot_prod_min = cos(deg2rad(ang_max));
+    double dot_prod_min = cos(deg2rad(ang_max));
     dist_search *= 1000.0;  // [kilometre] to [metre]
     cout << "Search distance: " << dist_search << " m" << endl;
 
@@ -466,23 +466,23 @@ void sw_dir_cor_comp(
                             m + (pixel_per_gc * offset_gc),
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        float vert_0_x = vert_grid[ind_tri_0];
-                        float vert_0_y = vert_grid[ind_tri_0 + 1];
-                        float vert_0_z = vert_grid[ind_tri_0 + 2];
-                        float vert_1_x = vert_grid[ind_tri_1];
-                        float vert_1_y = vert_grid[ind_tri_1 + 1];
-                        float vert_1_z = vert_grid[ind_tri_1 + 2];
-                        float vert_2_x = vert_grid[ind_tri_2];
-                        float vert_2_y = vert_grid[ind_tri_2 + 1];
-                        float vert_2_z = vert_grid[ind_tri_2 + 2];
+                        double vert_0_x = (double)vert_grid[ind_tri_0];
+                        double vert_0_y = (double)vert_grid[ind_tri_0 + 1];
+                        double vert_0_z = (double)vert_grid[ind_tri_0 + 2];
+                        double vert_1_x = (double)vert_grid[ind_tri_1];
+                        double vert_1_y = (double)vert_grid[ind_tri_1 + 1];
+                        double vert_1_z = (double)vert_grid[ind_tri_1 + 2];
+                        double vert_2_x = (double)vert_grid[ind_tri_2];
+                        double vert_2_y = (double)vert_grid[ind_tri_2 + 1];
+                        double vert_2_z = (double)vert_grid[ind_tri_2 + 2];
 
-                        float cent_x, cent_y, cent_z;
+                        double cent_x, cent_y, cent_z;
                         triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             cent_x, cent_y, cent_z);
 
-                        float norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
+                        double norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
@@ -490,11 +490,11 @@ void sw_dir_cor_comp(
                             area_tilt);
 
                         // Ray origin
-                        float ray_org_x = (cent_x
+                        double ray_org_x = (cent_x
                             + norm_tilt_x * ray_org_elev);
-                        float ray_org_y = (cent_y
+                        double ray_org_y = (cent_y
                             + norm_tilt_y * ray_org_elev);
-                        float ray_org_z = (cent_z
+                        double ray_org_z = (cent_z
                             + norm_tilt_z * ray_org_elev);
 
                         //-----------------------------------------------------
@@ -504,24 +504,24 @@ void sw_dir_cor_comp(
                         func_ptr[n](dem_dim_in_1, k, m,
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        vert_0_x = vert_grid_in[ind_tri_0];
-                        vert_0_y = vert_grid_in[ind_tri_0 + 1];
-                        vert_0_z = vert_grid_in[ind_tri_0 + 2];
-                        vert_1_x = vert_grid_in[ind_tri_1];
-                        vert_1_y = vert_grid_in[ind_tri_1 + 1];
-                        vert_1_z = vert_grid_in[ind_tri_1 + 2];
-                        vert_2_x = vert_grid_in[ind_tri_2];
-                        vert_2_y = vert_grid_in[ind_tri_2 + 1];
-                        vert_2_z = vert_grid_in[ind_tri_2 + 2];
+                        vert_0_x = (double)vert_grid_in[ind_tri_0];
+                        vert_0_y = (double)vert_grid_in[ind_tri_0 + 1];
+                        vert_0_z = (double)vert_grid_in[ind_tri_0 + 2];
+                        vert_1_x = (double)vert_grid_in[ind_tri_1];
+                        vert_1_y = (double)vert_grid_in[ind_tri_1 + 1];
+                        vert_1_z = (double)vert_grid_in[ind_tri_1 + 2];
+                        vert_2_x = (double)vert_grid_in[ind_tri_2];
+                        vert_2_y = (double)vert_grid_in[ind_tri_2 + 1];
+                        vert_2_z = (double)vert_grid_in[ind_tri_2 + 2];
 
-                        float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
+                        double norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             norm_hori_x, norm_hori_y, norm_hori_z,
                             area_hori);
 
-                        float surf_enl_fac = area_tilt / area_hori;
+                        double surf_enl_fac = area_tilt / area_hori;
 
                         //-----------------------------------------------------
                         // Loop through sun positions and compute correction
@@ -538,16 +538,16 @@ void sw_dir_cor_comp(
                                     dim_sun_0, dim_sun_1, i, j, o, p);
 
                                 // Compute sun unit vector
-                                float sun_x = (sun_pos[ind_lin_sun]
+                                double sun_x = (sun_pos[ind_lin_sun]
                                     - ray_org_x);
-                                float sun_y = (sun_pos[ind_lin_sun + 1]
+                                double sun_y = (sun_pos[ind_lin_sun + 1]
                                     - ray_org_y);
-                                float sun_z = (sun_pos[ind_lin_sun + 2]
+                                double sun_z = (sun_pos[ind_lin_sun + 2]
                                     - ray_org_z);
                                 vec_unit(sun_x, sun_y, sun_z);
 
                                 // Check for self-shadowing (Earth)
-                                float dot_prod_hs = (norm_hori_x * sun_x
+                                double dot_prod_hs = (norm_hori_x * sun_x
                                     + norm_hori_y * sun_y
                                     + norm_hori_z * sun_z);
                                 if (dot_prod_hs <= dot_prod_min) {
@@ -555,7 +555,7 @@ void sw_dir_cor_comp(
                                 }
 
                                 // Check for self-shadowing (triangle)
-                                float dot_prod_ts = norm_tilt_x * sun_x
+                                double dot_prod_ts = norm_tilt_x * sun_x
                                     + norm_tilt_y * sun_y
                                     + norm_tilt_z * sun_z;
                                 if (dot_prod_ts <= 0.0) {
@@ -568,14 +568,14 @@ void sw_dir_cor_comp(
 
                                 // Ray structure
                                 struct RTCRay ray;
-                                ray.org_x = ray_org_x;
-                                ray.org_y = ray_org_y;
-                                ray.org_z = ray_org_z;
-                                ray.dir_x = sun_x;
-                                ray.dir_y = sun_y;
-                                ray.dir_z = sun_z;
+                                ray.org_x = (float)ray_org_x;
+                                ray.org_y = (float)ray_org_y;
+                                ray.org_z = (float)ray_org_z;
+                                ray.dir_x = (float)sun_x;
+                                ray.dir_y = (float)sun_y;
+                                ray.dir_z = (float)sun_z;
                                 ray.tnear = 0.0;
-                                ray.tfar = dist_search;
+                                ray.tfar = (float)dist_search;
                                 // std::numeric_limits<float>::infinity();
 
                                 // Intersect ray with scene
@@ -585,9 +585,9 @@ void sw_dir_cor_comp(
                                     // updated; otherwise 'tfar' = -inf
                                     sw_dir_cor[ind_lin_cor] =
                                         sw_dir_cor[ind_lin_cor]
-                                        + std::min(((dot_prod_ts
+                                        + (float)(std::min(((dot_prod_ts
                                         / dot_prod_hs) * surf_enl_fac),
-                                        sw_dir_cor_max);
+                                        sw_dir_cor_max));
                                 }  // else: sw_dir_cor += 0.0
                                 num_rays += 1;
 
@@ -619,8 +619,8 @@ void sw_dir_cor_comp(
     std::chrono::duration<double> time_ray = (end_ray - start_ray);
     cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
     cout << "Number of rays shot: " << num_rays << endl;
-    float frac_ray = (float)num_rays /
-        ((float)num_tri * (float)dim_sun_0 * (float)dim_sun_1);
+    double frac_ray = (double)num_rays /
+        ((double)num_tri * (double)dim_sun_0 * (double)dim_sun_1);
     cout << "Fraction of rays required: " << frac_ray << endl;
 
     // Divide accumulated values by number of triangles within grid cell
@@ -653,23 +653,23 @@ void sw_dir_cor_comp_coherent(
     int dem_dim_0, int dem_dim_1,
     float* vert_grid_in,
     int dem_dim_in_0, int dem_dim_in_1,
-    float* sun_pos,
+    double* sun_pos,
     int dim_sun_0, int dim_sun_1,
     float* sw_dir_cor,
     int pixel_per_gc,
     int offset_gc,
     uint8_t* mask,
-    float dist_search,
+    double dist_search,
     char* geom_type,
-    float sw_dir_cor_max,
-    float ang_max) {
+    double sw_dir_cor_max,
+    double ang_max) {
 
     cout << "--------------------------------------------------------" << endl;
     cout << "Compute lookup table with coherent rays" << endl;
     cout << "--------------------------------------------------------" << endl;
 
     // Hard-coded settings
-    float ray_org_elev = 0.2;
+    double ray_org_elev = 0.1;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
 
@@ -686,7 +686,7 @@ void sw_dir_cor_comp_coherent(
     int num_tri_per_gc = pixel_per_gc * pixel_per_gc * 2;
 
     // Unit conversion(s)
-    float dot_prod_min = cos(deg2rad(ang_max));
+    double dot_prod_min = cos(deg2rad(ang_max));
     dist_search *= 1000.0;  // [kilometre] to [metre]
     cout << "Search distance: " << dist_search << " m" << endl;
 
@@ -719,10 +719,10 @@ void sw_dir_cor_comp_coherent(
             size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
             if (mask[lin_ind_gc] == 1) {
 
-            float* norm_tilt = new float[num_tri_per_gc * 3];
-            float* ray_org = new float[num_tri_per_gc * 3];
-            float* norm_hori = new float[num_tri_per_gc * 3];
-            float* surf_enl_fac = new float[num_tri_per_gc];
+            double* norm_tilt = new double[num_tri_per_gc * 3];
+            double* ray_org = new double[num_tri_per_gc * 3];
+            double* norm_hori = new double[num_tri_per_gc * 3];
+            double* surf_enl_fac = new double[num_tri_per_gc];
             float* sw_dir_cor_ray = new float[num_tri_per_gc];
 
             // Compute triangle's centroid, surface normal and area
@@ -746,23 +746,23 @@ void sw_dir_cor_comp_coherent(
                             m + (pixel_per_gc * offset_gc),
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        float vert_0_x = vert_grid[ind_tri_0];
-                        float vert_0_y = vert_grid[ind_tri_0 + 1];
-                        float vert_0_z = vert_grid[ind_tri_0 + 2];
-                        float vert_1_x = vert_grid[ind_tri_1];
-                        float vert_1_y = vert_grid[ind_tri_1 + 1];
-                        float vert_1_z = vert_grid[ind_tri_1 + 2];
-                        float vert_2_x = vert_grid[ind_tri_2];
-                        float vert_2_y = vert_grid[ind_tri_2 + 1];
-                        float vert_2_z = vert_grid[ind_tri_2 + 2];
+                        double vert_0_x = (double)vert_grid[ind_tri_0];
+                        double vert_0_y = (double)vert_grid[ind_tri_0 + 1];
+                        double vert_0_z = (double)vert_grid[ind_tri_0 + 2];
+                        double vert_1_x = (double)vert_grid[ind_tri_1];
+                        double vert_1_y = (double)vert_grid[ind_tri_1 + 1];
+                        double vert_1_z = (double)vert_grid[ind_tri_1 + 2];
+                        double vert_2_x = (double)vert_grid[ind_tri_2];
+                        double vert_2_y = (double)vert_grid[ind_tri_2 + 1];
+                        double vert_2_z = (double)vert_grid[ind_tri_2 + 2];
 
-                        float cent_x, cent_y, cent_z;
+                        double cent_x, cent_y, cent_z;
                         triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             cent_x, cent_y, cent_z);
 
-                        float norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
+                        double norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
@@ -787,17 +787,18 @@ void sw_dir_cor_comp_coherent(
                         func_ptr[n](dem_dim_in_1, k, m,
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        vert_0_x = vert_grid_in[ind_tri_0];
-                        vert_0_y = vert_grid_in[ind_tri_0 + 1];
-                        vert_0_z = vert_grid_in[ind_tri_0 + 2];
-                        vert_1_x = vert_grid_in[ind_tri_1];
-                        vert_1_y = vert_grid_in[ind_tri_1 + 1];
-                        vert_1_z = vert_grid_in[ind_tri_1 + 2];
-                        vert_2_x = vert_grid_in[ind_tri_2];
-                        vert_2_y = vert_grid_in[ind_tri_2 + 1];
-                        vert_2_z = vert_grid_in[ind_tri_2 + 2];
+                        vert_0_x = (double)vert_grid_in[ind_tri_0];
+                        vert_0_y = (double)vert_grid_in[ind_tri_0 + 1];
+                        vert_0_z = (double)vert_grid_in[ind_tri_0 + 2];
+                        vert_1_x = (double)vert_grid_in[ind_tri_1];
+                        vert_1_y = (double)vert_grid_in[ind_tri_1 + 1];
+                        vert_1_z = (double)vert_grid_in[ind_tri_1 + 2];
+                        vert_2_x = (double)vert_grid_in[ind_tri_2];
+                        vert_2_y = (double)vert_grid_in[ind_tri_2 + 1];
+                        vert_2_z = (double)vert_grid_in[ind_tri_2 + 2];
 
-                        float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
+                        double norm_hori_x, norm_hori_y, norm_hori_z,
+                            area_hori;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
@@ -845,16 +846,16 @@ void sw_dir_cor_comp_coherent(
                             for (size_t n = 0; n < 2; n++) {
 
                                 // Compute sun unit vector
-                                float sun_x = (sun_pos[ind_lin_sun]
+                                double sun_x = (sun_pos[ind_lin_sun]
                                     - ray_org[ind_incr_3]);
-                                float sun_y = (sun_pos[ind_lin_sun + 1]
+                                double sun_y = (sun_pos[ind_lin_sun + 1]
                                     - ray_org[ind_incr_3 + 1]);
-                                float sun_z = (sun_pos[ind_lin_sun + 2]
+                                double sun_z = (sun_pos[ind_lin_sun + 2]
                                     - ray_org[ind_incr_3 + 2]);
                                 vec_unit(sun_x, sun_y, sun_z);
 
                                 // Check for self-shadowing (Earth)
-                                float dot_prod_hs
+                                double dot_prod_hs
                                     = (norm_hori[ind_incr_3] * sun_x
                                     + norm_hori[ind_incr_3 + 1] * sun_y
                                     + norm_hori[ind_incr_3 + 2] * sun_z);
@@ -865,7 +866,7 @@ void sw_dir_cor_comp_coherent(
                                 }
 
                                 // Check for self-shadowing (triangle)
-                                float dot_prod_ts
+                                double dot_prod_ts
                                     = norm_tilt[ind_incr_3] * sun_x
                                     + norm_tilt[ind_incr_3 + 1] * sun_y
                                     + norm_tilt[ind_incr_3 + 2] * sun_z;
@@ -877,23 +878,24 @@ void sw_dir_cor_comp_coherent(
 
                                 // Add ray
                                 rays[num_rays_gc].org_x
-                                    = ray_org[ind_incr_3];
+                                    = (float)ray_org[ind_incr_3];
                                 rays[num_rays_gc].org_y
-                                    = ray_org[ind_incr_3 + 1];
+                                    = (float)ray_org[ind_incr_3 + 1];
                                 rays[num_rays_gc].org_z
-                                    = ray_org[ind_incr_3 + 2];
-                                rays[num_rays_gc].dir_x = sun_x;
-                                rays[num_rays_gc].dir_y = sun_y;
-                                rays[num_rays_gc].dir_z = sun_z;
+                                    = (float)ray_org[ind_incr_3 + 2];
+                                rays[num_rays_gc].dir_x = (float)sun_x;
+                                rays[num_rays_gc].dir_y = (float)sun_y;
+                                rays[num_rays_gc].dir_z = (float)sun_z;
                                 rays[num_rays_gc].tnear = 0.0;
-                                rays[num_rays_gc].tfar = dist_search;
+                                rays[num_rays_gc].tfar = (float)dist_search;
                                 // std::numeric_limits<float>::infinity();
                                 rays[num_rays_gc].id = num_rays_gc;
 
                                 sw_dir_cor_ray[num_rays_gc] =
-                                    std::min(((dot_prod_ts / dot_prod_hs)
+                                    (float)(std::min(((dot_prod_ts
+                                    / dot_prod_hs)
                                     * surf_enl_fac[ind_incr_1]),
-                                    sw_dir_cor_max);
+                                    sw_dir_cor_max));
                                 num_rays_gc = num_rays_gc + 1;
 
                                 ind_incr_3 = ind_incr_3 + 3;
@@ -929,7 +931,8 @@ void sw_dir_cor_comp_coherent(
 
                     size_t ind_lin_cor = lin_ind_4d(num_gc_x,
                         dim_sun_0, dim_sun_1, i, j, o, p);
-                    sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg / num_tri_per_gc;
+                    sw_dir_cor[ind_lin_cor] = sw_dir_cor_agg 
+                        / (float)num_tri_per_gc;
 
                 }
             }
@@ -960,8 +963,8 @@ void sw_dir_cor_comp_coherent(
     std::chrono::duration<double> time_ray = (end_ray - start_ray);
     cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
     cout << "Number of rays shot: " << num_rays << endl;
-    float frac_ray = (float)num_rays /
-        ((float)num_tri * (float)dim_sun_0 * (float)dim_sun_1);
+    double frac_ray = (double)num_rays /
+        ((double)num_tri * (double)dim_sun_0 * (double)dim_sun_1);
     cout << "Fraction of rays required: " << frac_ray << endl;
 
     // Release resources allocated through Embree
@@ -987,16 +990,16 @@ void sw_dir_cor_comp_coherent_rp8(
     int dem_dim_0, int dem_dim_1,
     float* vert_grid_in,
     int dem_dim_in_0, int dem_dim_in_1,
-    float* sun_pos,
+    double* sun_pos,
     int dim_sun_0, int dim_sun_1,
     float* sw_dir_cor,
     int pixel_per_gc,
     int offset_gc,
     uint8_t* mask,
-    float dist_search,
+    double dist_search,
     char* geom_type,
-    float sw_dir_cor_max,
-    float ang_max) {
+    double sw_dir_cor_max,
+    double ang_max) {
 
     cout << "--------------------------------------------------------" << endl;
     cout << "Compute lookup table with coherent rays" << endl;
@@ -1004,7 +1007,7 @@ void sw_dir_cor_comp_coherent_rp8(
     cout << "--------------------------------------------------------" << endl;
 
     // Hard-coded settings
-    float ray_org_elev = 0.2;
+    double ray_org_elev = 0.1;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
 
@@ -1020,7 +1023,7 @@ void sw_dir_cor_comp_coherent_rp8(
     cout << "Number of triangles: " << num_tri << endl;
 
     // Unit conversion(s)
-    float dot_prod_min = cos(deg2rad(ang_max));
+    double dot_prod_min = cos(deg2rad(ang_max));
     dist_search *= 1000.0;  // [kilometre] to [metre]
     cout << "Search distance: " << dist_search << " m" << endl;
 
@@ -1053,10 +1056,10 @@ void sw_dir_cor_comp_coherent_rp8(
             size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
             if (mask[lin_ind_gc] == 1) {
 
-            float* norm_tilt = new float[8 * 3];
-            float* ray_org = new float[8 * 3];
-            float* norm_hori = new float[8 * 3];
-            float* surf_enl_fac = new float[8];
+            double* norm_tilt = new double[8 * 3];
+            double* ray_org = new double[8 * 3];
+            double* norm_hori = new double[8 * 3];
+            double* surf_enl_fac = new double[8];
             float* sw_dir_cor_ray = new float[8];
             RTCRay8 ray8;
 
@@ -1084,23 +1087,24 @@ void sw_dir_cor_comp_coherent_rp8(
                             m_block + (pixel_per_gc * offset_gc),
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        float vert_0_x = vert_grid[ind_tri_0];
-                        float vert_0_y = vert_grid[ind_tri_0 + 1];
-                        float vert_0_z = vert_grid[ind_tri_0 + 2];
-                        float vert_1_x = vert_grid[ind_tri_1];
-                        float vert_1_y = vert_grid[ind_tri_1 + 1];
-                        float vert_1_z = vert_grid[ind_tri_1 + 2];
-                        float vert_2_x = vert_grid[ind_tri_2];
-                        float vert_2_y = vert_grid[ind_tri_2 + 1];
-                        float vert_2_z = vert_grid[ind_tri_2 + 2];
+                        double vert_0_x = (double)vert_grid[ind_tri_0];
+                        double vert_0_y = (double)vert_grid[ind_tri_0 + 1];
+                        double vert_0_z = (double)vert_grid[ind_tri_0 + 2];
+                        double vert_1_x = (double)vert_grid[ind_tri_1];
+                        double vert_1_y = (double)vert_grid[ind_tri_1 + 1];
+                        double vert_1_z = (double)vert_grid[ind_tri_1 + 2];
+                        double vert_2_x = (double)vert_grid[ind_tri_2];
+                        double vert_2_y = (double)vert_grid[ind_tri_2 + 1];
+                        double vert_2_z = (double)vert_grid[ind_tri_2 + 2];
 
-                        float cent_x, cent_y, cent_z;
+                        double cent_x, cent_y, cent_z;
                         triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             cent_x, cent_y, cent_z);
 
-                        float norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
+                        double norm_tilt_x, norm_tilt_y, norm_tilt_z,
+                            area_tilt;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
@@ -1125,17 +1129,18 @@ void sw_dir_cor_comp_coherent_rp8(
                         func_ptr[n](dem_dim_in_1, k_block, m_block,
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        vert_0_x = vert_grid_in[ind_tri_0];
-                        vert_0_y = vert_grid_in[ind_tri_0 + 1];
-                        vert_0_z = vert_grid_in[ind_tri_0 + 2];
-                        vert_1_x = vert_grid_in[ind_tri_1];
-                        vert_1_y = vert_grid_in[ind_tri_1 + 1];
-                        vert_1_z = vert_grid_in[ind_tri_1 + 2];
-                        vert_2_x = vert_grid_in[ind_tri_2];
-                        vert_2_y = vert_grid_in[ind_tri_2 + 1];
-                        vert_2_z = vert_grid_in[ind_tri_2 + 2];
+                        vert_0_x = (double)vert_grid_in[ind_tri_0];
+                        vert_0_y = (double)vert_grid_in[ind_tri_0 + 1];
+                        vert_0_z = (double)vert_grid_in[ind_tri_0 + 2];
+                        vert_1_x = (double)vert_grid_in[ind_tri_1];
+                        vert_1_y = (double)vert_grid_in[ind_tri_1 + 1];
+                        vert_1_z = (double)vert_grid_in[ind_tri_1 + 2];
+                        vert_2_x = (double)vert_grid_in[ind_tri_2];
+                        vert_2_y = (double)vert_grid_in[ind_tri_2 + 1];
+                        vert_2_z = (double)vert_grid_in[ind_tri_2 + 2];
 
-                        float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
+                        double norm_hori_x, norm_hori_y, norm_hori_z,
+                            area_hori;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
@@ -1179,16 +1184,16 @@ void sw_dir_cor_comp_coherent_rp8(
                             for (size_t q = 0; q < 8; q++) {
 
                                 // Compute sun unit vector
-                                float sun_x = (sun_pos[ind_lin_sun]
+                                double sun_x = (sun_pos[ind_lin_sun]
                                     - ray_org[ind_incr_3]);
-                                float sun_y = (sun_pos[ind_lin_sun + 1]
+                                double sun_y = (sun_pos[ind_lin_sun + 1]
                                     - ray_org[ind_incr_3 + 1]);
-                                float sun_z = (sun_pos[ind_lin_sun + 2]
+                                double sun_z = (sun_pos[ind_lin_sun + 2]
                                     - ray_org[ind_incr_3 + 2]);
                                 vec_unit(sun_x, sun_y, sun_z);
 
                                 // Check for self-shadowing (Earth)
-                                float dot_prod_hs
+                                double dot_prod_hs
                                     = (norm_hori[ind_incr_3] * sun_x
                                     + norm_hori[ind_incr_3 + 1] * sun_y
                                     + norm_hori[ind_incr_3 + 2] * sun_z);
@@ -1199,7 +1204,7 @@ void sw_dir_cor_comp_coherent_rp8(
                                 }
 
                                 // Check for self-shadowing (triangle)
-                                float dot_prod_ts
+                                double dot_prod_ts
                                     = norm_tilt[ind_incr_3] * sun_x
                                     + norm_tilt[ind_incr_3 + 1] * sun_y
                                     + norm_tilt[ind_incr_3 + 2] * sun_z;
@@ -1211,24 +1216,25 @@ void sw_dir_cor_comp_coherent_rp8(
 
                                 // Add ray
                                 ray8.org_x[num_rays_gc]
-                                    = ray_org[ind_incr_3];
+                                    = (float)ray_org[ind_incr_3];
                                 ray8.org_y[num_rays_gc]
-                                    = ray_org[ind_incr_3 + 1];
+                                    = (float)ray_org[ind_incr_3 + 1];
                                 ray8.org_z[num_rays_gc]
-                                    = ray_org[ind_incr_3 + 2];
+                                    = (float)ray_org[ind_incr_3 + 2];
                                 ray8.tnear[num_rays_gc] = 0.0;
-                                ray8.dir_x[num_rays_gc] = sun_x;
-                                ray8.dir_y[num_rays_gc] = sun_y;
-                                ray8.dir_z[num_rays_gc] = sun_z;
-                                ray8.tfar[num_rays_gc] = dist_search;
+                                ray8.dir_x[num_rays_gc] = (float)sun_x;
+                                ray8.dir_y[num_rays_gc] = (float)sun_y;
+                                ray8.dir_z[num_rays_gc] = (float)sun_z;
+                                ray8.tfar[num_rays_gc] = (float)dist_search;
                                 // std::numeric_limits<float>::infinity();
                                 ray8.id[num_rays_gc] = num_rays_gc;
                                 valid8[num_rays_gc] = -1; // -1: valid
 
                                 sw_dir_cor_ray[num_rays_gc] =
-                                    std::min(((dot_prod_ts / dot_prod_hs)
+                                    (float)(std::min(((dot_prod_ts
+                                    / dot_prod_hs)
                                     * surf_enl_fac[ind_incr_1]),
-                                    sw_dir_cor_max);
+                                    sw_dir_cor_max));
                                 num_rays_gc = num_rays_gc + 1;
 
                                 ind_incr_3 = ind_incr_3 + 3;
@@ -1296,8 +1302,8 @@ void sw_dir_cor_comp_coherent_rp8(
     std::chrono::duration<double> time_ray = (end_ray - start_ray);
     cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
     cout << "Number of rays shot: " << num_rays << endl;
-    float frac_ray = (float)num_rays /
-        ((float)num_tri * (float)dim_sun_0 * (float)dim_sun_1);
+    double frac_ray = (double)num_rays /
+        ((double)num_tri * (double)dim_sun_0 * (double)dim_sun_1);
     cout << "Fraction of rays required: " << frac_ray << endl;
 
     // Divide accumulated values by number of triangles within grid cell

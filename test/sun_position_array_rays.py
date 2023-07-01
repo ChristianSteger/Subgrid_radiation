@@ -200,7 +200,7 @@ if plot:
 # Combine sun position in one array
 sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
                           y_enu[:, :, np.newaxis],
-                          z_enu[:, :, np.newaxis]), axis=2, dtype=np.float32)
+                          z_enu[:, :, np.newaxis]), axis=2)
 
 # Mask (optional)
 num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc

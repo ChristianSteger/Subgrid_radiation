@@ -9,10 +9,11 @@ cdef extern from "sun_position_comp.h" namespace "shapes":
     cdef cppclass CppTerrain:
         CppTerrain()
         void initialise(float*, int, int, float*, int, int,
-                        int, int, unsigned char*, float, char*, float, float)
-        void sw_dir_cor(float*, float*, int)
-        void sw_dir_cor_coherent(float*, float*)
-        void sw_dir_cor_coherent_rp8(float *, float *)
+                        int, int, unsigned char*,
+                        double, char*, double, double)
+        void sw_dir_cor(double*, float*, int)
+        void sw_dir_cor_coherent(double*, float*)
+        void sw_dir_cor_coherent_rp8(double*, float*)
 
 cdef class Terrain:
 
@@ -32,10 +33,10 @@ cdef class Terrain:
                    int pixel_per_gc,
                    int offset_gc,
                    np.ndarray[np.uint8_t, ndim = 2] mask,
-                   float dist_search=100.0,
+                   double dist_search=100.0,
                    str geom_type="grid",
-                   float sw_dir_cor_max=25.0,
-                   float ang_max=89.9):
+                   double sw_dir_cor_max=25.0,
+                   double ang_max=89.9):
         """Initialise Terrain class with Digital Elevation Model (DEM) data.
 
         Parameters
@@ -62,14 +63,14 @@ cdef class Terrain:
             Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
             'sky_view_factor' are computed. Masked (0) grid cells are filled
             with NaN.
-        dist_search : float
+        dist_search : double
             Search distance for topographic shadowing [kilometre]
         geom_type : str
             Embree geometry type (triangle, quad, grid)
-        sw_dir_cor_max : float
+        sw_dir_cor_max : double
             Maximal allowed correction factor for direct downward shortwave
             radiation [-]
-        ang_max : float
+        ang_max : double
             Maximal angle between sun vector and horizontal surface normal for
             which correction is computed. For larger angles, 'sw_dir_cor' is
             set to 0.0 [degree]"""
@@ -126,7 +127,7 @@ cdef class Terrain:
 
 # -----------------------------------------------------------------------------
 
-    def sw_dir_cor(self, np.ndarray[np.float32_t, ndim = 1] sun_pos,
+    def sw_dir_cor(self, np.ndarray[np.float64_t, ndim = 1] sun_pos,
                    np.ndarray[np.float32_t, ndim = 2] sw_dir_cor,
                    bint refrac_cor=False):
         """Compute subgrid-scale correction factors for direct downward
@@ -134,7 +135,7 @@ cdef class Terrain:
 
         Parameters
         ----------
-        sun_pos : ndarray of float
+        sun_pos : ndarray of double
             Array (one-dimensional) with sun position in ENU coordinates
             (x, y, z) [metre]
         sw_dir_cor : ndarray of float
@@ -164,14 +165,14 @@ cdef class Terrain:
 # -----------------------------------------------------------------------------
 
     def sw_dir_cor_coherent(
-            self, np.ndarray[np.float32_t, ndim = 1] sun_pos,
+            self, np.ndarray[np.float64_t, ndim = 1] sun_pos,
             np.ndarray[np.float32_t, ndim = 2] sw_dir_cor):
         """Compute subgrid-scale correction factors for direct downward
         shortwave radiation for a specific sun position (use coherent rays).
 
         Parameters
         ----------
-        sun_pos : ndarray of float
+        sun_pos : ndarray of double
             Array (one-dimensional) with sun position in ENU coordinates
             (x, y, z) [metre]
         sw_dir_cor : ndarray of float
@@ -197,7 +198,7 @@ cdef class Terrain:
 # -----------------------------------------------------------------------------
 
     def sw_dir_cor_coherent_rp8(
-            self, np.ndarray[np.float32_t, ndim = 1] sun_pos,
+            self, np.ndarray[np.float64_t, ndim = 1] sun_pos,
             np.ndarray[np.float32_t, ndim = 2] sw_dir_cor):
         """Compute subgrid-scale correction factors for direct downward
         shortwave radiation for a specific sun position (use coherent rays
@@ -205,7 +206,7 @@ cdef class Terrain:
 
         Parameters
         ----------
-        sun_pos : ndarray of float
+        sun_pos : ndarray of double
             Array (one-dimensional) with sun position in ENU coordinates
             (x, y, z) [metre]
         sw_dir_cor : ndarray of float

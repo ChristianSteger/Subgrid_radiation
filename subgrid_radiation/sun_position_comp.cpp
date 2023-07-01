@@ -29,7 +29,7 @@ using namespace shapes;
 // ----------------------------------------------------------------------------
 
 // Convert degree to radian
-inline float deg2rad(float ang) {
+inline double deg2rad(double ang) {
     /* Parameters
        ----------
        ang: angle [degree]
@@ -42,7 +42,7 @@ inline float deg2rad(float ang) {
 }
 
 // Convert radian to degree
-inline float rad2deg(float ang) {
+inline double rad2deg(double ang) {
     /* Parameters
        ----------
        ang: angle [radian]
@@ -55,7 +55,7 @@ inline float rad2deg(float ang) {
 }
 
 // Convert from Kelvin to degree Celsius
-inline float K2degC(float temp) {
+inline double K2degC(double temp) {
     /* Parameters
        ----------
        temp: temperature [Kelvin]
@@ -90,22 +90,23 @@ inline size_t lin_ind_2d(size_t dim_1, size_t ind_0, size_t ind_1) {
 // ----------------------------------------------------------------------------
 
 // Unit vector
-inline void vec_unit(float &v_x, float &v_y, float &v_z) {
+inline void vec_unit(double &v_x, double &v_y, double &v_z) {
     /* Parameters
        ----------
        v_x: x-component of vector [arbitrary]
        v_y: y-component of vector [arbitrary]
        v_z: z-component of vector [arbitrary]
     */
-    float mag = sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
+    double mag = sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
     v_x = v_x / mag;
     v_y = v_y / mag;
     v_z = v_z / mag;
 }
 
 // Cross product
-inline void cross_prod(float a_x, float a_y, float a_z, float b_x, float b_y,
-    float b_z, float &c_x, float &c_y, float &c_z) {
+inline void cross_prod(double a_x, double a_y, double a_z,
+    double b_x, double b_y, double b_z,
+    double &c_x, double &c_y, double &c_z) {
     /* Parameters
        ----------
        a_x: x-component of vector a [arbitrary]
@@ -124,8 +125,8 @@ inline void cross_prod(float a_x, float a_y, float a_z, float b_x, float b_y,
 }
 
 // Vector rotation (according to Rodrigues' rotation formula)
-inline void vec_rot(float k_x, float k_y, float k_z, float theta,
-    float &v_x, float &v_y, float &v_z) {
+inline void vec_rot(double k_x, double k_y, double k_z, double theta,
+    double &v_x, double &v_y, double &v_z) {
     /* Parameters
        ----------
        k_x: x-component of unit vector perpendicular to rotation plane [-]
@@ -136,14 +137,14 @@ inline void vec_rot(float k_x, float k_y, float k_z, float theta,
        v_y: y-component of rotated vector [-]
        v_z: z-component of rotated vector [-]
     */
-    float cos_theta = cos(theta);
-    float sin_theta = sin(theta);
-    float part = (k_x * v_x + k_y * v_y + k_z * v_z) * (1.0 - cos_theta);
-    float v_x_rot = v_x * cos_theta + (k_y * v_z - k_z * v_y) * sin_theta
+    double cos_theta = cos(theta);
+    double sin_theta = sin(theta);
+    double part = (k_x * v_x + k_y * v_y + k_z * v_z) * (1.0 - cos_theta);
+    double v_x_rot = v_x * cos_theta + (k_y * v_z - k_z * v_y) * sin_theta
         + k_x * part;
-    float v_y_rot = v_y * cos_theta + (k_z * v_x - k_x * v_z) * sin_theta
+    double v_y_rot = v_y * cos_theta + (k_z * v_x - k_x * v_z) * sin_theta
         + k_y * part;
-    float v_z_rot = v_z * cos_theta + (k_x * v_y - k_y * v_x) * sin_theta
+    double v_z_rot = v_z * cos_theta + (k_x * v_y - k_y * v_x) * sin_theta
         + k_z * part;
     v_x = v_x_rot;
     v_y = v_y_rot;
@@ -156,11 +157,11 @@ inline void vec_rot(float k_x, float k_y, float k_z, float theta,
 
 // Triangle surface normal and area
 inline void triangle_normal_area(
-    float &vert_0_x, float &vert_0_y, float &vert_0_z,
-    float &vert_1_x, float &vert_1_y, float &vert_1_z,
-    float &vert_2_x, float &vert_2_y, float &vert_2_z,
-    float &norm_x, float &norm_y, float &norm_z,
-    float &area) {
+    double &vert_0_x, double &vert_0_y, double &vert_0_z,
+    double &vert_1_x, double &vert_1_y, double &vert_1_z,
+    double &vert_2_x, double &vert_2_y, double &vert_2_z,
+    double &norm_x, double &norm_y, double &norm_z,
+    double &area) {
     /* Parameters
        ----------
        vert_0_x: x-component of first triangle vertices [m]
@@ -177,18 +178,18 @@ inline void triangle_normal_area(
        norm_z: z-component of triangle surface normal [-]
        area: area of triangle [m2]
     */
-    float a_x = vert_2_x - vert_1_x;
-    float a_y = vert_2_y - vert_1_y;
-    float a_z = vert_2_z - vert_1_z;
-    float b_x = vert_0_x - vert_1_x;
-    float b_y = vert_0_y - vert_1_y;
-    float b_z = vert_0_z - vert_1_z;
+    double a_x = vert_2_x - vert_1_x;
+    double a_y = vert_2_y - vert_1_y;
+    double a_z = vert_2_z - vert_1_z;
+    double b_x = vert_0_x - vert_1_x;
+    double b_y = vert_0_y - vert_1_y;
+    double b_z = vert_0_z - vert_1_z;
 
     norm_x = a_y * b_z - a_z * b_y;
     norm_y = a_z * b_x - a_x * b_z;
     norm_z = a_x * b_y - a_y * b_x;
 
-    float mag = sqrt(norm_x * norm_x + norm_y * norm_y + norm_z * norm_z);
+    double mag = sqrt(norm_x * norm_x + norm_y * norm_y + norm_z * norm_z);
     norm_x = norm_x / mag;
     norm_y = norm_y / mag;
     norm_z = norm_z / mag;
@@ -198,10 +199,10 @@ inline void triangle_normal_area(
 
 // Triangle centroid
 inline void triangle_centroid(
-    float &vert_0_x, float &vert_0_y, float &vert_0_z,
-    float &vert_1_x, float &vert_1_y, float &vert_1_z,
-    float &vert_2_x, float &vert_2_y, float &vert_2_z,
-    float &cent_x, float &cent_y, float &cent_z) {
+    double &vert_0_x, double &vert_0_y, double &vert_0_z,
+    double &vert_1_x, double &vert_1_y, double &vert_1_z,
+    double &vert_2_x, double &vert_2_y, double &vert_2_z,
+    double &cent_x, double &cent_y, double &cent_z) {
     /* Parameters
        ----------
        vert_0_x: x-component of first triangle vertices [m]
@@ -257,7 +258,8 @@ void (*func_ptr[2])(size_t dim_1, size_t ind_0, size_t ind_1,
 // ----------------------------------------------------------------------------
 
 // Estimate atmospheric refraction
-inline float atmos_refrac(float elev_ang_true, float temp, float pressure) {
+inline double atmos_refrac(double elev_ang_true, double temp,
+    double pressure) {
     /* Parameters
        ----------
        elev_ang_true: true solar elevation angle [degree]
@@ -273,10 +275,10 @@ inline float atmos_refrac(float elev_ang_true, float temp, float pressure) {
        - Saemundsson, P. (1986). "Astronomical Refraction". Sky and Telescope.
          72: 70
        - Meeus, J. (1998): Astronomical Algorithm - Second edition, p. 106*/
-    float lower = -1.0;
-    float upper = 90.0;
+    double lower = -1.0;
+    double upper = 90.0;
     elev_ang_true = std::max(lower, std::min(elev_ang_true, upper));
-    float refrac_cor = (1.02 / tan(deg2rad(elev_ang_true + 10.3
+    double refrac_cor = (1.02 / tan(deg2rad(elev_ang_true + 10.3
         / (elev_ang_true + 5.11))));
     refrac_cor += 0.0019279;  // set R = 0.0 for h = 90.0 degree
     refrac_cor *= (pressure / 101.0) * (283.0 / (273.0 + temp));
@@ -448,10 +450,10 @@ void CppTerrain::initialise(
     int pixel_per_gc,
     int offset_gc,
 	unsigned char* mask,
-    float dist_search,
+    double dist_search,
     char* geom_type,
-    float sw_dir_cor_max,
-    float ang_max) {
+    double sw_dir_cor_max,
+    double ang_max) {
 
     vert_grid_cl = vert_grid;
     dem_dim_0_cl = dem_dim_0;
@@ -466,7 +468,7 @@ void CppTerrain::initialise(
     ang_max_cl = ang_max;
 
     // Hard-coded settings
-    ray_org_elev_cl = 0.2;
+    ray_org_elev_cl = 0.1;
     // value to elevate ray origin (-> avoids potential issue with numerical
     // imprecision / truncation) [m]
 
@@ -501,19 +503,19 @@ void CppTerrain::initialise(
 // Compute correction factors
 //#############################################################################
 
-void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
+void CppTerrain::sw_dir_cor(double* sun_pos, float* sw_dir_cor,
     int refrac_cor) {
  
     auto start_ray = std::chrono::high_resolution_clock::now();
     size_t num_rays = 0;
 
 	// Parameters for reference atmosphere
-	float temperature_ref = 283.15;  // reference temperature at sea level [K]
-	float pressure_ref = 101.0;  // reference pressure at sea level [kPa]
-	float lapse_rate = 0.0065;  // temperature lapse rate [K m-1]
-	float g = 9.81;  // acceleration due to gravity at sea level [m s-2]
-	float R_d = 287.0;  // gas constant for dry air [J K-1 kg-1]
-	float exp_baro = (g / (R_d * lapse_rate));
+	double temperature_ref = 283.15;  // reference temperature at sea level [K]
+	double pressure_ref = 101.0;  // reference pressure at sea level [kPa]
+	double lapse_rate = 0.0065;  // temperature lapse rate [K m-1]
+	double g = 9.81;  // acceleration due to gravity at sea level [m s-2]
+	double R_d = 287.0;  // gas constant for dry air [J K-1 kg-1]
+	double exp_baro = (g / (R_d * lapse_rate));
 	// exponent for barometric formula
 
     num_rays += tbb::parallel_reduce(
@@ -547,23 +549,24 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
                             m + (pixel_per_gc_cl * offset_gc_cl),
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        float vert_0_x = vert_grid_cl[ind_tri_0];
-                        float vert_0_y = vert_grid_cl[ind_tri_0 + 1];
-                        float vert_0_z = vert_grid_cl[ind_tri_0 + 2];
-                        float vert_1_x = vert_grid_cl[ind_tri_1];
-                        float vert_1_y = vert_grid_cl[ind_tri_1 + 1];
-                        float vert_1_z = vert_grid_cl[ind_tri_1 + 2];
-                        float vert_2_x = vert_grid_cl[ind_tri_2];
-                        float vert_2_y = vert_grid_cl[ind_tri_2 + 1];
-                        float vert_2_z = vert_grid_cl[ind_tri_2 + 2];
+                        double vert_0_x = (double)vert_grid_cl[ind_tri_0];
+                        double vert_0_y = (double)vert_grid_cl[ind_tri_0 + 1];
+                        double vert_0_z = (double)vert_grid_cl[ind_tri_0 + 2];
+                        double vert_1_x = (double)vert_grid_cl[ind_tri_1];
+                        double vert_1_y = (double)vert_grid_cl[ind_tri_1 + 1];
+                        double vert_1_z = (double)vert_grid_cl[ind_tri_1 + 2];
+                        double vert_2_x = (double)vert_grid_cl[ind_tri_2];
+                        double vert_2_y = (double)vert_grid_cl[ind_tri_2 + 1];
+                        double vert_2_z = (double)vert_grid_cl[ind_tri_2 + 2];
 
-                        float cent_x, cent_y, cent_z;
+                        double cent_x, cent_y, cent_z;
                         triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             cent_x, cent_y, cent_z);
 
-                        float norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
+                        double norm_tilt_x, norm_tilt_y, norm_tilt_z,
+                            area_tilt;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
@@ -571,11 +574,11 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
                             area_tilt);
 
                         // Ray origin
-                        float ray_org_x = (cent_x
+                        double ray_org_x = (cent_x
                             + norm_tilt_x * ray_org_elev_cl);
-                        float ray_org_y = (cent_y
+                        double ray_org_y = (cent_y
                             + norm_tilt_y * ray_org_elev_cl);
-                        float ray_org_z = (cent_z
+                        double ray_org_z = (cent_z
                             + norm_tilt_z * ray_org_elev_cl);
 
                         //-----------------------------------------------------
@@ -585,64 +588,65 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
                         func_ptr[n](dem_dim_in_1_cl, k, m,
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        vert_0_x = vert_grid_in_cl[ind_tri_0];
-                        vert_0_y = vert_grid_in_cl[ind_tri_0 + 1];
-                        vert_0_z = vert_grid_in_cl[ind_tri_0 + 2];
-                        vert_1_x = vert_grid_in_cl[ind_tri_1];
-                        vert_1_y = vert_grid_in_cl[ind_tri_1 + 1];
-                        vert_1_z = vert_grid_in_cl[ind_tri_1 + 2];
-                        vert_2_x = vert_grid_in_cl[ind_tri_2];
-                        vert_2_y = vert_grid_in_cl[ind_tri_2 + 1];
-                        vert_2_z = vert_grid_in_cl[ind_tri_2 + 2];
+                        vert_0_x = (double)vert_grid_in_cl[ind_tri_0];
+                        vert_0_y = (double)vert_grid_in_cl[ind_tri_0 + 1];
+                        vert_0_z = (double)vert_grid_in_cl[ind_tri_0 + 2];
+                        vert_1_x = (double)vert_grid_in_cl[ind_tri_1];
+                        vert_1_y = (double)vert_grid_in_cl[ind_tri_1 + 1];
+                        vert_1_z = (double)vert_grid_in_cl[ind_tri_1 + 2];
+                        vert_2_x = (double)vert_grid_in_cl[ind_tri_2];
+                        vert_2_y = (double)vert_grid_in_cl[ind_tri_2 + 1];
+                        vert_2_z = (double)vert_grid_in_cl[ind_tri_2 + 2];
 
-                        float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
+                        double norm_hori_x, norm_hori_y, norm_hori_z,
+                            area_hori;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             norm_hori_x, norm_hori_y, norm_hori_z,
                             area_hori);
 
-                        float surf_enl_fac = area_tilt / area_hori;
+                        double surf_enl_fac = area_tilt / area_hori;
 
                         //-----------------------------------------------------
                         // Compute correction factor
                         //-----------------------------------------------------
 
                         // Compute sun unit vector
-                        float sun_x = (sun_pos[0] - ray_org_x);
-                        float sun_y = (sun_pos[1] - ray_org_y);
-                        float sun_z = (sun_pos[2] - ray_org_z);
+                        double sun_x = (sun_pos[0] - ray_org_x);
+                        double sun_y = (sun_pos[1] - ray_org_y);
+                        double sun_z = (sun_pos[2] - ray_org_z);
                         vec_unit(sun_x, sun_y, sun_z);
 
                         // Consider atmospheric refraction (optional)
-                        float dot_prod_hs = (norm_hori_x * sun_x
+                        double dot_prod_hs = (norm_hori_x * sun_x
                             + norm_hori_y * sun_y
                             + norm_hori_z * sun_z);
                         if (refrac_cor == 1) {
 
                             // Compute elevation (distance between centroid
                             // of DEM triangle and 'base triangle')
-                            float cent_base_x, cent_base_y, cent_base_z;
+                            double cent_base_x, cent_base_y, cent_base_z;
                             triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
                                 vert_1_x, vert_1_y, vert_1_z,
                                 vert_2_x, vert_2_y, vert_2_z,
                                 cent_base_x, cent_base_y, cent_base_z);
-                            float elevation
+                            double elevation
                                 = sqrt(pow(cent_x - cent_base_x, 2)
                                 + pow(cent_y - cent_base_y, 2)
                                 + pow(cent_z - cent_base_z, 2));
 
                             // Update sun position
-                            float elev_ang_true = 90.0
+                            double elev_ang_true = 90.0
                                 - rad2deg(acos(dot_prod_hs));
-                            float temperature = temperature_ref
+                            double temperature = temperature_ref
                                 - (lapse_rate * elevation);
-                            float pressure = pressure_ref
+                            double pressure = pressure_ref
                                 * pow((temperature / temperature_ref),
                                 exp_baro);
-                            float refrac_cor = atmos_refrac(elev_ang_true,
+                            double refrac_cor = atmos_refrac(elev_ang_true,
                                 K2degC(temperature), pressure);
-                            float k_x, k_y, k_z;
+                            double k_x, k_y, k_z;
                             cross_prod(sun_x, sun_y, sun_z,
                                 norm_hori_x, norm_hori_y, norm_hori_z,
                                 k_x, k_y, k_z);
@@ -660,7 +664,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
                         }
 
                         // Check for self-shadowing (triangle)
-                        float dot_prod_ts = norm_tilt_x * sun_x
+                        double dot_prod_ts = norm_tilt_x * sun_x
                             + norm_tilt_y * sun_y
                             + norm_tilt_z * sun_z;
                         if (dot_prod_ts <= 0.0) {
@@ -673,14 +677,14 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
 
                         // Ray structure
                         struct RTCRay ray;
-                        ray.org_x = ray_org_x;
-                        ray.org_y = ray_org_y;
-                        ray.org_z = ray_org_z;
-                        ray.dir_x = sun_x;
-                        ray.dir_y = sun_y;
-                        ray.dir_z = sun_z;
+                        ray.org_x = (float)ray_org_x;
+                        ray.org_y = (float)ray_org_y;
+                        ray.org_z = (float)ray_org_z;
+                        ray.dir_x = (float)sun_x;
+                        ray.dir_y = (float)sun_y;
+                        ray.dir_z = (float)sun_z;
                         ray.tnear = 0.0;
-                        ray.tfar = dist_search_cl;
+                        ray.tfar = (float)dist_search_cl;
                         // std::numeric_limits<float>::infinity();
 
                         // Intersect ray with scene
@@ -690,8 +694,9 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
                             // otherwise 'tfar' = -inf
                             sw_dir_cor[lin_ind_gc] =
                                 sw_dir_cor[lin_ind_gc]
-                                + std::min(((dot_prod_ts / dot_prod_hs)
-                                * surf_enl_fac), sw_dir_cor_max_cl);
+                                + (float)(std::min(((dot_prod_ts
+                                / dot_prod_hs)
+                                * surf_enl_fac), sw_dir_cor_max_cl));
                         }  // else: sw_dir_cor += 0.0
                         num_rays += 1;
 
@@ -716,7 +721,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
     std::chrono::duration<double> time_ray = (end_ray - start_ray);
     cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
     cout << "Number of rays shot: " << num_rays << endl;
-    float frac_ray = (float)num_rays / (float)num_tri_cl;
+    double frac_ray = (double)num_rays / (double)num_tri_cl;
     cout << "Fraction of rays required: " << frac_ray << endl;
 
     // Divide accumulated values by number of triangles within grid cell
@@ -732,7 +737,7 @@ void CppTerrain::sw_dir_cor(float* sun_pos, float* sw_dir_cor,
 // Compute correction factors with coherent rays
 //#############################################################################
 
-void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
+void CppTerrain::sw_dir_cor_coherent(double* sun_pos, float* sw_dir_cor) {
 
     auto start_ray = std::chrono::high_resolution_clock::now();
     size_t num_rays = 0;
@@ -775,23 +780,23 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                             m + (pixel_per_gc_cl * offset_gc_cl),
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        float vert_0_x = vert_grid_cl[ind_tri_0];
-                        float vert_0_y = vert_grid_cl[ind_tri_0 + 1];
-                        float vert_0_z = vert_grid_cl[ind_tri_0 + 2];
-                        float vert_1_x = vert_grid_cl[ind_tri_1];
-                        float vert_1_y = vert_grid_cl[ind_tri_1 + 1];
-                        float vert_1_z = vert_grid_cl[ind_tri_1 + 2];
-                        float vert_2_x = vert_grid_cl[ind_tri_2];
-                        float vert_2_y = vert_grid_cl[ind_tri_2 + 1];
-                        float vert_2_z = vert_grid_cl[ind_tri_2 + 2];
+                        double vert_0_x = (double)vert_grid_cl[ind_tri_0];
+                        double vert_0_y = (double)vert_grid_cl[ind_tri_0 + 1];
+                        double vert_0_z = (double)vert_grid_cl[ind_tri_0 + 2];
+                        double vert_1_x = (double)vert_grid_cl[ind_tri_1];
+                        double vert_1_y = (double)vert_grid_cl[ind_tri_1 + 1];
+                        double vert_1_z = (double)vert_grid_cl[ind_tri_1 + 2];
+                        double vert_2_x = (double)vert_grid_cl[ind_tri_2];
+                        double vert_2_y = (double)vert_grid_cl[ind_tri_2 + 1];
+                        double vert_2_z = (double)vert_grid_cl[ind_tri_2 + 2];
 
-                        float cent_x, cent_y, cent_z;
+                        double cent_x, cent_y, cent_z;
                         triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             cent_x, cent_y, cent_z);
 
-                        float norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
+                        double norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
@@ -799,11 +804,11 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                             area_tilt);
 
                         // Ray origin
-                        float ray_org_x = (cent_x
+                        double ray_org_x = (cent_x
                             + norm_tilt_x * ray_org_elev_cl);
-                        float ray_org_y = (cent_y
+                        double ray_org_y = (cent_y
                             + norm_tilt_y * ray_org_elev_cl);
-                        float ray_org_z = (cent_z
+                        double ray_org_z = (cent_z
                             + norm_tilt_z * ray_org_elev_cl);
 
                         //-----------------------------------------------------
@@ -813,37 +818,37 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                         func_ptr[n](dem_dim_in_1_cl, k, m,
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        vert_0_x = vert_grid_in_cl[ind_tri_0];
-                        vert_0_y = vert_grid_in_cl[ind_tri_0 + 1];
-                        vert_0_z = vert_grid_in_cl[ind_tri_0 + 2];
-                        vert_1_x = vert_grid_in_cl[ind_tri_1];
-                        vert_1_y = vert_grid_in_cl[ind_tri_1 + 1];
-                        vert_1_z = vert_grid_in_cl[ind_tri_1 + 2];
-                        vert_2_x = vert_grid_in_cl[ind_tri_2];
-                        vert_2_y = vert_grid_in_cl[ind_tri_2 + 1];
-                        vert_2_z = vert_grid_in_cl[ind_tri_2 + 2];
+                        vert_0_x = (double)vert_grid_in_cl[ind_tri_0];
+                        vert_0_y = (double)vert_grid_in_cl[ind_tri_0 + 1];
+                        vert_0_z = (double)vert_grid_in_cl[ind_tri_0 + 2];
+                        vert_1_x = (double)vert_grid_in_cl[ind_tri_1];
+                        vert_1_y = (double)vert_grid_in_cl[ind_tri_1 + 1];
+                        vert_1_z = (double)vert_grid_in_cl[ind_tri_1 + 2];
+                        vert_2_x = (double)vert_grid_in_cl[ind_tri_2];
+                        vert_2_y = (double)vert_grid_in_cl[ind_tri_2 + 1];
+                        vert_2_z = (double)vert_grid_in_cl[ind_tri_2 + 2];
 
-                        float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
+                        double norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             norm_hori_x, norm_hori_y, norm_hori_z,
                             area_hori);
 
-                        float surf_enl_fac = area_tilt / area_hori;
+                        double surf_enl_fac = area_tilt / area_hori;
 
                         //-----------------------------------------------------
                         // Compute correction factor
                         //-----------------------------------------------------
 
                         // Compute sun unit vector
-                        float sun_x = (sun_pos[0] - ray_org_x);
-                        float sun_y = (sun_pos[1] - ray_org_y);
-                        float sun_z = (sun_pos[2] - ray_org_z);
+                        double sun_x = (sun_pos[0] - ray_org_x);
+                        double sun_y = (sun_pos[1] - ray_org_y);
+                        double sun_z = (sun_pos[2] - ray_org_z);
                         vec_unit(sun_x, sun_y, sun_z);
 
                         // Check for self-shadowing (Earth)
-                        float dot_prod_hs = (norm_hori_x * sun_x
+                        double dot_prod_hs = (norm_hori_x * sun_x
                             + norm_hori_y * sun_y
                             + norm_hori_z * sun_z);
                         if (dot_prod_hs <= dot_prod_min_cl) {
@@ -851,7 +856,7 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                         }
 
                         // Check for self-shadowing (triangle)
-                        float dot_prod_ts = norm_tilt_x * sun_x
+                        double dot_prod_ts = norm_tilt_x * sun_x
                             + norm_tilt_y * sun_y
                             + norm_tilt_z * sun_z;
                         if (dot_prod_ts <= 0.0) {
@@ -859,21 +864,20 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
                         }
 
                         // Add ray
-                        rays[num_rays_gc].org_x = ray_org_x;
-                        rays[num_rays_gc].org_y = ray_org_y;
-                        rays[num_rays_gc].org_z = ray_org_z;
-                        rays[num_rays_gc].dir_x = sun_x;
-                        rays[num_rays_gc].dir_y = sun_y;
-                        rays[num_rays_gc].dir_z = sun_z;
+                        rays[num_rays_gc].org_x = (float)ray_org_x;
+                        rays[num_rays_gc].org_y = (float)ray_org_y;
+                        rays[num_rays_gc].org_z = (float)ray_org_z;
+                        rays[num_rays_gc].dir_x = (float)sun_x;
+                        rays[num_rays_gc].dir_y = (float)sun_y;
+                        rays[num_rays_gc].dir_z = (float)sun_z;
                         rays[num_rays_gc].tnear = 0.0;
-                        rays[num_rays_gc].tfar = dist_search_cl;
+                        rays[num_rays_gc].tfar = (float)dist_search_cl;
                         // std::numeric_limits<float>::infinity();
                         rays[num_rays_gc].id = num_rays_gc;
 
                         sw_dir_cor_ray[num_rays_gc] =
-                            std::min(((dot_prod_ts / dot_prod_hs)
-                            * surf_enl_fac),
-                            sw_dir_cor_max_cl);
+                            (float)(std::min(((dot_prod_ts / dot_prod_hs)
+                            * surf_enl_fac), sw_dir_cor_max_cl));
                         num_rays_gc = num_rays_gc + 1;
 
                     }
@@ -902,7 +906,8 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
 
             delete[] sw_dir_cor_ray;
 
-            sw_dir_cor[lin_ind_gc] = sw_dir_cor_agg / num_tri_per_gc;
+            sw_dir_cor[lin_ind_gc]
+                = sw_dir_cor_agg / (float)num_tri_per_gc;
 
             } else {
 
@@ -920,7 +925,7 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
     std::chrono::duration<double> time_ray = (end_ray - start_ray);
     cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
     cout << "Number of rays shot: " << num_rays << endl;
-    float frac_ray = (float)num_rays / (float)num_tri_cl;
+    double frac_ray = (double)num_rays / (double)num_tri_cl;
     cout << "Fraction of rays required: " << frac_ray << endl;
 
 }
@@ -929,7 +934,7 @@ void CppTerrain::sw_dir_cor_coherent(float* sun_pos, float* sw_dir_cor) {
 // Compute correction factors with coherent rays (packages with 8 rays)
 //#############################################################################
 
-void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
+void CppTerrain::sw_dir_cor_coherent_rp8(double* sun_pos, float* sw_dir_cor) {
 
     if (pixel_per_gc_cl % 2) {
         cout << "Error: method is only implemented for even " <<
@@ -940,7 +945,7 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
     auto start_ray = std::chrono::high_resolution_clock::now();
     size_t num_rays = 0;
 
-    float num_tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2.0;
+    double num_tri_per_gc = pixel_per_gc_cl * pixel_per_gc_cl * 2.0;
     // number of triangles per grid cell
 
     num_rays += tbb::parallel_reduce(
@@ -984,23 +989,24 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                             m_block + (pixel_per_gc_cl * offset_gc_cl),
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        float vert_0_x = vert_grid_cl[ind_tri_0];
-                        float vert_0_y = vert_grid_cl[ind_tri_0 + 1];
-                        float vert_0_z = vert_grid_cl[ind_tri_0 + 2];
-                        float vert_1_x = vert_grid_cl[ind_tri_1];
-                        float vert_1_y = vert_grid_cl[ind_tri_1 + 1];
-                        float vert_1_z = vert_grid_cl[ind_tri_1 + 2];
-                        float vert_2_x = vert_grid_cl[ind_tri_2];
-                        float vert_2_y = vert_grid_cl[ind_tri_2 + 1];
-                        float vert_2_z = vert_grid_cl[ind_tri_2 + 2];
+                        double vert_0_x = (double)vert_grid_cl[ind_tri_0];
+                        double vert_0_y = (double)vert_grid_cl[ind_tri_0 + 1];
+                        double vert_0_z = (double)vert_grid_cl[ind_tri_0 + 2];
+                        double vert_1_x = (double)vert_grid_cl[ind_tri_1];
+                        double vert_1_y = (double)vert_grid_cl[ind_tri_1 + 1];
+                        double vert_1_z = (double)vert_grid_cl[ind_tri_1 + 2];
+                        double vert_2_x = (double)vert_grid_cl[ind_tri_2];
+                        double vert_2_y = (double)vert_grid_cl[ind_tri_2 + 1];
+                        double vert_2_z = (double)vert_grid_cl[ind_tri_2 + 2];
 
-                        float cent_x, cent_y, cent_z;
+                        double cent_x, cent_y, cent_z;
                         triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             cent_x, cent_y, cent_z);
 
-                        float norm_tilt_x, norm_tilt_y, norm_tilt_z, area_tilt;
+                        double norm_tilt_x, norm_tilt_y, norm_tilt_z,
+                            area_tilt;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
@@ -1008,11 +1014,11 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                             area_tilt);
 
                         // Ray origin
-                        float ray_org_x = (cent_x
+                        double ray_org_x = (cent_x
                             + norm_tilt_x * ray_org_elev_cl);
-                        float ray_org_y = (cent_y
+                        double ray_org_y = (cent_y
                             + norm_tilt_y * ray_org_elev_cl);
-                        float ray_org_z = (cent_z
+                        double ray_org_z = (cent_z
                             + norm_tilt_z * ray_org_elev_cl);
 
                         //-----------------------------------------------------
@@ -1022,37 +1028,38 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                         func_ptr[n](dem_dim_in_1_cl, k_block, m_block,
                             ind_tri_0, ind_tri_1, ind_tri_2);
 
-                        vert_0_x = vert_grid_in_cl[ind_tri_0];
-                        vert_0_y = vert_grid_in_cl[ind_tri_0 + 1];
-                        vert_0_z = vert_grid_in_cl[ind_tri_0 + 2];
-                        vert_1_x = vert_grid_in_cl[ind_tri_1];
-                        vert_1_y = vert_grid_in_cl[ind_tri_1 + 1];
-                        vert_1_z = vert_grid_in_cl[ind_tri_1 + 2];
-                        vert_2_x = vert_grid_in_cl[ind_tri_2];
-                        vert_2_y = vert_grid_in_cl[ind_tri_2 + 1];
-                        vert_2_z = vert_grid_in_cl[ind_tri_2 + 2];
+                        vert_0_x = (double)vert_grid_in_cl[ind_tri_0];
+                        vert_0_y = (double)vert_grid_in_cl[ind_tri_0 + 1];
+                        vert_0_z = (double)vert_grid_in_cl[ind_tri_0 + 2];
+                        vert_1_x = (double)vert_grid_in_cl[ind_tri_1];
+                        vert_1_y = (double)vert_grid_in_cl[ind_tri_1 + 1];
+                        vert_1_z = (double)vert_grid_in_cl[ind_tri_1 + 2];
+                        vert_2_x = (double)vert_grid_in_cl[ind_tri_2];
+                        vert_2_y = (double)vert_grid_in_cl[ind_tri_2 + 1];
+                        vert_2_z = (double)vert_grid_in_cl[ind_tri_2 + 2];
 
-                        float norm_hori_x, norm_hori_y, norm_hori_z, area_hori;
+                        double norm_hori_x, norm_hori_y, norm_hori_z,
+                            area_hori;
                         triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
                             vert_1_x, vert_1_y, vert_1_z,
                             vert_2_x, vert_2_y, vert_2_z,
                             norm_hori_x, norm_hori_y, norm_hori_z,
                             area_hori);
 
-                        float surf_enl_fac = area_tilt / area_hori;
+                        double surf_enl_fac = area_tilt / area_hori;
 
                         //-----------------------------------------------------
                         // Compute correction factor
                         //-----------------------------------------------------
 
                         // Compute sun unit vector
-                        float sun_x = (sun_pos[0] - ray_org_x);
-                        float sun_y = (sun_pos[1] - ray_org_y);
-                        float sun_z = (sun_pos[2] - ray_org_z);
+                        double sun_x = (sun_pos[0] - ray_org_x);
+                        double sun_y = (sun_pos[1] - ray_org_y);
+                        double sun_z = (sun_pos[2] - ray_org_z);
                         vec_unit(sun_x, sun_y, sun_z);
 
                         // Check for self-shadowing (Earth)
-                        float dot_prod_hs = (norm_hori_x * sun_x
+                        double dot_prod_hs = (norm_hori_x * sun_x
                             + norm_hori_y * sun_y
                             + norm_hori_z * sun_z);
                         if (dot_prod_hs <= dot_prod_min_cl) {
@@ -1060,7 +1067,7 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                         }
 
                         // Check for self-shadowing (triangle)
-                        float dot_prod_ts = norm_tilt_x * sun_x
+                        double dot_prod_ts = norm_tilt_x * sun_x
                             + norm_tilt_y * sun_y
                             + norm_tilt_z * sun_z;
                         if (dot_prod_ts <= 0.0) {
@@ -1068,22 +1075,21 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
                         }
 
                         // Add ray
-                        ray8.org_x[num_rays_gc] = ray_org_x;
-                        ray8.org_y[num_rays_gc] = ray_org_y;
-                        ray8.org_z[num_rays_gc] = ray_org_z;
+                        ray8.org_x[num_rays_gc] = (float)ray_org_x;
+                        ray8.org_y[num_rays_gc] = (float)ray_org_y;
+                        ray8.org_z[num_rays_gc] = (float)ray_org_z;
                         ray8.tnear[num_rays_gc] = 0.0;
-                        ray8.dir_x[num_rays_gc] = sun_x;
-                        ray8.dir_y[num_rays_gc] = sun_y;
-                        ray8.dir_z[num_rays_gc] = sun_z;
-                        ray8.tfar[num_rays_gc] = dist_search_cl;
+                        ray8.dir_x[num_rays_gc] = (float)sun_x;
+                        ray8.dir_y[num_rays_gc] = (float)sun_y;
+                        ray8.dir_z[num_rays_gc] = (float)sun_z;
+                        ray8.tfar[num_rays_gc] = (float)dist_search_cl;
                         // std::numeric_limits<float>::infinity();
                         ray8.id[num_rays_gc] = num_rays_gc;
                         valid8[num_rays_gc] = -1; // -1: valid
 
                         sw_dir_cor_ray[num_rays_gc] =
-                            std::min(((dot_prod_ts / dot_prod_hs)
-                            * surf_enl_fac),
-                            sw_dir_cor_max_cl);
+                            (float)(std::min(((dot_prod_ts / dot_prod_hs)
+                            * surf_enl_fac), sw_dir_cor_max_cl));
                         num_rays_gc = num_rays_gc + 1;
 
                     }
@@ -1131,7 +1137,7 @@ void CppTerrain::sw_dir_cor_coherent_rp8(float* sun_pos, float* sw_dir_cor) {
     std::chrono::duration<double> time_ray = (end_ray - start_ray);
     cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
     cout << "Number of rays shot: " << num_rays << endl;
-    float frac_ray = (float)num_rays / (float)num_tri_cl;
+    double frac_ray = (double)num_rays / (double)num_tri_cl;
     cout << "Fraction of rays required: " << frac_ray << endl;
 
 }

@@ -201,7 +201,7 @@ x_ecef, y_ecef, z_ecef \
                             trans_lonlat2enu)
 x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                          trans_lonlat2enu)
-sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
+sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]])
 print((" Default: ").center(79, "-"))
 terrain.sw_dir_cor(sun_pos, sw_dir_cor, refrac_cor=False)
 print("Number of NaN-values: " + str(np.isnan(sw_dir_cor).sum()))
@@ -252,7 +252,7 @@ for ind_i, i in enumerate(subsol_lat_1d):
                                     subsol_dist, trans_lonlat2enu)
         x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
                                                  trans_lonlat2enu)
-        sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]], dtype=np.float32)
+        sun_pos = np.array([x_enu[0], y_enu[0], z_enu[0]])
         # terrain.sw_dir_cor(sun_pos, sw_dir_cor)
         # terrain.sw_dir_cor_coherent(sun_pos, sw_dir_cor)
         terrain.sw_dir_cor_coherent_rp8(sun_pos, sw_dir_cor)

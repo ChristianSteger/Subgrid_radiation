@@ -108,7 +108,7 @@ y_sun = r_sun * np.cos(np.deg2rad(lu_lat_2d)) * np.sin(np.deg2rad(lu_lon_2d))
 z_sun = r_sun * np.sin(np.deg2rad(lu_lat_2d))
 sun_pos = np.concatenate((x_sun[:, :, np.newaxis],
                           y_sun[:, :, np.newaxis],
-                          z_sun[:, :, np.newaxis]), axis=2).astype(np.float32)
+                          z_sun[:, :, np.newaxis]), axis=2)
 
 # Mask (optional)
 num_gc_y = int((x.shape[0] - 1) / pixel_per_gc) - 2 * offset_gc

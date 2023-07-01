@@ -15,30 +15,30 @@ cdef extern from "rays_comp.h":
             int dem_dim_0, int dem_dim_1,
             float* vert_grid_in,
             int dem_dim_in_0, int dem_dim_in_1,
-            float* sun_pos,
+            double* sun_pos,
             int dim_sun_0, int dim_sun_1,
             float* sw_dir_cor,
             int pixel_per_gc,
             int offset_gc,
             np.npy_uint8 * mask,
-            float dist_search,
+            double dist_search,
             char* geom_type,
-            float sw_dir_cor_max,
-            float ang_max)
+            double sw_dir_cor_max,
+            double ang_max)
 
 def sw_dir_cor(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
         int dem_dim_0, int dem_dim_1,
         np.ndarray[np.float32_t, ndim = 1] vert_grid_in,
         int dem_dim_in_0, int dem_dim_in_1,
-        np.ndarray[np.float32_t, ndim = 3] sun_pos,
+        np.ndarray[np.float64_t, ndim = 3] sun_pos,
         int pixel_per_gc,
         int offset_gc,
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
-        float dist_search=100.0,
+        double dist_search=100.0,
         str geom_type="grid",
-        float sw_dir_cor_max=25.0,
-        float ang_max=89.9):
+        double sw_dir_cor_max=25.0,
+        double ang_max=89.9):
     """Compute subsolar lookup table of subgrid-scale correction factors
     for direct downward shortwave radiation.
 
@@ -57,7 +57,7 @@ def sw_dir_cor(
         Dimension length of inner DEM in y-direction
     dem_dim_in_1 : int
         Dimension length of inner DEM in x-direction
-    sun_pos : ndarray of float
+    sun_pos : ndarray of double
         Array (three-dimensional) with sun positions in ENU coordinates
         (dim_sun_0, dim_sun_1, 3) [metre]
     pixel_per_gc : int
@@ -68,14 +68,14 @@ def sw_dir_cor(
         Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
         'sky_view_factor' are computed. Masked (0) grid cells are filled with
         NaN.
-    dist_search : float
+    dist_search : double
         Search distance for topographic shadowing [kilometre]
     geom_type : str
         Embree geometry type (triangle, quad, grid)
-    sw_dir_cor_max : float
+    sw_dir_cor_max : double
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
-    ang_max : float
+    ang_max : double
         Maximal angle between sun vector and horizontal surface normal for
         which correction is computed. For larger angles, 'sw_dir_cor' is set
         to 0.0 [degree]
@@ -175,30 +175,30 @@ cdef extern from "rays_comp.h":
             int dem_dim_0, int dem_dim_1,
             float* vert_grid_in,
             int dem_dim_in_0, int dem_dim_in_1,
-            float* sun_pos,
+            double* sun_pos,
             int dim_sun_0, int dim_sun_1,
             float* sw_dir_cor,
             int pixel_per_gc,
             int offset_gc,
             np.npy_uint8 * mask,
-            float dist_search,
+            double dist_search,
             char* geom_type,
-            float sw_dir_cor_max,
-            float ang_max)
+            double sw_dir_cor_max,
+            double ang_max)
 
 def sw_dir_cor_coherent(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
         int dem_dim_0, int dem_dim_1,
         np.ndarray[np.float32_t, ndim = 1] vert_grid_in,
         int dem_dim_in_0, int dem_dim_in_1,
-        np.ndarray[np.float32_t, ndim = 3] sun_pos,
+        np.ndarray[np.float64_t, ndim = 3] sun_pos,
         int pixel_per_gc,
         int offset_gc,
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
-        float dist_search=100.0,
+        double dist_search=100.0,
         str geom_type="grid",
-        float sw_dir_cor_max=25.0,
-        float ang_max=89.9):
+        double sw_dir_cor_max=25.0,
+        double ang_max=89.9):
     """Compute subsolar lookup table of subgrid-scale correction factors
     for direct downward shortwave radiation (use coherent rays).
 
@@ -217,7 +217,7 @@ def sw_dir_cor_coherent(
         Dimension length of inner DEM in y-direction
     dem_dim_in_1 : int
         Dimension length of inner DEM in x-direction
-    sun_pos : ndarray of float
+    sun_pos : ndarray of double
         Array (three-dimensional) with sun positions in ENU coordinates
         (dim_sun_0, dim_sun_1, 3) [metre]
     pixel_per_gc : int
@@ -228,14 +228,14 @@ def sw_dir_cor_coherent(
         Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
         'sky_view_factor' are computed. Masked (0) grid cells are filled with
         NaN.
-    dist_search : float
+    dist_search : double
         Search distance for topographic shadowing [kilometre]
     geom_type : str
         Embree geometry type (triangle, quad, grid)
-    sw_dir_cor_max : float
+    sw_dir_cor_max : double
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
-    ang_max : float
+    ang_max : double
         Maximal angle between sun vector and horizontal surface normal for
         which correction is computed. For larger angles, 'sw_dir_cor' is set
         to 0.0 [degree]
@@ -333,30 +333,30 @@ cdef extern from "rays_comp.h":
             int dem_dim_0, int dem_dim_1,
             float* vert_grid_in,
             int dem_dim_in_0, int dem_dim_in_1,
-            float* sun_pos,
+            double* sun_pos,
             int dim_sun_0, int dim_sun_1,
             float* sw_dir_cor,
             int pixel_per_gc,
             int offset_gc,
             np.npy_uint8 * mask,
-            float dist_search,
+            double dist_search,
             char* geom_type,
-            float sw_dir_cor_max,
-            float ang_max)
+            double sw_dir_cor_max,
+            double ang_max)
 
 def sw_dir_cor_coherent_rp8(
         np.ndarray[np.float32_t, ndim = 1] vert_grid,
         int dem_dim_0, int dem_dim_1,
         np.ndarray[np.float32_t, ndim = 1] vert_grid_in,
         int dem_dim_in_0, int dem_dim_in_1,
-        np.ndarray[np.float32_t, ndim = 3] sun_pos,
+        np.ndarray[np.float64_t, ndim = 3] sun_pos,
         int pixel_per_gc,
         int offset_gc,
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
-        float dist_search=100.0,
+        double dist_search=100.0,
         str geom_type="grid",
-        float sw_dir_cor_max=25.0,
-        float ang_max=89.9):
+        double sw_dir_cor_max=25.0,
+        double ang_max=89.9):
     """Compute subsolar lookup table of subgrid-scale correction factors
     for direct downward shortwave radiation (use coherent rays with packages
     of 8 rays).
@@ -376,7 +376,7 @@ def sw_dir_cor_coherent_rp8(
         Dimension length of inner DEM in y-direction
     dem_dim_in_1 : int
         Dimension length of inner DEM in x-direction
-    sun_pos : ndarray of float
+    sun_pos : ndarray of double
         Array (three-dimensional) with sun positions in ENU coordinates
         (dim_sun_0, dim_sun_1, 3) [metre]
     pixel_per_gc : int
@@ -387,14 +387,14 @@ def sw_dir_cor_coherent_rp8(
         Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
         'sky_view_factor' are computed. Masked (0) grid cells are filled with
         NaN.
-    dist_search : float
+    dist_search : double
         Search distance for topographic shadowing [kilometre]
     geom_type : str
         Embree geometry type (triangle, quad, grid)
-    sw_dir_cor_max : float
+    sw_dir_cor_max : double
         Maximal allowed correction factor for direct downward shortwave
         radiation [-]
-    ang_max : float
+    ang_max : double
         Maximal angle between sun vector and horizontal surface normal for
         which correction is computed. For larger angles, 'sw_dir_cor' is set
         to 0.0 [degree]
