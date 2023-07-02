@@ -13,7 +13,7 @@ Installation via **Conda** can be accomplished as follows for different platform
 Installation requires the [GNU Compiler Collection (GCC)](https://gcc.gnu.org). Create an appropriate Conda environment
 
 ```bash
-conda create -n raytracing -c conda-forge embree3 tbb-devel cython numpy scipy xarray matplotlib cartopy netcdf4 cmcrameri skyfield
+conda create -n raytracing -c conda-forge embree3 tbb-devel cython numpy scipy xarray matplotlib cartopy netcdf4 cmcrameri skyfield skimage pyinterp pyproj
 ```
 
 and **activate this environment**.
@@ -32,7 +32,7 @@ Subgrid_radiation is compiled with **Clang** under Mac OS X. As the Apple-provid
 This can be done via Conda. Create an appropriate Conda environment
 
 ```bash
-conda create -n raytracing -c conda-forge embree3 tbb-devel cython numpy scipy xarray matplotlib cartopy netcdf4 cmcrameri skyfield c-compiler openmp python=3.9
+conda create -n raytracing -c conda-forge embree3 tbb-devel cython numpy scipy xarray matplotlib cartopy netcdf4 cmcrameri skyfield skimage pyinterp pyproj c-compiler openmp python=3.9
 ```
 
 and **activate this environment**.
