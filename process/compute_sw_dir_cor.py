@@ -36,6 +36,7 @@ ang_max = 89.9
 # Miscellaneous settings
 file_in = "MERIT_remapped_COSMO_0.02deg.nc"
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
+# path_work = "/scratch/snx3000/csteger/Subgrid_radiation_data/"  # CSCS
 file_out = "SW_dir_cor_lookup_21x60.nc"
 radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 

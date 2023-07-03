@@ -67,6 +67,7 @@ bound_width = 100.0  # width for additional terrain at the boundary [km]
 path_dem = "/Users/csteger/Dropbox/IAC/Data/DEMs/MERIT/Tiles/"
 # path_dem = "/store/c2sm/extpar_raw_data/topo/merit/"  # CSCS
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
+# path_work = "/scratch/snx3000/csteger/Subgrid_radiation_data/"  # CSCS
 file_out = "MERIT_remapped_COSMO_%.2f" % drlon + "deg.nc"
 plot_map = True
 

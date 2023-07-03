@@ -15,4 +15,5 @@
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 conda activate raytracing
-srun -u python compute_sun_position_array.py
+srun -u python compute_sw_dir_cor.py
+# srun -u python compute_sky_view_factor.py
