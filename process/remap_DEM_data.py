@@ -62,14 +62,18 @@ drlat = 0.005			# Grid spacing (meridional)
 startrlon_tot = -3.6    # Centre longitude of lower left grid cell
 startrlat_tot = -3.5    # Centre latitude of lower left grid cell
 
+# Platform dependent settings
+path_dem = "/Users/csteger/Dropbox/IAC/Data/DEMs/MERIT/Tiles/"
+path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
+uzip_dem = True
+# path_dem = "/store/c2sm/extpar_raw_data/topo/merit/"  # CSCS
+# path_work = "/scratch/snx3000/csteger/Subgrid_radiation_data/"  # CSCS
+# uzip_dem = False  # CSCS
+
 # Miscellaneous settings
 bound_width = 100.0  # width for additional terrain at the boundary [km]
-path_dem = "/Users/csteger/Dropbox/IAC/Data/DEMs/MERIT/Tiles/"
-# path_dem = "/store/c2sm/extpar_raw_data/topo/merit/"  # CSCS
-path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
-# path_work = "/scratch/snx3000/csteger/Subgrid_radiation_data/"  # CSCS
-file_out = "MERIT_remapped_COSMO_%.2f" % drlon + "deg.nc"
 plot_map = True
+file_out = "MERIT_remapped_COSMO_%.2f" % drlon + "deg.nc"
 
 # Constants
 radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
@@ -208,16 +212,18 @@ for i in range(lat_min, lat_max, 30):
         # -> tile name without file ending
 print("The following DEM tiles are required:\n" + "\n".join(tiles_dem))
 
-# Unzip DEM tiles
-cmd = "gunzip -c"
-for i in tiles_dem:
-    sf = path_dem + i + ".nc.xz"
-    tf = path_work + i + ".nc"
-    if not os.path.isfile(tf):
-        t_beg = time.time()
-        subprocess.call(cmd + " " + sf + " > " + tf, shell=True)
-        print("File " + i + ".nc unzipped (%.1f" % (time.time() - t_beg)
-              + " s)")
+# Unzip DEM tiles (optional)
+if uzip_dem:
+    cmd = "gunzip -c"
+    for i in tiles_dem:
+        sf = path_dem + i + ".nc.xz"
+        tf = path_work + i + ".nc"
+        if not os.path.isfile(tf):
+            t_beg = time.time()
+            subprocess.call(cmd + " " + sf + " > " + tf, shell=True)
+            print("File " + i + ".nc unzipped (%.1f" % (time.time() - t_beg)
+                  + " s)")
+    path_dem = path_work
 
 # -----------------------------------------------------------------------------
 # Regrid DEM bilinearly to model sub-grid
@@ -258,7 +264,7 @@ for i in range(num_subdom_y):
                                        ccrs_rot_pole, ccrs_geo)
 
         # Merge DEM tiles and crop domain
-        ds = xr.open_mfdataset([path_work + i + ".nc" for i in tiles_dem])
+        ds = xr.open_mfdataset([path_dem + i + ".nc" for i in tiles_dem])
         ds = ds.sel(lon=slice(geo_extent[0], geo_extent[1]),
                     lat=slice(geo_extent[3], geo_extent[2]))
         lon = ds["lon"].values.astype(np.float64)  # geographic longitude [deg]
