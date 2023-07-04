@@ -52,7 +52,7 @@ radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 print("Load data")
 
 # Load data
-ds = xr.open_dataset(path_work + "MERIT_remapped_COSMO_0.11deg_y1_x1.nc")
+ds = xr.open_dataset(path_work + "MERIT_remapped_COSMO_0.110deg_y1_x1.nc")
 num_gc_in_x = ds.attrs["num_grid_cells_inner_zonal"]
 num_gc_in_y = ds.attrs["num_grid_cells_inner_meridional"]
 # number of grid cells in inner domain

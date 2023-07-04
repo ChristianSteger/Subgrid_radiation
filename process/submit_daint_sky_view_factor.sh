@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --job-name="subrad"
+#SBATCH --job-name="sky_view_factor"
 #SBATCH --account="pr133"
 #SBATCH --time=01:58:00
 #SBATCH --nodes=1

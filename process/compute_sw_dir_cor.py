@@ -37,8 +37,8 @@ sw_dir_cor_max = 25.0
 ang_max = 89.9
 
 # File input/output
-file_in = "MERIT_remapped_COSMO_0.02deg_y0_x?.nc"
-# file_in = "MERIT_remapped_COSMO_0.01deg.nc"
+file_in = "MERIT_remapped_COSMO_0.020deg_y0_x?.nc"
+# file_in = "MERIT_remapped_COSMO_0.005deg.nc"
 
 # Miscellaneous settings
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
@@ -49,7 +49,7 @@ radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 # Process data
 # -----------------------------------------------------------------------------
 
-# Set working path
+# Set working path depending on system
 systems = {"Darwin": "local", "Linux": "cscs"}
 path_work = path_work[systems[platform.system()]]
 

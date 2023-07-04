@@ -24,6 +24,7 @@ import matplotlib as mpl
 import pyinterp
 from netCDF4 import Dataset
 from packaging import version
+import platform
 from utilities.grid import grid_frame
 
 mpl.style.use("classic")
@@ -62,18 +63,20 @@ startrlat_tot = -6.6    # Centre latitude of lower left grid cell
 # startrlon_tot = -3.6    # Centre longitude of lower left grid cell
 # startrlat_tot = -3.5    # Centre latitude of lower left grid cell
 
-# Platform dependent settings
-path_dem = "/Users/csteger/Dropbox/IAC/Data/DEMs/MERIT/Tiles/"
-path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
-uzip_dem = True
-# path_dem = "/store/c2sm/extpar_raw_data/topo/merit/"  # CSCS
-# path_work = "/scratch/snx3000/csteger/Subgrid_radiation_data/"  # CSCS
-# uzip_dem = False  # CSCS
+# System-dependent settings
+if platform.system() == "Darwin":  # local
+    path_dem = "/Users/csteger/Dropbox/IAC/Data/DEMs/MERIT/Tiles/"
+    path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
+    uzip_dem = True
+elif platform.system() == "Linux":  # CSCS
+    path_dem = "/store/c2sm/extpar_raw_data/topo/merit/"
+    path_work = "/scratch/snx3000/csteger/Subgrid_radiation_data/"
+    uzip_dem = False
 
 # Miscellaneous settings
 bound_width = 100.0  # width for additional terrain at the boundary [km]
 plot_map = True
-file_out = "MERIT_remapped_COSMO_%.2f" % drlon + "deg.nc"
+file_out = "MERIT_remapped_COSMO_%.3f" % drlon + "deg.nc"
 extent_max_half = 800.0  # np.inf # maximal 'half' extent of domain [km]
 # -> limit maximal absolute value of subsequently computed global ENU
 #    coordinates. Should be set to a suitable value regarding 'ray_org_elev'
