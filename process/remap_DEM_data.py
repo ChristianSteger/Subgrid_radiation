@@ -74,7 +74,7 @@ uzip_dem = True
 bound_width = 100.0  # width for additional terrain at the boundary [km]
 plot_map = True
 file_out = "MERIT_remapped_COSMO_%.2f" % drlon + "deg.nc"
-extent_max_half = 800_000.0  # np.inf # maximal 'half' extent of domain [m]
+extent_max_half = 800.0  # np.inf # maximal 'half' extent of domain [km]
 # -> limit maximal absolute value of subsequently computed global ENU
 #    coordinates. Should be set to a suitable value regarding 'ray_org_elev'
 #    and the representation of ENU coordinates with 32-bit floats.
@@ -239,7 +239,8 @@ if uzip_dem:
 if np.isinf(extent_max_half):
     len_max = 32_767
 else:
-    extent_max = 360.0 / (2.0 * np.pi * radius_earth) * (extent_max_half * 2.0)
+    extent_max = 360.0 / (2.0 * np.pi * radius_earth) \
+                 * (extent_max_half * 1000.0 * 2.0)
     len_max = np.minimum(int(np.ceil(extent_max / (drlat / pixel_per_gc_y))),
                          32_767)
 # 32_767: maximal length along one dimension determined by Embree restriction

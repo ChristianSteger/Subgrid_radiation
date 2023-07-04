@@ -12,6 +12,9 @@ import numpy as np
 import xarray as xr
 from skyfield.api import Distance
 from netCDF4 import Dataset
+import glob
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 from subgrid_radiation import transform, auxiliary
 from subgrid_radiation import sun_position_array
 
@@ -33,11 +36,15 @@ geom_type = "grid"  # "grid" or "quad"
 sw_dir_cor_max = 25.0
 ang_max = 89.9
 
+# File input/output
+file_in = "MERIT_remapped_COSMO_0.02deg_y0_x0.nc"
+file_out = "SW_dir_cor_lookup_21x60_COSMO_0.02deg_y0_x0.nc"
+# file_in = "MERIT_remapped_COSMO_0.02deg_y0_x1.nc"
+# file_out = "SW_dir_cor_lookup_21x60_COSMO_0.02deg_y0_x1.nc"
+
 # Miscellaneous settings
-file_in = "MERIT_remapped_COSMO_0.02deg.nc"
 path_work = "/Users/csteger/Desktop/dir_work/"  # working directory
 # path_work = "/scratch/snx3000/csteger/Subgrid_radiation_data/"  # CSCS
-file_out = "SW_dir_cor_lookup_21x60.nc"
 radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------
@@ -97,6 +104,10 @@ transform.lonlat2ecef(lon, lat, elevation_zero, trans_lonlat2enu,
                       in_place=True)
 transform.ecef2enu(lon, lat, elevation_zero, trans_lonlat2enu,
                    in_place=True)
+value_abs_max = np.array([np.abs(lon).max(), np.abs(lat).max(),
+                          np.abs(elevation_zero).max()]).max()
+print("Maximal absolute ENU coordinate value (32-bit float) "
+      + "in inner domain: %.2f" % value_abs_max)
 x_enu = lon.astype(np.float32)
 del lon
 y_enu = lat.astype(np.float32)
@@ -128,8 +139,6 @@ sun_pos = np.concatenate((x_enu[:, :, np.newaxis],
 num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
 num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
 mask = np.zeros((num_gc_y, num_gc_x), dtype=np.uint8)
-# mask[325:355, 265:315] = 1
-# mask[295:385, 235:345] = 1
 mask[-60:, -60:] = 1
 
 # -----------------------------------------------------------------------------
@@ -207,3 +216,24 @@ nc_data[:] = sw_dir_cor
 nc_data.units = "-"
 # -----------------------------------------------------------------------------
 ncfile.close()
+
+# -----------------------------------------------------------------------------
+# Test load and plot
+# -----------------------------------------------------------------------------
+
+# # Load data (merge subdomains)
+# files = glob.glob(path_work
+#                   + "SW_dir_cor_lookup_21x60_COSMO_0.02deg_y?_x?.nc")
+# ds = xr.open_mfdataset(files)
+# rlon_gc = ds["rlon_gc"].values
+# rlat_gc = ds["rlat_gc"].values
+# f_cor = ds["f_cor"].values
+# ds.close()
+# print(np.abs(np.diff(rlon_gc) - 0.02).max())
+# print(np.abs(np.diff(rlat_gc) - 0.02).max())
+# print("Size of lookup table: %.2f" % (f_cor.nbytes / (10 ** 9)) + " GB")
+#
+# # Plot
+# plt.figure(figsize=(10.0, 6.5))
+# plt.pcolormesh(rlon_gc, rlat_gc, f_cor[:, :, 10, 30])
+# plt.colorbar()
