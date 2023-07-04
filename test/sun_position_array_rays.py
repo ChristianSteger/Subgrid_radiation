@@ -52,30 +52,16 @@ radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 # -----------------------------------------------------------------------------
 
 # Load data
-ds = xr.open_dataset(path_work + "MERIT_remapped_COSMO_0.02deg.nc")
+ds = xr.open_dataset(path_work + "MERIT_remapped_COSMO_0.020deg_y0_x0.nc")
 pixel_per_gc = ds.attrs["pixels_per_grid_cell_zonal"]
 # pixel per grid cell (along one dimension)
 offset_gc = ds.attrs["offset_grid_cells_zonal"]
 # offset in number of grid cells
-# -----------------------------------------------------------------------------
-# sub-domain with reduces boundary: 30 x 50
-offset_gc = int(offset_gc / 2)
-ds = ds.isel(rlat=slice(325 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        355 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-             rlon=slice(265 * pixel_per_gc - pixel_per_gc * offset_gc,
-                        315 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
-# -----------------------------------------------------------------------------
-# # sub-domain: 390 x 490
-# ds = ds.isel(rlat=slice(100 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-#              rlon=slice(100 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         590 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
-# -----------------------------------------------------------------------------
-# # sub-domain: 240 x 290
-# ds = ds.isel(rlat=slice(200 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         440 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
-#              rlon=slice(200 * pixel_per_gc - pixel_per_gc * offset_gc,
-#                         490 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
+# ------------------------- sub-domain: 30 x 50 -------------------------------
+ds = ds.isel(rlat=slice(275 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        305 * pixel_per_gc + 1 + pixel_per_gc * offset_gc),
+             rlon=slice(415 * pixel_per_gc - pixel_per_gc * offset_gc,
+                        465 * pixel_per_gc + 1 + pixel_per_gc * offset_gc))
 # -----------------------------------------------------------------------------
 lon = ds["lon"].values.astype(np.float64)
 lat = ds["lat"].values.astype(np.float64)
@@ -185,13 +171,13 @@ x_enu, y_enu, z_enu = transform.ecef2enu(x_ecef, y_ecef, z_ecef,
 if plot:
     fig = plt.figure()
     ax = fig.add_subplot(projection="3d")
-    ax.scatter(0.0, 0.0, 0.0 , marker=".", s=100, color="lightblue")
+    ax.scatter(0.0, 0.0, 0.0, marker=".", s=100, color="lightblue")
     # ax.scatter(x_ecef.ravel(), y_ecef.ravel(), z_ecef.ravel() , marker=".",
     #            s=20, color="orangered")
     # ax.set_xlabel("x-axis")
     # ax.set_ylabel("y-axis")
     # ax.set_zlabel("z-axis")
-    ax.scatter(x_enu.ravel(), y_enu.ravel(), z_enu.ravel() , marker=".",
+    ax.scatter(x_enu.ravel(), y_enu.ravel(), z_enu.ravel(), marker=".",
                s=20, color="orangered")
     ax.set_xlabel("East")
     ax.set_ylabel("North")
@@ -287,12 +273,12 @@ ncfile.createDimension(dimname="subsolar_lat", size=sw_dir_cor.shape[2])
 ncfile.createDimension(dimname="subsolar_lon", size=sw_dir_cor.shape[3])
 # -----------------------------------------------------------------------------
 nc_sslat = ncfile.createVariable(varname="subsolar_lat", datatype="f",
-                                dimensions="subsolar_lat")
+                                 dimensions="subsolar_lat")
 nc_sslat[:] = subsol_lat
 nc_sslat.long_name = "subsolar latitude"
 nc_sslat.units = "degrees"
 nc_sslon = ncfile.createVariable(varname="subsolar_lon", datatype="f",
-                                dimensions="subsolar_lon")
+                                 dimensions="subsolar_lon")
 nc_sslon[:] = subsol_lon
 nc_sslon.long_name = "subsolar longitude"
 nc_sslon.units = "degrees"
