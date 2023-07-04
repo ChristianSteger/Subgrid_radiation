@@ -32,15 +32,15 @@ mpl.style.use("classic")
 # Settings
 # -----------------------------------------------------------------------------
 
-# # Rotated latitude/longitude COSMO grid (fine resolution)
-# pollat = 43.0 			# Latitude of the rotated North Pole
-# pollon = -170.0 		# Longitude of the rotated North Pole
-# ie_tot = 800			# Number of grid cells (zonal)
-# je_tot = 600			# Number of grid cells (meridional)
-# drlon = 0.02			# Grid spacing (zonal)
-# drlat = 0.02			# Grid spacing (meridional)
-# startrlon_tot = -6.2    # Centre longitude of lower left grid cell
-# startrlat_tot = -6.6    # Centre latitude of lower left grid cell
+# Rotated latitude/longitude COSMO grid (fine resolution)
+pollat = 43.0 			# Latitude of the rotated North Pole
+pollon = -170.0 		# Longitude of the rotated North Pole
+ie_tot = 1000			# Number of grid cells (zonal)
+je_tot = 600			# Number of grid cells (meridional)
+drlon = 0.02			# Grid spacing (zonal)
+drlat = 0.02			# Grid spacing (meridional)
+startrlon_tot = -10.2   # Centre longitude of lower left grid cell
+startrlat_tot = -6.6    # Centre latitude of lower left grid cell
 
 # # Rotated latitude/longitude COSMO grid (coarse resolution)
 # pollat = 43.0 			# Latitude of the rotated North Pole
@@ -52,15 +52,15 @@ mpl.style.use("classic")
 # startrlon_tot = -23.33  # Centre longitude of lower left grid cell
 # startrlat_tot = -19.36  # Centre latitude of lower left grid cell
 
-# Rotated latitude/longitude COSMO grid (~550 m test domain)
-pollat = 43.0 			# Latitude of the rotated North Pole
-pollon = -170.0 		# Longitude of the rotated North Pole
-ie_tot = 1600			# Number of grid cells (zonal)
-je_tot = 1000			# Number of grid cells (meridional)
-drlon = 0.005			# Grid spacing (zonal)
-drlat = 0.005			# Grid spacing (meridional)
-startrlon_tot = -3.6    # Centre longitude of lower left grid cell
-startrlat_tot = -3.5    # Centre latitude of lower left grid cell
+# # Rotated latitude/longitude COSMO grid (~550 m test domain)
+# pollat = 43.0 			# Latitude of the rotated North Pole
+# pollon = -170.0 		# Longitude of the rotated North Pole
+# ie_tot = 1600			# Number of grid cells (zonal)
+# je_tot = 1000			# Number of grid cells (meridional)
+# drlon = 0.005			# Grid spacing (zonal)
+# drlat = 0.005			# Grid spacing (meridional)
+# startrlon_tot = -3.6    # Centre longitude of lower left grid cell
+# startrlat_tot = -3.5    # Centre latitude of lower left grid cell
 
 # Platform dependent settings
 path_dem = "/Users/csteger/Dropbox/IAC/Data/DEMs/MERIT/Tiles/"
@@ -74,6 +74,10 @@ uzip_dem = True
 bound_width = 100.0  # width for additional terrain at the boundary [km]
 plot_map = True
 file_out = "MERIT_remapped_COSMO_%.2f" % drlon + "deg.nc"
+extent_max_half = 800_000.0  # np.inf # maximal 'half' extent of domain [m]
+# -> limit maximal absolute value of subsequently computed global ENU
+#    coordinates. Should be set to a suitable value regarding 'ray_org_elev'
+#    and the representation of ENU coordinates with 32-bit floats.
 
 # Constants
 radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
@@ -231,7 +235,14 @@ if uzip_dem:
 #  32_767 x 32_767)
 # -----------------------------------------------------------------------------
 
-len_max = 32_767  # maximal length along one dimension (according to Embree)
+# Split domain in sub-domains (if required)
+if np.isinf(extent_max_half):
+    len_max = 32_767
+else:
+    extent_max = 360.0 / (2.0 * np.pi * radius_earth) * (extent_max_half * 2.0)
+    len_max = np.minimum(int(np.ceil(extent_max / (drlat / pixel_per_gc_y))),
+                         32_767)
+# 32_767: maximal length along one dimension determined by Embree restriction
 num_subdom_y = int(np.ceil(rlat_edge_dem.size / len_max))
 num_subdom_x = int(np.ceil(rlon_edge_dem.size / len_max))
 flag_subdom = (num_subdom_y > 1) or (num_subdom_x > 1)
@@ -242,15 +253,10 @@ if flag_subdom:
 # Loop through subdomains
 num_pixel_y = pixel_per_gc_y * gc_add_rlat
 num_pixel_x = pixel_per_gc_x * gc_add_rlon
-ind_y = (num_pixel_y,
-         num_pixel_y + int(je_tot / 2) * pixel_per_gc_y,
-         rlat_edge_dem.size - 1 - num_pixel_y)
-ind_x = (num_pixel_x,
-         num_pixel_x + int(ie_tot / 2) * pixel_per_gc_x,
-         rlon_edge_dem.size - 1 - num_pixel_x)
-if not flag_subdom:
-    ind_y = (ind_y[0], ind_y[-1])
-    ind_x = (ind_x[0], ind_x[-1])
+ind_y = np.linspace(num_pixel_y, rlat_edge_dem.size - 1 - num_pixel_y,
+                    (num_subdom_y + 1), dtype=int)
+ind_x = np.linspace(num_pixel_x, rlon_edge_dem.size - 1 - num_pixel_x,
+                    (num_subdom_x + 1), dtype=int)
 for i in range(num_subdom_y):
     for j in range(num_subdom_x):
 
