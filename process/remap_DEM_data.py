@@ -234,44 +234,49 @@ if uzip_dem:
 
 # -----------------------------------------------------------------------------
 # Regrid DEM bilinearly to model sub-grid
-# (-> split large domains due to Embree's grid size limitation of
-#  32_767 x 32_767)
 # -----------------------------------------------------------------------------
 
 # Split domain in sub-domains (if required)
 if np.isinf(extent_max_half):
-    len_max = 32_767
+    len_max_y = 32_767
+    len_max_x = 32_767
 else:
     extent_max = 360.0 / (2.0 * np.pi * radius_earth) \
                  * (extent_max_half * 1000.0 * 2.0)
-    len_max = np.minimum(int(np.ceil(extent_max / (drlat / pixel_per_gc_y))),
+    len_max_y = np.minimum(int(np.ceil(extent_max / (drlat / pixel_per_gc_y))),
+                         32_767)
+    len_max_x = np.minimum(int(np.ceil(extent_max / (drlon / pixel_per_gc_x))),
                          32_767)
 # 32_767: maximal length along one dimension determined by Embree restriction
-num_subdom_y = int(np.ceil(rlat_edge_dem.size / len_max))
-num_subdom_x = int(np.ceil(rlon_edge_dem.size / len_max))
+num_subdom_y = int(np.ceil(rlat_edge_dem.size / len_max_y))
+num_subdom_x = int(np.ceil(rlon_edge_dem.size / len_max_x))
 flag_subdom = (num_subdom_y > 1) or (num_subdom_x > 1)
 if flag_subdom:
     print("DEM domain is split in sub-domains: ("
           + str(num_subdom_y) + ", " + str(num_subdom_x) + ")")
 
 # Loop through subdomains
+ind_y = np.linspace(gc_add_rlat, gc_add_rlat + je_tot,
+                    (num_subdom_y + 1), dtype=int) * pixel_per_gc_y
+ind_x = np.linspace(gc_add_rlon,  gc_add_rlon + ie_tot,
+                    (num_subdom_x + 1), dtype=int) * pixel_per_gc_x
 num_pixel_y = pixel_per_gc_y * gc_add_rlat
 num_pixel_x = pixel_per_gc_x * gc_add_rlon
-ind_y = np.linspace(num_pixel_y, rlat_edge_dem.size - 1 - num_pixel_y,
-                    (num_subdom_y + 1), dtype=int)
-ind_x = np.linspace(num_pixel_x, rlon_edge_dem.size - 1 - num_pixel_x,
-                    (num_subdom_x + 1), dtype=int)
 for i in range(num_subdom_y):
     for j in range(num_subdom_x):
 
         # Compute required geographical domain
         slice_y = slice(ind_y[i] - num_pixel_y, ind_y[i + 1] + num_pixel_y + 1)
         slice_x = slice(ind_x[j] - num_pixel_x, ind_x[j + 1] + num_pixel_x + 1)
-        rlon_edge_dem_sd = rlon_edge_dem[slice_x]
         rlat_edge_dem_sd = rlat_edge_dem[slice_y]
+        rlon_edge_dem_sd = rlon_edge_dem[slice_x]
         geo_extent = geo_domain_extent(rlon_edge_dem_sd,
                                        rlat_edge_dem_sd,
                                        ccrs_rot_pole, ccrs_geo)
+        rlat_model_sd = rlat_model[int(slice_y.start / pixel_per_gc_y)
+                                   :int((slice_y.stop - 1) / pixel_per_gc_y)]
+        rlon_model_sd = rlon_model[int(slice_x.start / pixel_per_gc_x)
+                                   :int((slice_x.stop - 1) / pixel_per_gc_x)]
 
         # Merge DEM tiles and crop domain
         ds = xr.open_mfdataset([path_dem + i + ".nc" for i in tiles_dem])
@@ -386,16 +391,12 @@ for i in range(num_subdom_y):
         nc_meta.grid_north_pole_latitude = pollat
         nc_meta.north_pole_grid_longitude = 0.0
         # ---------------------------------------------------------------------
-        rlat_model_sd = rlat_model[int(slice_y.start / pixel_per_gc_y)
-                                   :int((slice_y.stop - 1) / pixel_per_gc_y)]
         ncfile.createDimension(dimname="rlat_gc", size=rlat_model_sd.size)
         nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f",
                                         dimensions="rlat_gc")
         nc_rlat[:] = rlat_model_sd
         nc_rlat.long_name = "latitude of grid cells in rotated pole grid"
         nc_rlat.units = "degrees"
-        rlon_model_sd = rlon_model[int(slice_x.start / pixel_per_gc_x)
-                                   :int((slice_x.stop - 1) / pixel_per_gc_x)]
         ncfile.createDimension(dimname="rlon_gc", size=rlon_model_sd.size)
         nc_rlon = ncfile.createVariable(varname="rlon_gc", datatype="f",
                                         dimensions="rlon_gc")
