@@ -30,38 +30,78 @@ from utilities.grid import grid_frame
 mpl.style.use("classic")
 
 # -----------------------------------------------------------------------------
-# Settings
+# Specifications for rotated latitude/longitude COSMO domain
 # -----------------------------------------------------------------------------
 
-# Rotated latitude/longitude COSMO grid (fine resolution)
-pollat = 43.0 			# Latitude of the rotated North Pole
-pollon = -170.0 		# Longitude of the rotated North Pole
-ie_tot = 1000			# Number of grid cells (zonal)
-je_tot = 600			# Number of grid cells (meridional)
-drlon = 0.02			# Grid spacing (zonal)
-drlat = 0.02			# Grid spacing (meridional)
-startrlon_tot = -10.2   # Centre longitude of lower left grid cell
-startrlat_tot = -6.6    # Centre latitude of lower left grid cell
+# Alps (with Pyrenees), ~2.2 km
+pollat = 43.0          # Latitude of the rotated North Pole [degree]
+pollon = -170.0        # Longitude of the rotated North Pole [degree]
+polgam = 0.0           # Longitude rotation about the new pole [degree]
+ie_tot = 1000          # Number of grid cells (zonal)
+je_tot = 600           # Number of grid cells (meridional)
+drlon = 0.02           # Grid spacing (zonal) [degree]
+drlat = 0.02           # Grid spacing (meridional) [degree]
+startrlon_tot = -10.2  # Centre longitude of lower left grid cell [degree]
+startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
 
-# # Rotated latitude/longitude COSMO grid (coarse resolution)
-# pollat = 43.0 			# Latitude of the rotated North Pole
-# pollon = -170.0 		# Longitude of the rotated North Pole
-# ie_tot = 361			# Number of grid cells (zonal)
-# je_tot = 361			# Number of grid cells (meridional)
-# drlon = 0.11			# Grid spacing (zonal)
-# drlat = 0.11			# Grid spacing (meridional)
-# startrlon_tot = -23.33  # Centre longitude of lower left grid cell
-# startrlat_tot = -19.36  # Centre latitude of lower left grid cell
+# # Europe, ~12 km
+# pollat = 43.0
+# pollon = -170.0
+# polgam = 0.0
+# ie_tot = 361
+# je_tot = 361
+# drlon = 0.11
+# drlat = 0.11
+# startrlon_tot = -23.33
+# startrlat_tot = -19.36
 
-# # Rotated latitude/longitude COSMO grid (~550 m test domain)
-# pollat = 43.0 			# Latitude of the rotated North Pole
-# pollon = -170.0 		# Longitude of the rotated North Pole
-# ie_tot = 1600			# Number of grid cells (zonal)
-# je_tot = 1000			# Number of grid cells (meridional)
-# drlon = 0.005			# Grid spacing (zonal)
-# drlat = 0.005			# Grid spacing (meridional)
-# startrlon_tot = -3.6    # Centre longitude of lower left grid cell
-# startrlat_tot = -3.5    # Centre latitude of lower left grid cell
+# # Alps, ~550 m
+# pollat = 43.0
+# pollon = -170.0
+# polgam = 0.0
+# ie_tot = 1600
+# je_tot = 1000
+# drlon = 0.005
+# drlat = 0.005
+# startrlon_tot = -3.6
+# startrlat_tot = -3.5
+
+# # Hengduan Mountains, ~550 m
+# pollat = 61.81         # Latitude of the rotated North Pole [degree]
+# pollon = -81.13        # Longitude of the rotated North Pole [degree]
+# polgam = 0.0           # Longitude rotation about the new pole [degre
+# ie_tot = 18 * 16       # Number of grid cells (zonal)
+# je_tot = 16 * 16       # Number of grid cells (meridional)
+# drlon = 0.005          # Grid spacing (zonal) [degree]
+# drlat = 0.005          # Grid spacing (meridional) [degree]
+# startrlon_tot =-(0.08 * 18 / 2) + (0.005 / 2)
+# startrlat_tot =-(0.08 * 16 / 2) + (0.005 / 2)
+
+# # Karakoram, ~550 m
+# pollon = -103.49
+# pollat = 54.12
+# polgam = 0.0
+# ie_tot = 18 * 16
+# je_tot = 16 * 16
+# drlon = 0.005
+# drlat = 0.005
+# startrlon_tot =-(0.08 * 18 / 2) + (0.005 / 2)
+# startrlat_tot =-(0.08 * 16 / 2) + (0.005 / 2)
+
+# # New Zealand, ~550 m
+# pollon = 168.10
+# pollat = 45.25
+# polgam = 180.00
+# ie_tot = 14 * 16
+# je_tot = 12 * 16
+# drlon = 0.005
+# drlat = 0.005
+# startrlon_tot =-(0.08 * 14 / 2) + (0.005 / 2)
+# startrlat_tot =-(0.08 * 12 / 2) + (0.005 / 2)
+
+# -----------------------------------------------------------------------------
+# Other settings
+# -----------------------------------------------------------------------------
 
 # System-dependent settings
 if platform.system() == "Darwin":  # local
@@ -168,6 +208,7 @@ print("Size of interpolated DEM grid: "
 # Coordinate systems
 globe = ccrs.Globe(datum="WGS84", ellipse="sphere")
 ccrs_rot_pole = ccrs.RotatedPole(pole_latitude=pollat, pole_longitude=pollon,
+                                 central_rotated_longitude=polgam,
                                  globe=globe)
 ccrs_geo = ccrs.PlateCarree(globe=globe)
 
@@ -389,7 +430,7 @@ for i in range(num_subdom_y):
         nc_meta.grid_mapping_name = "rotated_latitude_longitude"
         nc_meta.grid_north_pole_longitude = pollon
         nc_meta.grid_north_pole_latitude = pollat
-        nc_meta.north_pole_grid_longitude = 0.0
+        nc_meta.north_pole_grid_longitude = polgam
         # ---------------------------------------------------------------------
         ncfile.createDimension(dimname="rlat_gc", size=rlat_model_sd.size)
         nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f",

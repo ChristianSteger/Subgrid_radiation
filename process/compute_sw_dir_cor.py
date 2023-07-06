@@ -44,6 +44,8 @@ file_in = "MERIT_remapped_COSMO_0.020deg_y0_x?.nc"
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
              "cscs": "/scratch/snx3000/csteger/Subgrid_radiation_data/"}
 radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
+ncview_reorder = True
+# reorder dimensions of NetCDF-output to make it viewable with 'ncview'
 
 # -----------------------------------------------------------------------------
 # Process data
@@ -237,9 +239,21 @@ if len(files_in) > 1:
     print("Total size of lookup table: %.2f"
           % (ds["f_cor"].nbytes / (10 ** 9)) + " GB")
     print("Shape of lookup table: " + str(ds["f_cor"].shape))
-    ds.to_netcdf(files_out[0][:-9] + ".nc")
+    file_out = files_out[0].split("/")[-1][:-9] + ".nc"
+    ds.to_netcdf(path_work + file_out)
     ds.close()
 
     time.sleep(1)
     for i in files_out:
         os.remove(i)
+
+# -----------------------------------------------------------------------------
+# Create 'ncview-viewable' NetCDF file (optional)
+# -----------------------------------------------------------------------------
+
+if ncview_reorder:
+
+    print("Transpose dimensions")
+    ds = xr.open_dataset(path_work + file_out)
+    ds = ds.transpose("subsolar_lat", "subsolar_lon", "rlat_gc", "rlon_gc")
+    ds.to_netcdf(path_work + file_out[:-3] + "_ncview.nc")
