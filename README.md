@@ -1,7 +1,7 @@
 # Subgrid_radiation
-Package to efficiently compute subgrid correction factors to consider topographic effects on surface direct downward shortwave radiation.
-These effects include terrain- and self-shading as well as as altered solar inclination angles in sloped terrain (with respect to a plane surface).
-Correction factors can be computed for an two-dimensional array of subsolar positions or individual positions.
+Package to efficiently compute topographic parameters to consider the subgrid effects of complex terrain on surface radiation.
+Correction factors for direct downward shortwave radiation can be computed for a two-dimensional array of subsolar positions or individual positions.
+
 # Installation
 
 Subgrid_radiation has been tested with **Python 3.9** (Mac OS X).
