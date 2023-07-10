@@ -55,16 +55,16 @@ startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
 # startrlon_tot = -23.33
 # startrlat_tot = -19.36
 
-# # Alps, ~550 m
+# # Switzerland, ~550 m
 # pollat = 43.0
 # pollon = -170.0
 # polgam = 0.0
-# ie_tot = 1600
-# je_tot = 1000
+# ie_tot = 46 * 16
+# je_tot = 36 * 16
 # drlon = 0.005
 # drlat = 0.005
-# startrlon_tot = -3.6
-# startrlat_tot = -3.5
+# startrlon_tot = -4.0075 + (0.005 * 12 * 16)
+# startrlat_tot = -2.5275 + (0.005 * 12 * 16)
 
 # # Hengduan Mountains, ~550 m
 # pollat = 61.81         # Latitude of the rotated North Pole [degree]
