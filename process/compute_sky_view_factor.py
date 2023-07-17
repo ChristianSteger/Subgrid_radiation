@@ -135,11 +135,12 @@ for i in files_in:
     # mask[:] = 1
 
     # Ray-tracing
-    sky_view_factor, area_increase_factor, sky_view_area_factor \
+    sky_view_factor, area_increase_factor, sky_view_area_factor, \
+        slope, aspect \
         = sun_position_array.horizon.sky_view_factor(
             vert_grid, dem_dim_0, dem_dim_1,
             vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-            pixel_per_gc, offset_gc,
+            trans_lonlat2enu.north_pole_enu, pixel_per_gc, offset_gc,
             mask=mask, dist_search=dist_search, hori_azim_num=hori_azim_num,
             hori_acc=hori_acc, ray_algorithm=ray_algorithm,
             elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type)
@@ -154,6 +155,10 @@ for i in files_in:
           + ", %.4f" % np.nanmax(sky_view_area_factor))
     print("Spatial mean of sky view area factor: %.4f"
           % np.nanmean(sky_view_area_factor))
+    print("Surface slope: %.4f" % np.nanmin(slope)
+          + ", %.4f" % np.nanmax(slope))
+    print("Surface aspect: %.4f" % np.nanmin(aspect)
+          + ", %.4f" % np.nanmax(aspect))
 
     # Save to NetCDF file
     file_out = "Sky_view_factor_" + "_".join(i.split("/")[-1].split("_")[2:])
@@ -200,6 +205,17 @@ for i in files_in:
                                     dimensions=("rlat_gc", "rlon_gc"))
     nc_data[:] = sky_view_area_factor.astype(np.float32)
     nc_data.units = "-"
+    # -------------------------------------------------------------------------
+    nc_data = ncfile.createVariable(varname="slope",
+                                    datatype="f",
+                                    dimensions=("rlat_gc", "rlon_gc"))
+    nc_data[:] = slope.astype(np.float32)
+    nc_data.units = "degree"
+    nc_data = ncfile.createVariable(varname="aspect",
+                                    datatype="f",
+                                    dimensions=("rlat_gc", "rlon_gc"))
+    nc_data[:] = aspect.astype(np.float32)
+    nc_data.units = "degree"
     # -------------------------------------------------------------------------
     ncfile.close()
 

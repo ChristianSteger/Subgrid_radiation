@@ -278,27 +278,22 @@ class TransformerLonlat2enu:
                          * np.sin(np.deg2rad(self.lon_or))
         self.z_ecef_or = self.radius_earth * np.sin(np.deg2rad(self.lat_or))
 
-        # North Pole in ENU coordinate system
-        self.x_enu_np = (- np.sin(np.deg2rad(self.lon_or))
-                         * (0.0 - self.x_ecef_or)
-                         + np.cos(np.deg2rad(self.lon_or))
-                         * (0.0 - self.y_ecef_or))
-        self.y_enu_np = (- np.sin(np.deg2rad(self.lat_or))
-                         * np.cos(np.deg2rad(self.lon_or))
-                         * (0.0 - self.x_ecef_or)
-                         - np.sin(np.deg2rad(self.lat_or))
-                         * np.sin(np.deg2rad(self.lon_or))
-                         * (0.0 - self.y_ecef_or)
-                         + np.cos(np.deg2rad(self.lat_or))
-                         * (self.radius_earth - self.z_ecef_or))
-        self.z_enu_np = (+ np.cos(np.deg2rad(self.lat_or))
-                         * np.cos(np.deg2rad(self.lon_or))
-                         * (0.0 - self.x_ecef_or)
-                         + np.cos(np.deg2rad(self.lat_or))
-                         * np.sin(np.deg2rad(self.lon_or))
-                         * (0.0 - self.y_ecef_or)
-                         + np.sin(np.deg2rad(self.lat_or))
-                         * (self.radius_earth - self.z_ecef_or))
+        # North Pole in ENU coordinate system (x, y, z)
+        self.north_pole_enu = np.array([
+            (- np.sin(np.deg2rad(self.lon_or)) * (0.0 - self.x_ecef_or)
+             + np.cos(np.deg2rad(self.lon_or)) * (0.0 - self.y_ecef_or)),
+            (- np.sin(np.deg2rad(self.lat_or))
+             * np.cos(np.deg2rad(self.lon_or)) * (0.0 - self.x_ecef_or)
+             - np.sin(np.deg2rad(self.lat_or))
+             * np.sin(np.deg2rad(self.lon_or)) * (0.0 - self.y_ecef_or)
+             + np.cos(np.deg2rad(self.lat_or))
+             * (self.radius_earth - self.z_ecef_or)),
+            (+ np.cos(np.deg2rad(self.lat_or))
+             * np.cos(np.deg2rad(self.lon_or)) * (0.0 - self.x_ecef_or)
+             + np.cos(np.deg2rad(self.lat_or))
+             * np.sin(np.deg2rad(self.lon_or)) * (0.0 - self.y_ecef_or)
+             + np.sin(np.deg2rad(self.lat_or))
+             * (self.radius_earth - self.z_ecef_or))], dtype=np.float64)
 
 # -----------------------------------------------------------------------------
 # Auxiliary function(s)

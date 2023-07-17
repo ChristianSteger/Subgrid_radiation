@@ -670,9 +670,12 @@ void sky_view_factor_comp(
     int dem_dim_0, int dem_dim_1,
     float* vert_grid_in,
     int dem_dim_in_0, int dem_dim_in_1,
+    double* north_pole,
     double* sky_view_factor,
     double* area_increase_factor,
     double* sky_view_area_factor,
+    double* slope,
+    double* aspect,
     int pixel_per_gc,
     int offset_gc,
     uint8_t* mask,
@@ -779,6 +782,7 @@ void sky_view_factor_comp(
             if (mask[lin_ind_gc] == 1) {
 
             double* horizon = new double[hori_azim_num];
+            double* tilt_gc = new double[3] {0.0, 0.0, 0.0};
 
             // Loop through 2D-field of DEM pixels
             for (size_t k = (i * pixel_per_gc);
@@ -862,23 +866,26 @@ void sky_view_factor_comp(
                         // Compute horizon in local ENU coordinate system
                         //-----------------------------------------------------
 
-                        // Approximate north vector (orthogonal to x-axis of
-                        // global ENU coordinate system; orientation of
-                        // coordinate system in which horizon is computed can
-                        // be arbitrary as long as the z-axis aligns with the
-                        // local horizontal surface normal)
-                        double north_x = 0.0;
-                        double north_y = 1.0;
-                        double north_z = -norm_hori_y / norm_hori_z;
+                        // Vector to North Pole (and orthogonal to 'norm_hori')
+                        double north_x = (north_pole[0] - cent_x);
+                        double north_y = (north_pole[1] - cent_y);
+                        double north_z = (north_pole[2] - cent_z);
+                        double dot_prod = ((north_x * norm_hori_x)
+                                         + (north_y * norm_hori_y)
+                                         + (north_z * norm_hori_z));
+                        north_x -= dot_prod * norm_hori_x;
+                        north_y -= dot_prod * norm_hori_y;
+                        north_z -= dot_prod * norm_hori_z;
                         vec_unit(north_x, north_y, north_z);
 
                         double east_x, east_y, east_z;
                         cross_prod(north_x, north_y, north_z,
                             norm_hori_x, norm_hori_y, norm_hori_z,
                             east_x, east_y, east_z);
-                        double rot_inv[3][3] = {{east_x, north_x, norm_hori_x},
-                                               {east_y, north_y, norm_hori_y},
-                                               {east_z, north_z, norm_hori_z}};
+                        double rot_inv[3][3] =
+                            {{east_x, north_x, norm_hori_x},
+                             {east_y, north_y, norm_hori_y},
+                             {east_z, north_z, norm_hori_z}};
 
                         function_pointer(
                             (float)ray_org_x, (float)ray_org_y,
@@ -905,6 +912,9 @@ void sky_view_factor_comp(
                                                  norm_tilt_z};
                         double tilt_local[3];
                         mat_vec_mult(rot, tilt_global, tilt_local);
+                        tilt_gc[0] = tilt_gc[0] + tilt_local[0];
+                        tilt_gc[1] = tilt_gc[1] + tilt_local[1];
+                        tilt_gc[2] = tilt_gc[2] + tilt_local[2];
 
                         // Compute sky view factor
                         double agg = 0.0;
@@ -947,13 +957,25 @@ void sky_view_factor_comp(
                 }
             }
 
+            // Compute mean grid cell slope and aspect
+            vec_unit(tilt_gc[0], tilt_gc[1], tilt_gc[2]);
+            slope[lin_ind_gc] = rad2deg(acos(tilt_gc[2]));
+            double aspect_temp = atan2(tilt_gc[0], tilt_gc[1]);
+            if (aspect_temp < 0.0) {
+                aspect_temp += 2.0 * M_PI;
+            }
+            aspect[lin_ind_gc] = rad2deg(aspect_temp);
+
             delete[] horizon;
+            delete[] tilt_gc;
 
             } else {
 
                 sky_view_factor[lin_ind_gc] = NAN;
                 area_increase_factor[lin_ind_gc] = NAN;
                 sky_view_area_factor[lin_ind_gc] = NAN;
+                slope[lin_ind_gc] = NAN;
+                aspect[lin_ind_gc] = NAN;
 
             }
 
@@ -1012,12 +1034,15 @@ void sky_view_factor_sw_dir_cor_comp(
     int dem_dim_0, int dem_dim_1,
     float* vert_grid_in,
     int dem_dim_in_0, int dem_dim_in_1,
+    double* north_pole,
     double* sun_pos,
     int dim_sun_0, int dim_sun_1,
     float* sw_dir_cor,
     double* sky_view_factor,
     double* area_increase_factor,
     double* sky_view_area_factor,
+    double* slope,
+    double* aspect,
     int pixel_per_gc,
     int offset_gc,
     uint8_t* mask,
@@ -1132,6 +1157,7 @@ void sky_view_factor_sw_dir_cor_comp(
             double* horizon = new double[hori_azim_num + 1];
             double* horizon_sin = new double[hori_azim_num + 1];
             // save horizon in 'periodical' array for interpolation
+            double* tilt_gc = new double[3] {0.0, 0.0, 0.0};
 
             // Loop through 2D-field of DEM pixels
             for (size_t k = (i * pixel_per_gc);
@@ -1215,23 +1241,26 @@ void sky_view_factor_sw_dir_cor_comp(
                         // Compute horizon in local ENU coordinate system
                         //-----------------------------------------------------
 
-                        // Approximate north vector (orthogonal to x-axis of
-                        // global ENU coordinate system; orientation of
-                        // coordinate system in which horizon is computed can
-                        // be arbitrary as long as the z-axis aligns with the
-                        // local horizontal surface normal)
-                        double north_x = 0.0;
-                        double north_y = 1.0;
-                        double north_z = -norm_hori_y / norm_hori_z;
+                        // Vector to North Pole (and orthogonal to 'norm_hori')
+                        double north_x = (north_pole[0] - cent_x);
+                        double north_y = (north_pole[1] - cent_y);
+                        double north_z = (north_pole[2] - cent_z);
+                        double dot_prod = ((north_x * norm_hori_x)
+                                         + (north_y * norm_hori_y)
+                                         + (north_z * norm_hori_z));
+                        north_x -= dot_prod * norm_hori_x;
+                        north_y -= dot_prod * norm_hori_y;
+                        north_z -= dot_prod * norm_hori_z;
                         vec_unit(north_x, north_y, north_z);
 
                         double east_x, east_y, east_z;
                         cross_prod(north_x, north_y, north_z,
                             norm_hori_x, norm_hori_y, norm_hori_z,
                             east_x, east_y, east_z);
-                        double rot_inv[3][3] = {{east_x, north_x, norm_hori_x},
-                                               {east_y, north_y, norm_hori_y},
-                                               {east_z, north_z, norm_hori_z}};
+                        double rot_inv[3][3] =
+                            {{east_x, north_x, norm_hori_x},
+                             {east_y, north_y, norm_hori_y},
+                             {east_z, north_z, norm_hori_z}};
 
                         function_pointer(
                             (float)ray_org_x, (float)ray_org_y,
@@ -1258,6 +1287,9 @@ void sky_view_factor_sw_dir_cor_comp(
                                                  norm_tilt_z};
                         double tilt_local[3];
                         mat_vec_mult(rot, tilt_global, tilt_local);
+                        tilt_gc[0] = tilt_gc[0] + tilt_local[0];
+                        tilt_gc[1] = tilt_gc[1] + tilt_local[1];
+                        tilt_gc[2] = tilt_gc[2] + tilt_local[2];
 
                         // Compute sky view factor
                         double agg = 0.0;
@@ -1401,8 +1433,18 @@ void sky_view_factor_sw_dir_cor_comp(
                 }
             }
 
+            // Compute mean grid cell slope and aspect
+            vec_unit(tilt_gc[0], tilt_gc[1], tilt_gc[2]);
+            slope[lin_ind_gc] = rad2deg(acos(tilt_gc[2]));
+            double aspect_temp = atan2(tilt_gc[0], tilt_gc[1]);
+            if (aspect_temp < 0.0) {
+                aspect_temp += 2.0 * M_PI;
+            }
+            aspect[lin_ind_gc] = rad2deg(aspect_temp);
+
             delete[] horizon;
             delete[] horizon_sin;
+            delete[] tilt_gc;
 
             } else {
 
@@ -1414,6 +1456,8 @@ void sky_view_factor_sw_dir_cor_comp(
                 sky_view_factor[lin_ind_gc] = NAN;
                 area_increase_factor[lin_ind_gc] = NAN;
                 sky_view_area_factor[lin_ind_gc] = NAN;
+                slope[lin_ind_gc] = NAN;
+                aspect[lin_ind_gc] = NAN;
 
             }
 

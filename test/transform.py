@@ -99,3 +99,15 @@ t_beg = time.perf_counter()
 transform.lonlat2ecef(lon, lat, elevation, trans_lonlat2enu, in_place=True)
 transform.ecef2enu(lon, lat, elevation, trans_lonlat2enu, in_place=True)
 print("Elapsed time: %.3f" % (time.perf_counter() - t_beg) + " s")
+
+# -----------------------------------------------------------------------------
+# Check North Pole coordinates
+# -----------------------------------------------------------------------------
+
+radius_earth = 6378137.0  # PROJ [m]
+
+trans_lonlat2enu = transform.TransformerLonlat2enu(
+    lon_or=0.0, lat_or=-45.0, radius_earth=radius_earth)
+
+with np.printoptions(precision=2, suppress=True):
+    print(trans_lonlat2enu.north_pole_enu)

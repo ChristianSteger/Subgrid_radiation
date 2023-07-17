@@ -122,35 +122,46 @@ mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
 # -----------------------------------------------------------------------------
 
 # Compute sky view factor
-sky_view_factor, area_increase_factor, sky_view_area_factor \
+north_pole = np.array([0.0, 10.0 ** 10, 0.0], dtype=np.float64)
+sky_view_factor, area_increase_factor, sky_view_area_factor, slope, aspect \
     = sun_position_array.horizon.sky_view_factor(
         vert_grid, dem_dim_0, dem_dim_1,
         vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-        pixel_per_gc, offset_gc,
+        north_pole, pixel_per_gc, offset_gc,
         mask=mask, dist_search=dist_search, hori_azim_num=hori_azim_num,
         hori_acc=hori_acc, ray_algorithm=ray_algorithm,
         elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type)
 
 # Compute sky view factor and SW_dir correction factor
-sw_dir_cor, sky_view_factor, area_increase_factor, sky_view_area_factor \
+sw_dir_cor, sky_view_factor_2nd, area_increase_factor_2nd, \
+    sky_view_area_factor_2nd, slope_2nd, aspect_2nd \
     = sun_position_array.horizon.sky_view_factor_sw_dir_cor(
         vert_grid, dem_dim_0, dem_dim_1,
         vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-        sun_pos, pixel_per_gc, offset_gc,
+        north_pole, sun_pos, pixel_per_gc, offset_gc,
         mask=mask, dist_search=dist_search, hori_azim_num=hori_azim_num,
         hori_acc=hori_acc, ray_algorithm=ray_algorithm,
         elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type,
         ang_max=ang_max, sw_dir_cor_max=sw_dir_cor_max)
 
-# Test plot for sky view factor related quantities
+# Check equlity of output
+print(np.abs(sky_view_factor - sky_view_factor_2nd).max())
+print(np.abs(area_increase_factor - area_increase_factor_2nd).max())
+print(np.abs(sky_view_area_factor - sky_view_area_factor_2nd).max())
+print(np.abs(slope - slope_2nd).max())
+print(np.abs(aspect - aspect_2nd).max())
+
+# Test plot for 2D-fields
 data_2d = {"sky_view_factor": sky_view_factor,
             "area_increase_factor": area_increase_factor,
-            "sky_view_area_factor": sky_view_area_factor}
+            "sky_view_area_factor": sky_view_area_factor,
+           "surface_slope": slope,
+           "surface_aspect": aspect}
 for i in data_2d.keys():
     plt.figure()
     plt.pcolormesh(data_2d[i])
     plt.colorbar()
-    plt.title(i.replace("_", " ") + " [-]", fontweight="bold",
+    plt.title(i.replace("_", " "), fontweight="bold",
               loc="left", y=1.01, fontsize=13)
     txt = "(min/max: %.3f" % np.nanmin(data_2d[i]) \
           + ", %.3f" % np.nanmax(data_2d[i]) + ")"

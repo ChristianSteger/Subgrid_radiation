@@ -15,9 +15,12 @@ cdef extern from "horizon_comp.h":
             int dem_dim_0, int dem_dim_1,
             float* vert_grid_in,
             int dem_dim_in_0, int dem_dim_in_1,
+            double* north_pole,
             double* sky_view_factor,
             double* area_increase_factor,
             double* sky_view_area_factor,
+            double* slope,
+            double* aspect,
             int pixel_per_gc,
             int offset_gc,
             np.npy_uint8* mask,
@@ -33,6 +36,7 @@ def sky_view_factor(
         int dem_dim_0, int dem_dim_1,
         np.ndarray[np.float32_t, ndim = 1] vert_grid_in,
         int dem_dim_in_0, int dem_dim_in_1,
+        np.ndarray[np.float64_t, ndim = 1] north_pole,
         int pixel_per_gc,
         int offset_gc,
         np.ndarray[np.uint8_t, ndim = 2] mask=None,
@@ -59,6 +63,8 @@ def sky_view_factor(
         Dimension length of inner DEM in y-direction
     dem_dim_in_1 : int
         Dimension length of inner DEM in x-direction
+    north_pole : ndarray of double
+        Array (one-dimensional) with ENU coordinates (x, y, z) of North Pole
     pixel_per_gc : int
         Number of subgrid pixels within one grid cell (along one dimension)
     offset_gc : int
@@ -91,6 +97,11 @@ def sky_view_factor(
     sky_view_area_factor : ndarray of double
         Array (two-dimensional) with 'sky_view_factor' divided by
         'area_increase_factor' [-]
+    slope : ndarray of double
+        Array (two-dimensional) with surface slope [degree]
+    aspect : ndarray of double
+        Array (two-dimensional) with surface aspect (clockwise from North)
+        [degree]
 
     References
     ----------
@@ -157,15 +168,22 @@ def sky_view_factor(
     cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
         sky_view_area_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
     sky_view_area_factor.fill(0.0)  # accumulated over pixels
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        slope = np.empty((len_in_0, len_in_1), dtype=np.float64)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        aspect = np.empty((len_in_0, len_in_1), dtype=np.float64)
 
     sky_view_factor_comp(
         &vert_grid[0],
         dem_dim_0, dem_dim_1,
         &vert_grid_in[0],
         dem_dim_in_0, dem_dim_in_1,
-        &sky_view_factor[0,0],
+        &north_pole[0],
+        &sky_view_factor[0, 0],
         &area_increase_factor[0, 0],
         &sky_view_area_factor[0, 0],
+        &slope[0, 0],
+        &aspect[0, 0],
         pixel_per_gc,
         offset_gc,
         &mask[0, 0],
@@ -176,7 +194,8 @@ def sky_view_factor(
         elev_ang_low_lim,
         geom_type_c)
 
-    return sky_view_factor, area_increase_factor, sky_view_area_factor
+    return sky_view_factor, area_increase_factor, sky_view_area_factor, \
+        slope, aspect
 
 # -----------------------------------------------------------------------------
 # Compute sky view factor and SW_dir correction factor
@@ -188,12 +207,15 @@ cdef extern from "horizon_comp.h":
             int dem_dim_0, int dem_dim_1,
             float* vert_grid_in,
             int dem_dim_in_0, int dem_dim_in_1,
+            double* north_pole,
             double* sun_pos,
             int dim_sun_0, int dim_sun_1,
             float* sw_dir_cor,
             double* sky_view_factor,
             double* area_increase_factor,
             double* sky_view_area_factor,
+            double* slope,
+            double* aspect,
             int pixel_per_gc,
             int offset_gc,
             np.npy_uint8* mask,
@@ -211,6 +233,7 @@ def sky_view_factor_sw_dir_cor(
         int dem_dim_0, int dem_dim_1,
         np.ndarray[np.float32_t, ndim = 1] vert_grid_in,
         int dem_dim_in_0, int dem_dim_in_1,
+        np.ndarray[np.float64_t, ndim = 1] north_pole,
         np.ndarray[np.float64_t, ndim = 3] sun_pos,
         int pixel_per_gc,
         int offset_gc,
@@ -242,6 +265,8 @@ def sky_view_factor_sw_dir_cor(
         Dimension length of inner DEM in y-direction
     dem_dim_in_1 : int
         Dimension length of inner DEM in x-direction
+    north_pole : ndarray of double
+        Array (one-dimensional) with ENU coordinates (x, y, z) of North Pole
     sun_pos : ndarray of double
         Array (three-dimensional) with sun positions in ENU coordinates
         (dim_sun_0, dim_sun_1, 3) [metre]
@@ -287,6 +312,11 @@ def sky_view_factor_sw_dir_cor(
     sky_view_area_factor : ndarray of double
         Array (two-dimensional) with 'sky_view_factor' divided by
         'area_increase_factor' [-]
+    slope : ndarray of double
+        Array (two-dimensional) with surface slope [degree]
+    aspect : ndarray of double
+        Array (two-dimensional) with surface aspect (clockwise from North)
+        [degree]
 
     References
     ----------
@@ -369,18 +399,25 @@ def sky_view_factor_sw_dir_cor(
     cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
         sky_view_area_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
     sky_view_area_factor.fill(0.0)  # accumulated over pixels
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        slope = np.empty((len_in_0, len_in_1), dtype=np.float64)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        aspect = np.empty((len_in_0, len_in_1), dtype=np.float64)
 
     sky_view_factor_sw_dir_cor_comp(
         &vert_grid[0],
         dem_dim_0, dem_dim_1,
         &vert_grid_in[0],
         dem_dim_in_0, dem_dim_in_1,
-        &sun_pos[0,0,0],
+        &north_pole[0],
+        &sun_pos[0, 0, 0],
         dim_sun_0, dim_sun_1,
-        &sw_dir_cor[0,0,0,0],
-        &sky_view_factor[0,0],
+        &sw_dir_cor[0, 0, 0, 0],
+        &sky_view_factor[0, 0],
         &area_increase_factor[0, 0],
         &sky_view_area_factor[0, 0],
+        &slope[0, 0],
+        &aspect[0, 0],
         pixel_per_gc,
         offset_gc,
         &mask[0, 0],
@@ -394,4 +431,5 @@ def sky_view_factor_sw_dir_cor(
         ang_max)
 
     return sw_dir_cor, sky_view_factor, \
-        area_increase_factor, sky_view_area_factor
+        area_increase_factor, sky_view_area_factor, \
+        slope, aspect
