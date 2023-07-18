@@ -66,6 +66,17 @@ startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
 # startrlon_tot = -4.0075 + (0.005 * 12 * 16)
 # startrlat_tot = -2.5275 + (0.005 * 12 * 16)
 
+# # Switzerland, ~90 m
+# pollat = 43.0
+# pollon = -170.0
+# polgam = 0.0
+# ie_tot = 46 * 16 * 6
+# je_tot = 36 * 16 * 6
+# drlon = (3.0 / 3600.0)
+# drlat = (3.0 / 3600.0)
+# startrlon_tot = -4.01 + ((3.0 / 3600.0) / 2) + ((3.0 / 3600.0) * 12 * 16 * 6)
+# startrlat_tot = -2.53 + ((3.0 / 3600.0) / 2) + ((3.0 / 3600.0) * 12 * 16 * 6)
+
 # # Hengduan Mountains, ~550 m
 # pollat = 61.81         # Latitude of the rotated North Pole [degree]
 # pollon = -81.13        # Longitude of the rotated North Pole [degree]

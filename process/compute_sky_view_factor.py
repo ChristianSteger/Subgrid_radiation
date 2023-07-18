@@ -36,6 +36,7 @@ elev_ang_low_lim = -85.0  # -15.0
 # File input/output
 file_in = "MERIT_remapped_COSMO_0.020deg_y0_x?.nc"
 # file_in = "MERIT_remapped_COSMO_0.005deg.nc"
+# file_in = "MERIT_remapped_COSMO_0.001deg.nc"
 
 # Miscellaneous settings
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
