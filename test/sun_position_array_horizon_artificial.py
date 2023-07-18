@@ -151,6 +151,21 @@ print(np.abs(sky_view_area_factor - sky_view_area_factor_2nd).max())
 print(np.abs(slope - slope_2nd).max())
 print(np.abs(aspect - aspect_2nd).max())
 
+# Compute sky view factor and average distance to terrain
+sky_view_factor, area_increase_factor, sky_view_area_factor, \
+    slope, aspect, distance \
+    = sun_position_array.horizon.sky_view_factor_dist(
+        vert_grid, dem_dim_0, dem_dim_1,
+        vert_grid_in, dem_dim_in_0, dem_dim_in_1,
+        north_pole, pixel_per_gc, offset_gc,
+        mask=mask, dist_search=dist_search,
+        azim_num=45, elev_num=20, geom_type=geom_type)
+
+# Test plot
+plt.figure()
+plt.pcolormesh(distance / 1000.0)
+plt.colorbar()
+
 # Test plot for 2D-fields
 data_2d = {"sky_view_factor": sky_view_factor,
             "area_increase_factor": area_increase_factor,

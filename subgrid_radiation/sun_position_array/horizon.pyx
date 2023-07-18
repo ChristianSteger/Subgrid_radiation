@@ -433,3 +433,185 @@ def sky_view_factor_sw_dir_cor(
     return sw_dir_cor, sky_view_factor, \
         area_increase_factor, sky_view_area_factor, \
         slope, aspect
+
+# -----------------------------------------------------------------------------
+# Compute sky view factor and average distance to terrain
+# -----------------------------------------------------------------------------
+
+cdef extern from "horizon_comp.h":
+    void sky_view_factor_dist_comp(
+            float* vert_grid,
+            int dem_dim_0, int dem_dim_1,
+            float* vert_grid_in,
+            int dem_dim_in_0, int dem_dim_in_1,
+            double* north_pole,
+            double* sky_view_factor,
+            double* area_increase_factor,
+            double* sky_view_area_factor,
+            double* slope,
+            double* aspect,
+            double * distance,
+            int pixel_per_gc,
+            int offset_gc,
+            np.npy_uint8* mask,
+            float dist_search,
+            int azim_num,
+            int elev_num,
+            char* geom_type)
+
+def sky_view_factor_dist(
+        np.ndarray[np.float32_t, ndim = 1] vert_grid,
+        int dem_dim_0, int dem_dim_1,
+        np.ndarray[np.float32_t, ndim = 1] vert_grid_in,
+        int dem_dim_in_0, int dem_dim_in_1,
+        np.ndarray[np.float64_t, ndim = 1] north_pole,
+        int pixel_per_gc,
+        int offset_gc,
+        np.ndarray[np.uint8_t, ndim = 2] mask=None,
+        float dist_search=100.0,
+        int azim_num=45,
+        int elev_num=30,
+        str geom_type="grid"):
+    """Compute the sky view factor and the average distance to the terrain.
+
+    Parameters
+    ----------
+    vert_grid : ndarray of float
+        Array (one-dimensional) with vertices of DEM in ENU coordinates [metre]
+    dem_dim_0 : int
+        Dimension length of DEM in y-direction
+    dem_dim_1 : int
+        Dimension length of DEM in x-direction
+    vert_grid_in : ndarray of float
+        Array (one-dimensional) with vertices of inner DEM with 0.0 m elevation
+        in ENU coordinates [metre]
+    dem_dim_in_0 : int
+        Dimension length of inner DEM in y-direction
+    dem_dim_in_1 : int
+        Dimension length of inner DEM in x-direction
+    north_pole : ndarray of double
+        Array (one-dimensional) with ENU coordinates (x, y, z) of North Pole
+    pixel_per_gc : int
+        Number of subgrid pixels within one grid cell (along one dimension)
+    offset_gc : int
+        Offset number of grid cells
+    mask : ndarray of uint8
+        Array (two-dimensional) with grid cells for which 'sw_dir_cor' and
+        'sky_view_factor' are computed. Masked (0) grid cells are filled with
+        NaN.
+    dist_search : float
+        Search distance for topographic shadowing [kilometre]
+    azim_num : int
+        Number of sampling along azimuth angle
+    elev_num : int
+        Number of sampling along elevation angle
+    geom_type : str
+        Embree geometry type (triangle, quad, grid)
+
+    Returns
+    -------
+    sky_view_factor : ndarray of double
+        Array (two-dimensional) with sky view factor (y, x) [-]
+    area_increase_factor : ndarray of double
+        Array (two-dimensional) with surface area increase factor
+        (due to sloped terrain) [-]
+    sky_view_area_factor : ndarray of double
+        Array (two-dimensional) with 'sky_view_factor' divided by
+        'area_increase_factor' [-]
+    slope : ndarray of double
+        Array (two-dimensional) with surface slope [degree]
+    aspect : ndarray of double
+        Array (two-dimensional) with surface aspect (clockwise from North)
+        [degree]
+    distance : ndarray of double
+        Array (two-dimensional) with average distance to the terrain [metre]
+
+    References
+    ----------
+    - Manners, J., Vosper, S.B. and Roberts, N. (2012): Radiative transfer
+      over resolved topographic features for high-resolution weather
+      prediction, Q.J.R. Meteorol. Soc., 138: 720-733.
+    - Steger, C. R., Steger, B., and Schär, C. (2022): HORAYZON v1.2: an
+      efficient and flexible ray-tracing algorithm to compute horizon and
+      sky view factor, Geosci. Model Dev., 15, 6817–6840."""
+
+	# Check consistency and validity of input arguments
+    if ((dem_dim_0 != (2 * offset_gc * pixel_per_gc) + dem_dim_in_0)
+            or (dem_dim_1 != (2 * offset_gc * pixel_per_gc) + dem_dim_in_1)):
+        raise ValueError("Inconsistency between input arguments 'dem_dim_?',"
+                         + " 'dem_dim_in_?', 'offset_gc' and 'pixel_per_gc'")
+    if len(vert_grid) < (dem_dim_0 * dem_dim_1 * 3):
+        raise ValueError("array 'vert_grid' has insufficient length")
+    if len(vert_grid_in) < (dem_dim_in_0 * dem_dim_in_1 * 3):
+        raise ValueError("array 'vert_grid_in' has insufficient length")
+    if pixel_per_gc < 1:
+        raise ValueError("value for 'pixel_per_gc' must be larger than 1")
+    if offset_gc < 0:
+        raise ValueError("value for 'offset_gc' must be larger than 0")
+    num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
+    num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
+    if mask is None:
+        mask = np.ones((num_gc_y, num_gc_x), dtype=np.uint8)
+    if (mask.shape[0] != num_gc_y) or (mask.shape[1] != num_gc_x):
+        raise ValueError("shape of mask is inconsistent with other input")
+    if mask.dtype != "uint8":
+        raise TypeError("data type of mask must be 'uint8'")
+    if dist_search < 0.1:
+        raise ValueError("'dist_search' must be at least 100.0 m")
+    if geom_type not in ("triangle", "quad", "grid"):
+        raise ValueError("invalid input argument for geom_type")
+
+    # Check size of input geometries
+    if (dem_dim_0 > 32767) or (dem_dim_1 > 32767):
+        raise ValueError("maximal allowed input length for dem_dim_0 and "
+                         "dem_dim_1 is 32'767")
+
+    # Ensure that passed arrays are contiguous in memory
+    vert_grid = np.ascontiguousarray(vert_grid)
+    vert_grid_in = np.ascontiguousarray(vert_grid_in)
+
+    # Convert input strings to bytes
+    geom_type_c = geom_type.encode("utf-8")
+
+    # Allocate array for shortwave correction factors
+    cdef int len_in_0 = int((dem_dim_in_0 - 1) / pixel_per_gc)
+    cdef int len_in_1 = int((dem_dim_in_1 - 1) / pixel_per_gc)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        sky_view_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
+    sky_view_factor.fill(0.0)  # accumulated over pixels
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        area_increase_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
+    area_increase_factor.fill(0.0)  # accumulated over pixels
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        sky_view_area_factor = np.empty((len_in_0, len_in_1), dtype=np.float64)
+    sky_view_area_factor.fill(0.0)  # accumulated over pixels
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        slope = np.empty((len_in_0, len_in_1), dtype=np.float64)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        aspect = np.empty((len_in_0, len_in_1), dtype=np.float64)
+    cdef np.ndarray[np.float64_t, ndim = 2, mode = "c"] \
+        distance = np.empty((len_in_0, len_in_1), dtype=np.float64)
+    distance.fill(0.0)  # accumulated over pixels
+
+    sky_view_factor_dist_comp(
+        &vert_grid[0],
+        dem_dim_0, dem_dim_1,
+        &vert_grid_in[0],
+        dem_dim_in_0, dem_dim_in_1,
+        &north_pole[0],
+        &sky_view_factor[0, 0],
+        &area_increase_factor[0, 0],
+        &sky_view_area_factor[0, 0],
+        &slope[0, 0],
+        &aspect[0, 0],
+        &distance[0, 0],
+        pixel_per_gc,
+        offset_gc,
+        &mask[0, 0],
+        dist_search,
+        azim_num,
+        elev_num,
+        geom_type_c)
+
+    return sky_view_factor, area_increase_factor, sky_view_area_factor, \
+        slope, aspect, distance

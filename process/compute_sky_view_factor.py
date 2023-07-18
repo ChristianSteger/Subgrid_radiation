@@ -34,9 +34,9 @@ ray_algorithm = "guess_constant"
 elev_ang_low_lim = -85.0  # -15.0
 
 # File input/output
-file_in = "MERIT_remapped_COSMO_0.020deg_y0_x?.nc"
+# file_in = "MERIT_remapped_COSMO_0.020deg_y0_x?.nc"
 # file_in = "MERIT_remapped_COSMO_0.005deg.nc"
-# file_in = "MERIT_remapped_COSMO_0.001deg.nc"
+file_in = "MERIT_remapped_COSMO_0.001deg.nc"
 
 # Miscellaneous settings
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
@@ -132,8 +132,9 @@ for i in files_in:
     num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
     num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
     mask = np.zeros((num_gc_y, num_gc_x), dtype=np.uint8)
-    mask[-30:, -30:] = 1
-    # mask[:] = 1
+    # mask[-30:, -30:] = 1
+    # mask[:3000, :3000] = 1
+    mask[:] = 1
 
     # Ray-tracing
     sky_view_factor, area_increase_factor, sky_view_area_factor, \
@@ -145,6 +146,14 @@ for i in files_in:
             mask=mask, dist_search=dist_search, hori_azim_num=hori_azim_num,
             hori_acc=hori_acc, ray_algorithm=ray_algorithm,
             elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type)
+
+    a, b, c, d, e, distance \
+        = sun_position_array.horizon.sky_view_factor_dist(
+        vert_grid, dem_dim_0, dem_dim_1,
+        vert_grid_in, dem_dim_in_0, dem_dim_in_1,
+        trans_lonlat2enu.north_pole_enu, pixel_per_gc, offset_gc,
+        mask=mask, dist_search=dist_search,
+        azim_num=30, elev_num=50, geom_type=geom_type)
 
     # Check output
     print("Range of values [min, max]:")
@@ -217,6 +226,12 @@ for i in files_in:
                                     dimensions=("rlat_gc", "rlon_gc"))
     nc_data[:] = aspect.astype(np.float32)
     nc_data.units = "degree"
+    # -------------------------------------------------------------------------
+    nc_data = ncfile.createVariable(varname="distance",
+                                    datatype="f",
+                                    dimensions=("rlat_gc", "rlon_gc"))
+    nc_data[:] = distance.astype(np.float32)
+    nc_data.units = "m"
     # -------------------------------------------------------------------------
     ncfile.close()
 

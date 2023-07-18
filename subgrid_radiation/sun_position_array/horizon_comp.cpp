@@ -435,6 +435,39 @@ bool castRay_occluded1(RTCScene scene, float ox, float oy, float oz, float dx,
 
 }
 
+//-----------------------------------------------------------------------------
+
+bool castRay_intersect1(RTCScene scene, float ox, float oy, float oz, float dx,
+	float dy, float dz, float dist_search, float &dist) {
+
+    // Intersect context
+    struct RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+
+    // Ray hit structure
+    struct RTCRayHit rayhit;
+    rayhit.ray.org_x = ox;
+    rayhit.ray.org_y = oy;
+    rayhit.ray.org_z = oz;
+    rayhit.ray.dir_x = dx;
+    rayhit.ray.dir_y = dy;
+    rayhit.ray.dir_z = dz;
+    rayhit.ray.tnear = 0.0;
+    //rayhit.ray.tfar = std::numeric_limits<float>::infinity();
+    rayhit.ray.tfar = dist_search;
+    //rayhit.ray.mask = -1;
+    //rayhit.ray.flags = 0;
+    rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+    rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
+
+    // Intersect ray with scene
+    rtcIntersect1(scene, &context, &rayhit);
+    dist = rayhit.ray.tfar;
+
+    return (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID);
+
+}
+
 //#############################################################################
 // Horizon detection algorithms
 //#############################################################################
@@ -656,6 +689,47 @@ void (*function_pointer)(float ray_org_x, float ray_org_y, float ray_org_z,
     RTCScene scene, size_t &num_rays, double* horizon,
     double* azim_sin, double* azim_cos, double* elev_ang,
     double* elev_cos, double* elev_sin, double (&rot_inv)[3][3]);
+
+//#############################################################################
+// Sample hemisphere
+//#############################################################################
+
+void sample_hemisphere(float ray_org_x, float ray_org_y, float ray_org_z,
+    size_t azim_num, size_t elev_num, float dist_search,
+    RTCScene scene, size_t &num_rays, double &dist_mean,
+    double* azim_sin, double* azim_cos,
+    double* elev_cos, double* elev_sin, double (&rot_inv)[3][3]) {
+
+    int num_hit = 0;
+    for (size_t k = 0; k < azim_num; k++) {
+
+        int ind_elev = 0;
+        bool hit = true;
+        while (hit) {
+
+            double ray[3] = {elev_cos[ind_elev] * azim_sin[k],
+                             elev_cos[ind_elev] * azim_cos[k],
+                             elev_sin[ind_elev]};
+            double ray_rot[3];
+            mat_vec_mult(rot_inv, ray, ray_rot);
+            float dist;
+            hit = castRay_intersect1(scene,
+                ray_org_x, ray_org_y, ray_org_z,
+                (float)ray_rot[0], (float)ray_rot[1], (float)ray_rot[2],
+                dist_search, dist);
+            num_rays += 1;
+            ind_elev = ind_elev + 1;
+            if (hit) {
+                dist_mean = dist_mean + dist;
+                num_hit = num_hit + 1;
+            }
+
+        }
+
+    }
+    dist_mean = dist_mean / (double)num_hit;
+
+}
 
 //#############################################################################
 // Main functions
@@ -1495,6 +1569,338 @@ void sky_view_factor_sw_dir_cor_comp(
     num_elem = (num_gc_y * num_gc_x * dim_sun_0 * dim_sun_1);
     for (size_t i = 0; i < num_elem; i++) {
         sw_dir_cor[i] /= (float)num_tri_per_gc;
+    }
+
+    // Release resources allocated through Embree
+    rtcReleaseScene(scene);
+    rtcReleaseDevice(device);
+
+    auto end_tot = std::chrono::high_resolution_clock::now();
+    time = end_tot - start_ini;
+    cout << "Total run time: " << time.count() << " s" << endl;
+
+    //-------------------------------------------------------------------------
+
+    cout << "--------------------------------------------------------" << endl;
+
+}
+
+//-----------------------------------------------------------------------------
+// Compute sky view factor and average distance to terrain
+//-----------------------------------------------------------------------------
+
+void sky_view_factor_dist_comp(
+    float* vert_grid,
+    int dem_dim_0, int dem_dim_1,
+    float* vert_grid_in,
+    int dem_dim_in_0, int dem_dim_in_1,
+    double* north_pole,
+    double* sky_view_factor,
+    double* area_increase_factor,
+    double* sky_view_area_factor,
+    double* slope,
+    double* aspect,
+    double* distance,
+    int pixel_per_gc,
+    int offset_gc,
+    uint8_t* mask,
+    float dist_search,
+    int azim_num,
+    int elev_num,
+    char* geom_type) {
+
+    cout << "--------------------------------------------------------" << endl;
+    cout << "Compute sky view factor " << endl;
+    cout << "--------------------------------------------------------" << endl;
+
+    // Hard-coded settings
+    double ray_org_elev = 0.1;
+    // value to elevate ray origin (-> avoids potential issue with numerical
+    // imprecision / truncation) [m]
+
+    // Number of grid cells
+    int num_gc_y = (dem_dim_in_0 - 1) / pixel_per_gc;
+    int num_gc_x = (dem_dim_in_1 - 1) / pixel_per_gc;
+    cout << "Number of grid cells in y-direction: " << num_gc_y << endl;
+    cout << "Number of grid cells in x-direction: " << num_gc_x << endl;
+
+    // Number of triangles
+    int num_tri = (dem_dim_in_0 - 1) * (dem_dim_in_1 - 1) * 2;
+    cout << "Number of triangles: " << num_tri << endl;
+
+    // Unit conversion(s)
+    dist_search *= 1000.0;  // [kilometre] to [metre]
+    cout << "Search distance: " << dist_search << " m" << endl;
+
+    // Initialisation
+    auto start_ini = std::chrono::high_resolution_clock::now();
+    RTCDevice device = initializeDevice();
+    RTCScene scene = initializeScene(device, vert_grid, dem_dim_0, dem_dim_1,
+        geom_type);
+    auto end_ini = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> time = end_ini - start_ini;
+    cout << "Total initialisation time: " << time.count() << " s" << endl;
+
+    // ------------------------------------------------------------------------
+    // Allocate and initialise arrays with evaluated trigonometric functions
+    // ------------------------------------------------------------------------
+
+    // Azimuth angles (allocate on stack)
+    double azim_sin[azim_num];
+    double azim_cos[azim_num];
+    double ang;
+    for (int i = 0; i < azim_num; i++) {
+        ang = ((2 * M_PI) / azim_num * i);
+        azim_sin[i] = sin(ang);
+        azim_cos[i] = cos(ang);
+    }
+    double azim_spac = (2.0 * M_PI) / (double)azim_num;
+
+    // Elevation angles (allocate on stack)
+    double beta_step = -2.0 / (double)elev_num;
+    double alpha[elev_num + 1];
+    for (int i = 0; i < (elev_num + 1); i++) {
+        double beta = 1.0 + ((double)i * beta_step);
+        alpha[i] = acos(beta) / 2.0;
+    }
+    double elev_sin[elev_num];
+    double elev_cos[elev_num];
+    for (int i = 0; i < elev_num; i++) {
+        ang = (alpha[i] + alpha[i + 1]) / 2.0;
+        elev_sin[i] = sin(ang);
+        elev_cos[i] = cos(ang);
+    }
+
+    //-------------------------------------------------------------------------
+
+    auto start_ray = std::chrono::high_resolution_clock::now();
+    size_t num_rays = 0;
+
+    num_rays += tbb::parallel_reduce(
+        tbb::blocked_range<size_t>(0, num_gc_y), 0.0,
+        [&](tbb::blocked_range<size_t> r, size_t num_rays) {  // parallel
+
+    // Loop through 2D-field of grid cells
+    // for (size_t i = 0; i < num_gc_y; i++) {  // serial
+    for (size_t i=r.begin(); i<r.end(); ++i) {  // parallel
+        for (size_t j = 0; j < num_gc_x; j++) {
+
+            size_t lin_ind_gc = lin_ind_2d(num_gc_x, i, j);
+            if (mask[lin_ind_gc] == 1) {
+
+            double* tilt_gc = new double[3] {0.0, 0.0, 0.0};
+            double dist_mean_gc = 0.0;
+            int num_dist = 0;
+
+            // Loop through 2D-field of DEM pixels
+            for (size_t k = (i * pixel_per_gc);
+                k < ((i * pixel_per_gc) + pixel_per_gc); k++) {
+                for (size_t m = (j * pixel_per_gc);
+                    m < ((j * pixel_per_gc) + pixel_per_gc); m++) {
+
+                    // Loop through two triangles per pixel
+                    for (size_t n = 0; n < 2; n++) {
+
+                        //-----------------------------------------------------
+                        // Tilted triangle
+                        //-----------------------------------------------------
+
+                        size_t ind_tri_0, ind_tri_1, ind_tri_2;
+                        func_ptr[n](dem_dim_1,
+                            k + (pixel_per_gc * offset_gc),
+                            m + (pixel_per_gc * offset_gc),
+                            ind_tri_0, ind_tri_1, ind_tri_2);
+
+                        double vert_0_x = (double)vert_grid[ind_tri_0];
+                        double vert_0_y = (double)vert_grid[ind_tri_0 + 1];
+                        double vert_0_z = (double)vert_grid[ind_tri_0 + 2];
+                        double vert_1_x = (double)vert_grid[ind_tri_1];
+                        double vert_1_y = (double)vert_grid[ind_tri_1 + 1];
+                        double vert_1_z = (double)vert_grid[ind_tri_1 + 2];
+                        double vert_2_x = (double)vert_grid[ind_tri_2];
+                        double vert_2_y = (double)vert_grid[ind_tri_2 + 1];
+                        double vert_2_z = (double)vert_grid[ind_tri_2 + 2];
+
+                        double cent_x, cent_y, cent_z;
+                        triangle_centroid(vert_0_x, vert_0_y, vert_0_z,
+                            vert_1_x, vert_1_y, vert_1_z,
+                            vert_2_x, vert_2_y, vert_2_z,
+                            cent_x, cent_y, cent_z);
+
+                        double norm_tilt_x, norm_tilt_y, norm_tilt_z,
+                            area_tilt;
+                        triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
+                            vert_1_x, vert_1_y, vert_1_z,
+                            vert_2_x, vert_2_y, vert_2_z,
+                            norm_tilt_x, norm_tilt_y, norm_tilt_z,
+                            area_tilt);
+
+                        // Ray origin
+                        double ray_org_x = (cent_x
+                            + norm_tilt_x * ray_org_elev);
+                        double ray_org_y = (cent_y
+                            + norm_tilt_y * ray_org_elev);
+                        double ray_org_z = (cent_z
+                            + norm_tilt_z * ray_org_elev);
+
+                        //-----------------------------------------------------
+                        // Horizontal triangle
+                        //-----------------------------------------------------
+
+                        func_ptr[n](dem_dim_in_1, k, m,
+                            ind_tri_0, ind_tri_1, ind_tri_2);
+
+                        vert_0_x = (double)vert_grid_in[ind_tri_0];
+                        vert_0_y = (double)vert_grid_in[ind_tri_0 + 1];
+                        vert_0_z = (double)vert_grid_in[ind_tri_0 + 2];
+                        vert_1_x = (double)vert_grid_in[ind_tri_1];
+                        vert_1_y = (double)vert_grid_in[ind_tri_1 + 1];
+                        vert_1_z = (double)vert_grid_in[ind_tri_1 + 2];
+                        vert_2_x = (double)vert_grid_in[ind_tri_2];
+                        vert_2_y = (double)vert_grid_in[ind_tri_2 + 1];
+                        vert_2_z = (double)vert_grid_in[ind_tri_2 + 2];
+
+                        double norm_hori_x, norm_hori_y, norm_hori_z,
+                            area_hori;
+                        triangle_normal_area(vert_0_x, vert_0_y, vert_0_z,
+                            vert_1_x, vert_1_y, vert_1_z,
+                            vert_2_x, vert_2_y, vert_2_z,
+                            norm_hori_x, norm_hori_y, norm_hori_z,
+                        area_hori);
+
+                        double surf_enl_fac = area_tilt / area_hori;
+
+                        //-----------------------------------------------------
+                        // Compute surface slope and aspect
+                        //-----------------------------------------------------
+
+                        // Vector to North Pole (and orthogonal to 'norm_hori')
+                        double north_x = (north_pole[0] - cent_x);
+                        double north_y = (north_pole[1] - cent_y);
+                        double north_z = (north_pole[2] - cent_z);
+                        double dot_prod = ((north_x * norm_hori_x)
+                                         + (north_y * norm_hori_y)
+                                         + (north_z * norm_hori_z));
+                        north_x -= dot_prod * norm_hori_x;
+                        north_y -= dot_prod * norm_hori_y;
+                        north_z -= dot_prod * norm_hori_z;
+                        vec_unit(north_x, north_y, north_z);
+
+                        double east_x, east_y, east_z;
+                        cross_prod(north_x, north_y, north_z,
+                            norm_hori_x, norm_hori_y, norm_hori_z,
+                            east_x, east_y, east_z);
+
+                       // Rotate tilt vector from global to local ENU
+                        // coordinate system
+                        double rot[3][3] = {{east_x, east_y, east_z},
+                                            {north_x, north_y, north_z},
+                                            {norm_hori_x, norm_hori_y,
+                                             norm_hori_z}};
+                        double tilt_global[3] = {norm_tilt_x, norm_tilt_y,
+                                                 norm_tilt_z};
+                        double tilt_local[3];
+                        mat_vec_mult(rot, tilt_global, tilt_local);
+                        tilt_gc[0] = tilt_gc[0] + tilt_local[0];
+                        tilt_gc[1] = tilt_gc[1] + tilt_local[1];
+                        tilt_gc[2] = tilt_gc[2] + tilt_local[2];
+
+                        //-----------------------------------------------------
+                        // Compute sky view factor and average distance to
+                        // terrain
+                        //-----------------------------------------------------
+
+                         // Approximate north vector in titled coordinate
+                         // system with global ENU North (-> can be arbitrary)
+                         north_x = 0.0;
+                         north_y = 1.0;
+                         north_z = -norm_tilt_y / norm_tilt_z;
+                         vec_unit(north_x, north_y, north_z);
+                         cross_prod(north_x, north_y, north_z,
+                             norm_tilt_x, norm_tilt_y, norm_tilt_z,
+                             east_x, east_y, east_z);
+                        double rot_inv[3][3] =
+                            {{east_x, north_x, norm_tilt_x},
+                             {east_y, north_y, norm_tilt_y},
+                             {east_z, north_z, norm_tilt_z}};
+
+                        double dist_mean = 0.0;
+                        sample_hemisphere(
+                            (float)ray_org_x, (float)ray_org_y,
+                            (float)ray_org_z,
+                            azim_num, elev_num, dist_search,
+                            scene, num_rays, dist_mean,
+                            azim_sin, azim_cos,
+                            elev_cos, elev_sin, rot_inv);
+                        if (!isnan(dist_mean)) {
+                            dist_mean_gc = dist_mean_gc + dist_mean;
+                            num_dist = num_dist + 1;
+                        }
+
+                    }
+
+                }
+            }
+
+            // Compute mean grid cell slope and aspect
+            vec_unit(tilt_gc[0], tilt_gc[1], tilt_gc[2]);
+            slope[lin_ind_gc] = rad2deg(acos(tilt_gc[2]));
+            double aspect_temp = atan2(tilt_gc[0], tilt_gc[1]);
+            if (aspect_temp < 0.0) {
+                aspect_temp += 2.0 * M_PI;
+            }
+            aspect[lin_ind_gc] = rad2deg(aspect_temp);
+
+            // Mean distance to terrain
+            if (dist_mean_gc != 0.0) {
+                distance[lin_ind_gc] = dist_mean_gc / (double)num_dist;
+            } else {
+                distance[lin_ind_gc] = NAN;
+            }
+
+            delete[] tilt_gc;
+
+            } else {
+
+                sky_view_factor[lin_ind_gc] = NAN;
+                area_increase_factor[lin_ind_gc] = NAN;
+                sky_view_area_factor[lin_ind_gc] = NAN;
+                slope[lin_ind_gc] = NAN;
+                aspect[lin_ind_gc] = NAN;
+                distance[lin_ind_gc] = NAN;
+
+            }
+
+        }
+    }
+
+    return num_rays;  // parallel
+    }, std::plus<size_t>());  // parallel
+
+    auto end_ray = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> time_ray = (end_ray - start_ray);
+    cout << "Ray tracing time: " << time_ray.count() << " s" << endl;
+
+    // Print number of rays needed for location and azimuth direction
+    cout << "Number of rays shot: " << num_rays << endl;
+    double gc_proc = 0;
+    for (size_t i = 0; i < (num_gc_y * num_gc_x); i++) {
+        if (mask[i] == 1) {
+            gc_proc += 1;
+        }
+    }
+    double tri_proc = (gc_proc * (double)(pixel_per_gc * pixel_per_gc) * 2.0)
+        * (double)azim_num;
+    double ratio = (double)num_rays / (double)tri_proc;
+    printf("Average number of rays per location and azimuth: %.2f \n", ratio);
+
+    // Divide accumulated values by number of triangles within grid cell
+    double num_tri_per_gc = pixel_per_gc * pixel_per_gc * 2.0;
+    size_t num_elem = (num_gc_y * num_gc_x);
+    for (size_t i = 0; i < num_elem; i++) {
+        sky_view_factor[i] /= num_tri_per_gc;
+        area_increase_factor[i] /= num_tri_per_gc;
+        sky_view_area_factor[i] /= num_tri_per_gc;
     }
 
     // Release resources allocated through Embree

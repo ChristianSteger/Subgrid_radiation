@@ -51,4 +51,24 @@ void sky_view_factor_sw_dir_cor_comp(
     double sw_dir_cor_max,
     double ang_max);
 
+void sky_view_factor_dist_comp(
+    float* vert_grid,
+    int dem_dim_0, int dem_dim_1,
+    float* vert_grid_in,
+    int dem_dim_in_0, int dem_dim_in_1,
+    double* north_pole,
+    double* sky_view_factor,
+    double* area_increase_factor,
+    double* sky_view_area_factor,
+    double* slope,
+    double* aspect,
+    double* distance,
+    int pixel_per_gc,
+    int offset_gc,
+    uint8_t* mask,
+    float dist_search,
+    int azim_num,
+    int elev_num,
+    char* geom_type);
+
 #endif
