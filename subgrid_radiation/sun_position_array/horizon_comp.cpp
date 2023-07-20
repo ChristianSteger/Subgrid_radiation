@@ -698,9 +698,11 @@ void sample_hemisphere(float ray_org_x, float ray_org_y, float ray_org_z,
     size_t azim_num, size_t elev_num, float dist_search,
     RTCScene scene, size_t &num_rays, double &dist_mean,
     double* azim_sin, double* azim_cos,
-    double* elev_cos, double* elev_sin, double (&rot_inv)[3][3]) {
+    double* elev_cos, double* elev_sin, double* weights,
+    double (&rot_inv)[3][3]) {
 
-    int num_hit = 0;
+    dist_mean = 0.0;
+    double weights_sum = 0.0;
     for (size_t k = 0; k < azim_num; k++) {
 
         int ind_elev = 0;
@@ -720,14 +722,14 @@ void sample_hemisphere(float ray_org_x, float ray_org_y, float ray_org_z,
             num_rays += 1;
             ind_elev = ind_elev + 1;
             if (hit) {
-                dist_mean = dist_mean + dist;
-                num_hit = num_hit + 1;
+                dist_mean = dist_mean + (dist * weights[ind_elev]);
+                weights_sum = weights_sum + weights[ind_elev];
             }
 
         }
 
     }
-    dist_mean = dist_mean / (double)num_hit;
+    dist_mean = dist_mean / weights_sum;
 
 }
 
@@ -1657,18 +1659,20 @@ void sky_view_factor_dist_comp(
     double azim_spac = (2.0 * M_PI) / (double)azim_num;
 
     // Elevation angles (allocate on stack)
-    double beta_step = -2.0 / (double)elev_num;
-    double alpha[elev_num + 1];
+    double elev_step = (M_PI / 2.0) / (double)elev_num;
+    double elev_ang_bound[elev_num + 1];
     for (int i = 0; i < (elev_num + 1); i++) {
-        double beta = 1.0 + ((double)i * beta_step);
-        alpha[i] = acos(beta) / 2.0;
+        elev_ang_bound[i] = (double)i * elev_step;
     }
     double elev_sin[elev_num];
     double elev_cos[elev_num];
+    double weights[elev_num];
     for (int i = 0; i < elev_num; i++) {
-        ang = (alpha[i] + alpha[i + 1]) / 2.0;
+        ang = (elev_ang_bound[i] + elev_ang_bound[i + 1]) / 2.0;
         elev_sin[i] = sin(ang);
         elev_cos[i] = cos(ang);
+        weights[i] = 1.0 / 4.0 * (cos(2 * elev_ang_bound[i])
+            - cos(2 * elev_ang_bound[i + 1]));
     }
 
     //-------------------------------------------------------------------------
@@ -1831,9 +1835,11 @@ void sky_view_factor_dist_comp(
                             azim_num, elev_num, dist_search,
                             scene, num_rays, dist_mean,
                             azim_sin, azim_cos,
-                            elev_cos, elev_sin, rot_inv);
+                            elev_cos, elev_sin, weights,
+                            rot_inv);
                         if (!isnan(dist_mean)) {
                             dist_mean_gc = dist_mean_gc + dist_mean;
+                            // maybe weight according to (titled) surface area?
                             num_dist = num_dist + 1;
                         }
 

@@ -159,7 +159,7 @@ sky_view_factor, area_increase_factor, sky_view_area_factor, \
         vert_grid_in, dem_dim_in_0, dem_dim_in_1,
         north_pole, pixel_per_gc, offset_gc,
         mask=mask, dist_search=dist_search,
-        azim_num=45, elev_num=20, geom_type=geom_type)
+        azim_num=45, elev_num=30, geom_type=geom_type)
 
 # Test plot
 plt.figure()

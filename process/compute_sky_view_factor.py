@@ -153,7 +153,7 @@ for i in files_in:
         vert_grid_in, dem_dim_in_0, dem_dim_in_1,
         trans_lonlat2enu.north_pole_enu, pixel_per_gc, offset_gc,
         mask=mask, dist_search=dist_search,
-        azim_num=30, elev_num=50, geom_type=geom_type)
+        azim_num=30, elev_num=30, geom_type=geom_type)
 
     # Check output
     print("Range of values [min, max]:")
