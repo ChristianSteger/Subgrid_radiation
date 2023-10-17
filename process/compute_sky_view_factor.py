@@ -34,9 +34,9 @@ ray_algorithm = "guess_constant"
 elev_ang_low_lim = -85.0  # -15.0
 
 # File input/output
-# file_in = "MERIT_remapped_COSMO_0.020deg_y0_x?.nc"
-# file_in = "MERIT_remapped_COSMO_0.005deg.nc"
-file_in = "MERIT_remapped_COSMO_0.001deg.nc"
+# file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
+# file_in = "MERIT_remapped_COSMO_0.020deg.nc"
+file_in = "MERIT_remapped_COSMO_0.005deg.nc"
 
 # Miscellaneous settings
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
@@ -147,7 +147,7 @@ for i in files_in:
             hori_acc=hori_acc, ray_algorithm=ray_algorithm,
             elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type)
 
-    a, b, c, d, e, distance \
+    _, _, _, _, _, distance \
         = sun_position_array.horizon.sky_view_factor_dist(
         vert_grid, dem_dim_0, dem_dim_1,
         vert_grid_in, dem_dim_in_0, dem_dim_in_1,
@@ -190,45 +190,45 @@ for i in files_in:
     ncfile.createDimension(dimname="rlat_gc", size=sky_view_factor.shape[0])
     ncfile.createDimension(dimname="rlon_gc", size=sky_view_factor.shape[1])
     # -------------------------------------------------------------------------
-    nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f",
+    nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f8",
                                     dimensions="rlat_gc")
     nc_rlat[:] = rlat_gc[offset_gc:-offset_gc]
     nc_rlat.long_name = "latitude of grid cells in rotated pole grid"
     nc_rlat.units = "degrees"
-    nc_rlon = ncfile.createVariable(varname="rlon_gc", datatype="f",
+    nc_rlon = ncfile.createVariable(varname="rlon_gc", datatype="f8",
                                     dimensions="rlon_gc")
     nc_rlon[:] = rlon_gc[offset_gc:-offset_gc]
     nc_rlon.long_name = "longitude of grid cells in rotated pole grid"
     nc_rlon.units = "degrees"
     # -------------------------------------------------------------------------
-    nc_data = ncfile.createVariable(varname="sky_view_factor", datatype="f",
+    nc_data = ncfile.createVariable(varname="sky_view_factor", datatype="f4",
                                     dimensions=("rlat_gc", "rlon_gc"))
     nc_data[:] = sky_view_factor.astype(np.float32)
     nc_data.units = "-"
     nc_data = ncfile.createVariable(varname="area_increase_factor",
-                                    datatype="f",
+                                    datatype="f4",
                                     dimensions=("rlat_gc", "rlon_gc"))
     nc_data[:] = area_increase_factor.astype(np.float32)
     nc_data.units = "-"
     nc_data = ncfile.createVariable(varname="sky_view_area_factor",
-                                    datatype="f",
+                                    datatype="f4",
                                     dimensions=("rlat_gc", "rlon_gc"))
     nc_data[:] = sky_view_area_factor.astype(np.float32)
     nc_data.units = "-"
     # -------------------------------------------------------------------------
     nc_data = ncfile.createVariable(varname="slope",
-                                    datatype="f",
+                                    datatype="f4",
                                     dimensions=("rlat_gc", "rlon_gc"))
     nc_data[:] = slope.astype(np.float32)
     nc_data.units = "degree"
     nc_data = ncfile.createVariable(varname="aspect",
-                                    datatype="f",
+                                    datatype="f4",
                                     dimensions=("rlat_gc", "rlon_gc"))
     nc_data[:] = aspect.astype(np.float32)
     nc_data.units = "degree"
     # -------------------------------------------------------------------------
     nc_data = ncfile.createVariable(varname="distance",
-                                    datatype="f",
+                                    datatype="f4",
                                     dimensions=("rlat_gc", "rlon_gc"))
     nc_data[:] = distance.astype(np.float32)
     nc_data.units = "m"

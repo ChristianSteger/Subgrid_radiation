@@ -9,6 +9,12 @@
 # - MERIT DEM data can be downloaded from:
 #   http://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_DEM/
 #
+# To do:
+# - CSCS MERIT NetCDFs are inaccurate compared to raw GeoTIFFs. Elevation is
+#   saved as integer and geographic coordinates only as float32. Furthermore,
+#   there is probably a latitudinal shift of 1 pixel introduced by erroneous
+#   grid cell centre computation from the GeoTIFF's extent...
+#
 # Copyright (c) 2023 ETH Zurich, Christian R. Steger
 # MIT License
 
@@ -37,34 +43,40 @@ mpl.style.use("classic")
 pollat = 43.0          # Latitude of the rotated North Pole [degree]
 pollon = -170.0        # Longitude of the rotated North Pole [degree]
 polgam = 0.0           # Longitude rotation about the new pole [degree]
-ie_tot = 1000          # Number of grid cells (zonal)
-je_tot = 600           # Number of grid cells (meridional)
+ie_tot = 1075          # Number of grid cells (zonal)
+je_tot = 675           # Number of grid cells (meridional)
 drlon = 0.02           # Grid spacing (zonal) [degree]
 drlat = 0.02           # Grid spacing (meridional) [degree]
 startrlon_tot = -10.2  # Centre longitude of lower left grid cell [degree]
 startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
 
-# # Europe, ~12 km
+# -----------------------------------------------------------------------------
+# Small Switzerland test domains
+# -----------------------------------------------------------------------------
+
+# # Switzerland, ~2.2 km
 # pollat = 43.0
 # pollon = -170.0
 # polgam = 0.0
-# ie_tot = 361
-# je_tot = 361
-# drlon = 0.11
-# drlat = 0.11
-# startrlon_tot = -23.33
-# startrlat_tot = -19.36
+# ie_tot = 185
+# je_tot = 105
+# drlon = 0.02
+# drlat = 0.02
+# startrlon_tot = -3.2
+# startrlat_tot = -1.3
 
 # # Switzerland, ~550 m
 # pollat = 43.0
 # pollon = -170.0
 # polgam = 0.0
-# ie_tot = 46 * 16
-# je_tot = 36 * 16
+# ie_tot = 185 * 4
+# je_tot = 105 * 4
 # drlon = 0.005
 # drlat = 0.005
-# startrlon_tot = -4.0075 + (0.005 * 12 * 16)
-# startrlat_tot = -2.5275 + (0.005 * 12 * 16)
+# startrlon_tot = -3.2 - (0.02 / 2.0) + (0.005 / 2.0)
+# startrlat_tot = -1.3 - (0.02 / 2.0) + (0.005 / 2.0)
+
+# -----------------------------------------------------------------------------
 
 # # Switzerland, ~90 m
 # pollat = 43.0
@@ -234,6 +246,7 @@ print("Latitude: %.2f" % geo_extent[2] + " - %.2f" % geo_extent[3])
 if plot_map:
     plt.figure(figsize=(12, 8))
     ax = plt.axes(projection=ccrs_geo)
+    ax.stock_img()
     ax.coastlines(zorder=1)
     plt.hlines(y=range(-90, 120, 30), xmin=-180, xmax=180, color="red",
                zorder=2)
@@ -352,14 +365,11 @@ for i in range(num_subdom_y):
         grid_elev = pyinterp.Grid2D(y_axis, x_axis, elevation)
         grid_lsm = pyinterp.Grid2D(y_axis, x_axis, mask_water)
         block_size = 5000
-        elevation_ip = np.empty((rlat_edge_dem_sd.size,
-                                 rlon_edge_dem_sd.size),
-                                dtype=np.float32)
-        mask_water_ip = np.empty((rlat_edge_dem_sd.size,
-                                  rlon_edge_dem_sd.size),
-                                 dtype=np.float32)
-        lon_ip = np.empty_like(elevation_ip)
-        lat_ip = np.empty_like(elevation_ip)
+        shp = (rlat_edge_dem_sd.size, rlon_edge_dem_sd.size)
+        elevation_ip = np.empty(shp, dtype=np.float32)
+        mask_water_ip = np.empty(shp, dtype=np.float32)
+        lon_ip = np.empty(shp, dtype=np.float64)
+        lat_ip = np.empty(shp, dtype=np.float64)
         steps_rlat = int(np.ceil(rlat_edge_dem_sd.size / block_size))
         steps_rlon = int(np.ceil(rlon_edge_dem_sd.size / block_size))
         print("Number of steps in block-wise interpolation: "
@@ -405,30 +415,32 @@ for i in range(num_subdom_y):
         ncfile.createDimension(dimname="rlat", size=elevation_ip.shape[0])
         ncfile.createDimension(dimname="rlon", size=elevation_ip.shape[1])
         # ---------------------------------------------------------------------
-        nc_rlat = ncfile.createVariable(varname="rlat", datatype="f",
+        nc_rlat = ncfile.createVariable(varname="rlat", datatype="f8",
                                         dimensions="rlat")
         nc_rlat[:] = rlat_edge_dem_sd
         nc_rlat.long_name = "latitude in rotated pole grid"
         nc_rlat.units = "degrees"
-        nc_rlon = ncfile.createVariable(varname="rlon", datatype="f",
+        nc_rlon = ncfile.createVariable(varname="rlon", datatype="f8",
                                         dimensions="rlon")
         nc_rlon[:] = rlon_edge_dem_sd
         nc_rlon.long_name = "longitude in rotated pole grid"
         nc_rlon.units = "degrees"
         # ---------------------------------------------------------------------
-        nc_lat = ncfile.createVariable(varname="lat", datatype="f",
+        nc_lat = ncfile.createVariable(varname="lat", datatype="f8",
                                        dimensions=("rlat", "rlon"))
         nc_lat[:] = lat_ip
         nc_lat.long_name = "geographical latitude"
         nc_lat.units = "degrees_north"
-        nc_lon = ncfile.createVariable(varname="lon", datatype="f",
-                                       dimensions=("rlat", "rlon"))
+        nc_lon = ncfile.createVariable(varname="lon", datatype="f8",
+                                       dimensions=("rlat", "rlon"),
+                                       zlib=True, complevel=1)
         nc_lon[:] = lon_ip
         nc_lon.long_name = "geographical longitude"
         nc_lon.units = "degrees_east"
         # ---------------------------------------------------------------------
-        nc_data = ncfile.createVariable(varname="Elevation", datatype="f",
-                                        dimensions=("rlat", "rlon"))
+        nc_data = ncfile.createVariable(varname="Elevation", datatype="f4",
+                                        dimensions=("rlat", "rlon"),
+                                        zlib=True, complevel=1)
         nc_data[:] = elevation_ip
         nc_data.units = "m"
         # ---------------------------------------------------------------------
@@ -444,13 +456,13 @@ for i in range(num_subdom_y):
         nc_meta.north_pole_grid_longitude = polgam
         # ---------------------------------------------------------------------
         ncfile.createDimension(dimname="rlat_gc", size=rlat_model_sd.size)
-        nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f",
+        nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f8",
                                         dimensions="rlat_gc")
         nc_rlat[:] = rlat_model_sd
         nc_rlat.long_name = "latitude of grid cells in rotated pole grid"
         nc_rlat.units = "degrees"
         ncfile.createDimension(dimname="rlon_gc", size=rlon_model_sd.size)
-        nc_rlon = ncfile.createVariable(varname="rlon_gc", datatype="f",
+        nc_rlon = ncfile.createVariable(varname="rlon_gc", datatype="f8",
                                         dimensions="rlon_gc")
         nc_rlon[:] = rlon_model_sd
         nc_rlon.long_name = "longitude of grid cells in rotated pole grid"

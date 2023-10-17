@@ -14,17 +14,21 @@ from skyfield.api import Distance
 from netCDF4 import Dataset
 import glob
 import platform
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 from subgrid_radiation import transform, auxiliary
 from subgrid_radiation.sun_position_array import rays
 from subgrid_radiation import sun_position_array
+
+mpl.style.use("classic")
 
 # -----------------------------------------------------------------------------
 # Settings
 # -----------------------------------------------------------------------------
 
 # Grid for subsolar points
-# subsol_lon = np.linspace(-180.0, 162.0, 10, dtype=np.float64)  # 38 degree
-# subsol_lat = np.linspace(-23.5, 23.5, 5, dtype=np.float64)  # 11.75 degree
+# subsol_lon = np.linspace(-180.0, 171.0, 40, dtype=np.float64)  # 9 degree
+# subsol_lat = np.linspace(-23.5, 23.5, 14, dtype=np.float64)  # 3.62 degree
 # subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
 # subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
 subsol_lon = np.linspace(-180.0, 174.0, 60, dtype=np.float64)  # 6 degree
@@ -37,8 +41,9 @@ sw_dir_cor_max = 25.0
 ang_max = 89.9
 
 # File input/output
-file_in = "MERIT_remapped_COSMO_0.020deg_y0_x?.nc"
-# file_in = "MERIT_remapped_COSMO_0.005deg.nc"
+# file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
+# file_in = "MERIT_remapped_COSMO_0.020deg.nc"
+file_in = "MERIT_remapped_COSMO_0.005deg.nc"
 
 # Miscellaneous settings
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
@@ -80,8 +85,8 @@ for i in files_in:
     # Compute vertices of DEM triangles in global ENU coordinates
     t_beg = time.perf_counter()
     ds = xr.open_dataset(i)
-    lon = ds["lon"].values.astype(np.float64)
-    lat = ds["lat"].values.astype(np.float64)
+    lon = ds["lon"].values
+    lat = ds["lat"].values
     elevation = ds["Elevation"].values.astype(np.float64)
     ds.close()
     dem_dim_0, dem_dim_1 = elevation.shape
@@ -152,8 +157,8 @@ for i in files_in:
     num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
     num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
     mask = np.zeros((num_gc_y, num_gc_x), dtype=np.uint8)
-    mask[-30:, -30:] = 1
-    # mask[:] = 1
+    # mask[-30:, -30:] = 1
+    mask[:] = 1
 
     # Ray-tracing
     # sw_dir_cor = sun_position_array.rays.sw_dir_cor(
@@ -193,29 +198,29 @@ for i in files_in:
     ncfile.createDimension(dimname="subsolar_lat", size=sw_dir_cor.shape[2])
     ncfile.createDimension(dimname="subsolar_lon", size=sw_dir_cor.shape[3])
     # -------------------------------------------------------------------------
-    nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f",
+    nc_rlat = ncfile.createVariable(varname="rlat_gc", datatype="f8",
                                     dimensions="rlat_gc")
     nc_rlat[:] = rlat_gc[offset_gc:-offset_gc]
     nc_rlat.long_name = "latitude of grid cells in rotated pole grid"
     nc_rlat.units = "degrees"
-    nc_rlon = ncfile.createVariable(varname="rlon_gc", datatype="f",
+    nc_rlon = ncfile.createVariable(varname="rlon_gc", datatype="f8",
                                     dimensions="rlon_gc")
     nc_rlon[:] = rlon_gc[offset_gc:-offset_gc]
     nc_rlon.long_name = "longitude of grid cells in rotated pole grid"
     nc_rlon.units = "degrees"
     # -------------------------------------------------------------------------
-    nc_sslat = ncfile.createVariable(varname="subsolar_lat", datatype="f",
+    nc_sslat = ncfile.createVariable(varname="subsolar_lat", datatype="f8",
                                     dimensions="subsolar_lat")
     nc_sslat[:] = subsol_lat
     nc_sslat.long_name = "subsolar latitude"
     nc_sslat.units = "degrees"
-    nc_sslon = ncfile.createVariable(varname="subsolar_lon", datatype="f",
+    nc_sslon = ncfile.createVariable(varname="subsolar_lon", datatype="f8",
                                     dimensions="subsolar_lon")
     nc_sslon[:] = subsol_lon
     nc_sslon.long_name = "subsolar longitude"
     nc_sslon.units = "degrees"
     # -------------------------------------------------------------------------
-    nc_data = ncfile.createVariable(varname="f_cor", datatype="f",
+    nc_data = ncfile.createVariable(varname="f_cor", datatype="f4",
                                     dimensions=("rlat_gc", "rlon_gc",
                                                 "subsolar_lat",
                                                 "subsolar_lon"))
@@ -257,3 +262,39 @@ if ncview_reorder:
     ds = xr.open_dataset(path_work + file_out)
     ds = ds.transpose("subsolar_lat", "subsolar_lon", "rlat_gc", "rlon_gc")
     ds.to_netcdf(path_work + file_out[:-3] + "_ncview.nc")
+
+# -----------------------------------------------------------------------------
+# Check computed f_cor values
+# -----------------------------------------------------------------------------
+
+# Load data
+ds = xr.open_dataset(path_work + file_out)
+f_cor = ds["f_cor"].values
+subsolar_lat = ds["subsolar_lat"].values
+subsolar_lon = ds["subsolar_lon"].values
+ds.close()
+
+# Check percentile
+perc = 99.9  # percentile [0.0, 100.0]
+print("'f_cor'-percentile (" + "%.2f" % perc
+      + "): %.3f" % np.percentile(f_cor.ravel(), perc))
+
+# Colormap
+cmap = plt.get_cmap("RdBu")
+levels = np.arange(0.99, 1.01, 0.001)
+norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, extend="both")
+ticks = np.arange(0.99, 1.01, 0.002)
+
+# Plot
+f_cor_sm = f_cor.mean(axis=(0, 1))
+plt.figure(figsize=(20, 8))
+ax = plt.axes()
+ax.set_facecolor("grey")
+data_plot = np.ma.masked_where(f_cor_sm == 0.0, f_cor_sm)
+plt.pcolormesh(subsolar_lon, subsolar_lat, data_plot, cmap=cmap, norm=norm)
+plt.axis([-180.0, 180.0, -23.5, 23.5])
+plt.xlabel("Subolar longitude [deg]")
+plt.ylabel("Subolar latitude [deg]")
+plt.title("Maximal f_cor value: %.3f" % f_cor_sm.max(), fontweight="bold",
+          fontsize=13, y=1.005)
+plt.colorbar(ticks=ticks, format="{}".format)
