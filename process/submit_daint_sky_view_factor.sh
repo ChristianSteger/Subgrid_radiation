@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH --job-name="sky_view_factor"
 #SBATCH --account="pr133"
-#SBATCH --time=01:58:00
+#SBATCH --time=01:57:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-core=2
 #SBATCH --ntasks-per-node=1

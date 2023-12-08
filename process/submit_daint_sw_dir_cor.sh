@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH --job-name="sw_dir_cor"
 #SBATCH --account="pr133"
-#SBATCH --time=02:58:00
+#SBATCH --time=03:58:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-core=2
 #SBATCH --ntasks-per-node=1
