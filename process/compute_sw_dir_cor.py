@@ -27,12 +27,12 @@ mpl.style.use("classic")
 # -----------------------------------------------------------------------------
 
 # Grid for subsolar points
-# subsol_lon = np.linspace(-180.0, 171.0, 40, dtype=np.float64)  # 9 degree
-# subsol_lat = np.linspace(-23.5, 23.5, 14, dtype=np.float64)  # 3.62 degree
+subsol_lon = np.linspace(-180.0, 171.0, 40, dtype=np.float64)  # 9 degree
+subsol_lat = np.linspace(-23.5, 23.5, 14, dtype=np.float64)  # 3.62 degree
 # subsol_lon = np.linspace(-180.0, 172.0, 45, dtype=np.float64)  # 8 degree
 # subsol_lat = np.linspace(-23.5, 23.5, 15, dtype=np.float64)  # 3.36 degree
-subsol_lon = np.linspace(-180.0, 174.0, 60, dtype=np.float64)  # 6 degree
-subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
+# subsol_lon = np.linspace(-180.0, 174.0, 60, dtype=np.float64)  # 6 degree
+# subsol_lat = np.linspace(-23.5, 23.5, 21, dtype=np.float64)  # 2.35 degree
 
 # Ray-tracing and 'SW_dir_cor' calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
@@ -41,13 +41,13 @@ sw_dir_cor_max = 25.0
 ang_max = 89.9
 
 # File input/output
-# file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
+file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
 # file_in = "MERIT_remapped_COSMO_0.020deg.nc"
-file_in = "MERIT_remapped_COSMO_0.005deg.nc"
+# file_in = "MERIT_remapped_COSMO_0.005deg.nc"
 
 # Miscellaneous settings
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
-             "cscs": "/scratch/snx3000/csteger/Subgrid_radiation_data/"}
+             "cscs": "/scratch/snx3000/csteger/Subgrid_radiation/Output/"}
 radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 ncview_reorder = True
 # reorder dimensions of NetCDF-output to make it viewable with 'ncview'
@@ -157,7 +157,7 @@ for i in files_in:
     num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
     num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
     mask = np.zeros((num_gc_y, num_gc_x), dtype=np.uint8)
-    # mask[-30:, -30:] = 1
+    # mask[-50:, -50:] = 1
     mask[:] = 1
 
     # Ray-tracing
@@ -279,22 +279,22 @@ perc = 99.9  # percentile [0.0, 100.0]
 print("'f_cor'-percentile (" + "%.2f" % perc
       + "): %.3f" % np.percentile(f_cor.ravel(), perc))
 
-# Colormap
-cmap = plt.get_cmap("RdBu")
-levels = np.arange(0.99, 1.01, 0.001)
-norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, extend="both")
-ticks = np.arange(0.99, 1.01, 0.002)
+# # Colormap
+# cmap = plt.get_cmap("RdBu")
+# levels = np.arange(0.99, 1.01, 0.001)
+# norm = mpl.colors.BoundaryNorm(levels, ncolors=cmap.N, extend="both")
+# ticks = np.arange(0.99, 1.01, 0.002)
 
-# Plot
-f_cor_sm = f_cor.mean(axis=(0, 1))
-plt.figure(figsize=(20, 8))
-ax = plt.axes()
-ax.set_facecolor("grey")
-data_plot = np.ma.masked_where(f_cor_sm == 0.0, f_cor_sm)
-plt.pcolormesh(subsolar_lon, subsolar_lat, data_plot, cmap=cmap, norm=norm)
-plt.axis([-180.0, 180.0, -23.5, 23.5])
-plt.xlabel("Subolar longitude [deg]")
-plt.ylabel("Subolar latitude [deg]")
-plt.title("Maximal f_cor value: %.3f" % f_cor_sm.max(), fontweight="bold",
-          fontsize=13, y=1.005)
-plt.colorbar(ticks=ticks, format="{}".format)
+# # Plot
+# f_cor_sm = f_cor.mean(axis=(0, 1))
+# plt.figure(figsize=(20, 8))
+# ax = plt.axes()
+# ax.set_facecolor("grey")
+# data_plot = np.ma.masked_where(f_cor_sm == 0.0, f_cor_sm)
+# plt.pcolormesh(subsolar_lon, subsolar_lat, data_plot, cmap=cmap, norm=norm)
+# plt.axis([-180.0, 180.0, -23.5, 23.5])
+# plt.xlabel("Subolar longitude [deg]")
+# plt.ylabel("Subolar latitude [deg]")
+# plt.title("Maximal f_cor value: %.3f" % f_cor_sm.max(), fontweight="bold",
+#           fontsize=13, y=1.005)
+# plt.colorbar(ticks=ticks, format="{}".format)

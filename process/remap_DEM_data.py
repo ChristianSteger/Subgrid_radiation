@@ -39,19 +39,30 @@ mpl.style.use("classic")
 # Specifications for rotated latitude/longitude COSMO domain
 # -----------------------------------------------------------------------------
 
-# Alps (with Pyrenees), ~2.2 km
+# Alps (default), ~2.2 km
 pollat = 43.0          # Latitude of the rotated North Pole [degree]
 pollon = -170.0        # Longitude of the rotated North Pole [degree]
 polgam = 0.0           # Longitude rotation about the new pole [degree]
-ie_tot = 1075          # Number of grid cells (zonal)
-je_tot = 675           # Number of grid cells (meridional)
+ie_tot = 800           # Number of grid cells (zonal)
+je_tot = 600           # Number of grid cells (meridional)
 drlon = 0.02           # Grid spacing (zonal) [degree]
 drlat = 0.02           # Grid spacing (meridional) [degree]
-startrlon_tot = -10.2  # Centre longitude of lower left grid cell [degree]
+startrlon_tot = -6.2   # Centre longitude of lower left grid cell [degree]
 startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
 
+# Alps (with Pyrenees), ~2.2 km
+# pollat = 43.0          # Latitude of the rotated North Pole [degree]
+# pollon = -170.0        # Longitude of the rotated North Pole [degree]
+# polgam = 0.0           # Longitude rotation about the new pole [degree]
+# ie_tot = 1075          # Number of grid cells (zonal)
+# je_tot = 675           # Number of grid cells (meridional)
+# drlon = 0.02           # Grid spacing (zonal) [degree]
+# drlat = 0.02           # Grid spacing (meridional) [degree]
+# startrlon_tot = -10.2  # Centre longitude of lower left grid cell [degree]
+# startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
+
 # -----------------------------------------------------------------------------
-# Small Switzerland test domains
+# Smaller test domains
 # -----------------------------------------------------------------------------
 
 # # Switzerland, ~2.2 km
@@ -76,8 +87,6 @@ startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
 # startrlon_tot = -3.2 - (0.02 / 2.0) + (0.005 / 2.0)
 # startrlat_tot = -1.3 - (0.02 / 2.0) + (0.005 / 2.0)
 
-# -----------------------------------------------------------------------------
-
 # # Switzerland, ~90 m
 # pollat = 43.0
 # pollon = -170.0
@@ -88,39 +97,6 @@ startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
 # drlat = (3.0 / 3600.0)
 # startrlon_tot = -4.01 + ((3.0 / 3600.0) / 2) + ((3.0 / 3600.0) * 12 * 16 * 6)
 # startrlat_tot = -2.53 + ((3.0 / 3600.0) / 2) + ((3.0 / 3600.0) * 12 * 16 * 6)
-
-# # Hengduan Mountains, ~550 m
-# pollat = 61.81         # Latitude of the rotated North Pole [degree]
-# pollon = -81.13        # Longitude of the rotated North Pole [degree]
-# polgam = 0.0           # Longitude rotation about the new pole [degre
-# ie_tot = 18 * 16       # Number of grid cells (zonal)
-# je_tot = 16 * 16       # Number of grid cells (meridional)
-# drlon = 0.005          # Grid spacing (zonal) [degree]
-# drlat = 0.005          # Grid spacing (meridional) [degree]
-# startrlon_tot =-(0.08 * 18 / 2) + (0.005 / 2)
-# startrlat_tot =-(0.08 * 16 / 2) + (0.005 / 2)
-
-# # Karakoram, ~550 m
-# pollon = -103.49
-# pollat = 54.12
-# polgam = 0.0
-# ie_tot = 18 * 16
-# je_tot = 16 * 16
-# drlon = 0.005
-# drlat = 0.005
-# startrlon_tot =-(0.08 * 18 / 2) + (0.005 / 2)
-# startrlat_tot =-(0.08 * 16 / 2) + (0.005 / 2)
-
-# # New Zealand, ~550 m
-# pollon = 168.10
-# pollat = 45.25
-# polgam = 180.00
-# ie_tot = 14 * 16
-# je_tot = 12 * 16
-# drlon = 0.005
-# drlat = 0.005
-# startrlon_tot =-(0.08 * 14 / 2) + (0.005 / 2)
-# startrlat_tot =-(0.08 * 12 / 2) + (0.005 / 2)
 
 # -----------------------------------------------------------------------------
 # Other settings
@@ -133,12 +109,12 @@ if platform.system() == "Darwin":  # local
     uzip_dem = True
 elif platform.system() == "Linux":  # CSCS
     path_dem = "/store/c2sm/extpar_raw_data/topo/merit/"
-    path_work = "/scratch/snx3000/csteger/Subgrid_radiation_data/"
+    path_work = "/scratch/snx3000/csteger/Subgrid_radiation/Output/"
     uzip_dem = False
 
 # Miscellaneous settings
 bound_width = 100.0  # width for additional terrain at the boundary [km]
-plot_map = True
+plot_map = False
 file_out = "MERIT_remapped_COSMO_%.3f" % drlon + "deg.nc"
 extent_max_half = 800.0  # np.inf # maximal 'half' extent of domain [km]
 # -> limit maximal absolute value of subsequently computed global ENU

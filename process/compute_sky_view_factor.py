@@ -24,23 +24,23 @@ from subgrid_radiation import sun_position_array
 # Ray-tracing and sky view factor calculation
 dist_search = 100.0  # search distance for terrain shading [kilometre]
 geom_type = "grid"  # "grid" or "quad"
-hori_azim_num, hori_acc = 30, 3.0
+# hori_azim_num, hori_acc = 30, 3.0
 # hori_azim_num, hori_acc = 45, 2.0
 # hori_azim_num, hori_acc = 60, 1.5
-# hori_azim_num, hori_acc = 90, 1.0
+hori_azim_num, hori_acc = 90, 1.0
 # hori_azim_num, hori_acc = 180, 0.5
 # hori_azim_num, hori_acc = 360, 0.25
 ray_algorithm = "guess_constant"
 elev_ang_low_lim = -85.0  # -15.0
 
 # File input/output
-# file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
+file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
 # file_in = "MERIT_remapped_COSMO_0.020deg.nc"
-file_in = "MERIT_remapped_COSMO_0.005deg.nc"
+# file_in = "MERIT_remapped_COSMO_0.005deg.nc"
 
 # Miscellaneous settings
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
-             "cscs": "/scratch/snx3000/csteger/Subgrid_radiation_data/"}
+             "cscs": "/scratch/snx3000/csteger/Subgrid_radiation/Output/"}
 radius_earth = 6_371_229.0  # radius of Earth (according to COSMO/ICON) [m]
 
 # -----------------------------------------------------------------------------
@@ -132,7 +132,7 @@ for i in files_in:
     num_gc_y = int((dem_dim_0 - 1) / pixel_per_gc) - 2 * offset_gc
     num_gc_x = int((dem_dim_1 - 1) / pixel_per_gc) - 2 * offset_gc
     mask = np.zeros((num_gc_y, num_gc_x), dtype=np.uint8)
-    # mask[-30:, -30:] = 1
+    # mask[-50:, -50:] = 1
     # mask[:3000, :3000] = 1
     mask[:] = 1
 
@@ -147,13 +147,13 @@ for i in files_in:
             hori_acc=hori_acc, ray_algorithm=ray_algorithm,
             elev_ang_low_lim=elev_ang_low_lim, geom_type=geom_type)
 
-    _, _, _, _, _, distance \
-        = sun_position_array.horizon.sky_view_factor_dist(
-        vert_grid, dem_dim_0, dem_dim_1,
-        vert_grid_in, dem_dim_in_0, dem_dim_in_1,
-        trans_lonlat2enu.north_pole_enu, pixel_per_gc, offset_gc,
-        mask=mask, dist_search=dist_search,
-        azim_num=30, elev_num=30, geom_type=geom_type)
+    # _, _, _, _, _, distance \
+    #     = sun_position_array.horizon.sky_view_factor_dist(
+    #     vert_grid, dem_dim_0, dem_dim_1,
+    #     vert_grid_in, dem_dim_in_0, dem_dim_in_1,
+    #     trans_lonlat2enu.north_pole_enu, pixel_per_gc, offset_gc,
+    #     mask=mask, dist_search=dist_search,
+    #     azim_num=30, elev_num=30, geom_type=geom_type)
 
     # Check output
     print("Range of values [min, max]:")
@@ -227,11 +227,11 @@ for i in files_in:
     nc_data[:] = aspect.astype(np.float32)
     nc_data.units = "degree"
     # -------------------------------------------------------------------------
-    nc_data = ncfile.createVariable(varname="distance",
-                                    datatype="f4",
-                                    dimensions=("rlat_gc", "rlon_gc"))
-    nc_data[:] = distance.astype(np.float32)
-    nc_data.units = "m"
+    # nc_data = ncfile.createVariable(varname="distance",
+    #                                 datatype="f4",
+    #                                 dimensions=("rlat_gc", "rlon_gc"))
+    # nc_data[:] = distance.astype(np.float32)
+    # nc_data.units = "m"
     # -------------------------------------------------------------------------
     ncfile.close()
 
