@@ -39,27 +39,49 @@ mpl.style.use("classic")
 # Specifications for rotated latitude/longitude COSMO domain
 # -----------------------------------------------------------------------------
 
-# Alps (default), ~2.2 km
-pollat = 43.0          # Latitude of the rotated North Pole [degree]
-pollon = -170.0        # Longitude of the rotated North Pole [degree]
-polgam = 0.0           # Longitude rotation about the new pole [degree]
-ie_tot = 800           # Number of grid cells (zonal)
-je_tot = 600           # Number of grid cells (meridional)
-drlon = 0.02           # Grid spacing (zonal) [degree]
-drlat = 0.02           # Grid spacing (meridional) [degree]
-startrlon_tot = -6.2   # Centre longitude of lower left grid cell [degree]
-startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
-
-# Alps (with Pyrenees), ~2.2 km
+# # Alps (default), ~2.2 km
 # pollat = 43.0          # Latitude of the rotated North Pole [degree]
 # pollon = -170.0        # Longitude of the rotated North Pole [degree]
 # polgam = 0.0           # Longitude rotation about the new pole [degree]
-# ie_tot = 1075          # Number of grid cells (zonal)
-# je_tot = 675           # Number of grid cells (meridional)
+# ie_tot = 800           # Number of grid cells (zonal)
+# je_tot = 600           # Number of grid cells (meridional)
 # drlon = 0.02           # Grid spacing (zonal) [degree]
 # drlat = 0.02           # Grid spacing (meridional) [degree]
-# startrlon_tot = -10.2  # Centre longitude of lower left grid cell [degree]
+# startrlon_tot = -6.2   # Centre longitude of lower left grid cell [degree]
 # startrlat_tot = -6.6   # Centre latitude of lower left grid cell [degree]
+
+# Alps (default), ~1.1 km
+# pollat = 43.0          # Latitude of the rotated North Pole [degree]
+# pollon = -170.0        # Longitude of the rotated North Pole [degree]
+# polgam = 0.0           # Longitude rotation about the new pole [degree]
+# ie_tot = 1600          # Number of grid cells (zonal)
+# je_tot = 1200          # Number of grid cells (meridional)
+# drlon = 0.01           # Grid spacing (zonal) [degree]
+# drlat = 0.01           # Grid spacing (meridional) [degree]
+# startrlon_tot = -6.205 # Centre longitude of lower left grid cell [degree]
+# startrlat_tot = -6.605 # Centre latitude of lower left grid cell [degree]
+
+# # Alps (default), ~550 m
+pollat = 43.0          # Latitude of the rotated North Pole [degree]
+pollon = -170.0        # Longitude of the rotated North Pole [degree]
+polgam = 0.0           # Longitude rotation about the new pole [degree]
+ie_tot = 800 * 4       # Number of grid cells (zonal)
+je_tot = 600 * 4       # Number of grid cells (meridional)
+drlon = 0.005          # Grid spacing (zonal) [degree]
+drlat = 0.005          # Grid spacing (meridional) [degree]
+startrlon_tot = -6.2075# Centre longitude of lower left grid cell [degree]
+startrlat_tot = -6.6075# Centre latitude of lower left grid cell [degree]
+
+# Alps (without eastern flatter part), ~550 m
+# pollat = 43.0          # Latitude of the rotated North Pole [degree]
+# pollon = -170.0        # Longitude of the rotated North Pole [degree]
+# polgam = 0.0           # Longitude rotation about the new pole [degree]
+# ie_tot = 2111          # Number of grid cells (zonal)
+# je_tot = 1983          # Number of grid cells (meridional)
+# drlon = 0.005          # Grid spacing (zonal) [degree]
+# drlat = 0.005          # Grid spacing (meridional) [degree]
+# startrlon_tot = -5.7775# Centre longitude of lower left grid cell [degree]
+# startrlat_tot = -5.0975# Centre latitude of lower left grid cell [degree]
 
 # -----------------------------------------------------------------------------
 # Smaller test domains
@@ -116,7 +138,8 @@ elif platform.system() == "Linux":  # CSCS
 bound_width = 100.0  # width for additional terrain at the boundary [km]
 plot_map = False
 file_out = "MERIT_remapped_COSMO_%.3f" % drlon + "deg.nc"
-extent_max_half = 800.0  # np.inf # maximal 'half' extent of domain [km]
+# extent_max_half = 800.0  # np.inf # maximal 'half' extent of domain [km]
+extent_max_half = 400.0  # for domain with 550 m resolution -> crash otherwise ######## temporary
 # -> limit maximal absolute value of subsequently computed global ENU
 #    coordinates. Should be set to a suitable value regarding 'ray_org_elev'
 #    and the representation of ENU coordinates with 32-bit floats.

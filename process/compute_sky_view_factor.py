@@ -34,9 +34,11 @@ ray_algorithm = "guess_constant"
 elev_ang_low_lim = -85.0  # -15.0
 
 # File input/output
-file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
+# file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
 # file_in = "MERIT_remapped_COSMO_0.020deg.nc"
+# file_in = "MERIT_remapped_COSMO_0.010deg_y?_x?.nc"
 # file_in = "MERIT_remapped_COSMO_0.005deg.nc"
+file_in = "MERIT_remapped_COSMO_0.005deg_y?_x?.nc"
 
 # Miscellaneous settings
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
@@ -245,8 +247,8 @@ if len(files_in) > 1:
     files_out = glob.glob(path_work + "Sky_view_factor_"
                           + "_".join(file_in.split("_")[2:]))
     ds = xr.open_mfdataset(files_out)
-    print(np.abs(np.diff(ds["rlon_gc"].values) - 0.02).max())
-    print(np.abs(np.diff(ds["rlat_gc"].values) - 0.02).max())
+    print(np.abs(np.diff(ds["rlon_gc"].values) - float(file_in[21:26])).max())
+    print(np.abs(np.diff(ds["rlat_gc"].values) - float(file_in[21:26])).max())
     ds.to_netcdf(files_out[0][:-9] + ".nc")
     ds.close()
 

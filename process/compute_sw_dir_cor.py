@@ -41,9 +41,11 @@ sw_dir_cor_max = 25.0
 ang_max = 89.9
 
 # File input/output
-file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
+# file_in = "MERIT_remapped_COSMO_0.020deg_y?_x?.nc"
 # file_in = "MERIT_remapped_COSMO_0.020deg.nc"
+# file_in = "MERIT_remapped_COSMO_0.010deg_y?_x?.nc"
 # file_in = "MERIT_remapped_COSMO_0.005deg.nc"
+file_in = "MERIT_remapped_COSMO_0.005deg_y?_x?.nc"
 
 # Miscellaneous settings
 path_work = {"local": "/Users/csteger/Desktop/dir_work/",
@@ -239,8 +241,8 @@ if len(files_in) > 1:
     files_out = glob.glob(path_work + file_out_part + "_"
                           + "_".join(file_in.split("_")[2:]))
     ds = xr.open_mfdataset(files_out)
-    print(np.abs(np.diff(ds["rlon_gc"].values) - 0.02).max())
-    print(np.abs(np.diff(ds["rlat_gc"].values) - 0.02).max())
+    print(np.abs(np.diff(ds["rlon_gc"].values) - float(file_in[21:26])).max())
+    print(np.abs(np.diff(ds["rlat_gc"].values) - float(file_in[21:26])).max())
     print("Total size of lookup table: %.2f"
           % (ds["f_cor"].nbytes / (10 ** 9)) + " GB")
     print("Shape of lookup table: " + str(ds["f_cor"].shape))
@@ -262,6 +264,10 @@ if ncview_reorder:
     ds = xr.open_dataset(path_work + file_out)
     ds = ds.transpose("subsolar_lat", "subsolar_lon", "rlat_gc", "rlon_gc")
     ds.to_netcdf(path_work + file_out[:-3] + "_ncview.nc")
+    # use NCO:
+    # ncpdq -a subsolar_lat,subsolar_lon,rlat_gc,rlon_gc \
+    # SW_dir_cor_lookup_14x40_COSMO_0.005deg.nc \
+    # SW_dir_cor_lookup_14x40_COSMO_0.005deg_ncview.nc
 
 # -----------------------------------------------------------------------------
 # Check computed f_cor values
@@ -293,8 +299,8 @@ print("'f_cor'-percentile (" + "%.2f" % perc
 # data_plot = np.ma.masked_where(f_cor_sm == 0.0, f_cor_sm)
 # plt.pcolormesh(subsolar_lon, subsolar_lat, data_plot, cmap=cmap, norm=norm)
 # plt.axis([-180.0, 180.0, -23.5, 23.5])
-# plt.xlabel("Subolar longitude [deg]")
-# plt.ylabel("Subolar latitude [deg]")
+# plt.xlabel("Subsolar longitude [deg]")
+# plt.ylabel("Subsolar latitude [deg]")
 # plt.title("Maximal f_cor value: %.3f" % f_cor_sm.max(), fontweight="bold",
 #           fontsize=13, y=1.005)
 # plt.colorbar(ticks=ticks, format="{}".format)
